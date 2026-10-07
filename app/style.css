@@ -229,3 +229,4 @@ button.icon.wide { font-size: 0.85rem; white-space: nowrap; }
 .tabbar button span { font-size: 1.3rem; line-height: 1; }
 .tabbar button[aria-current="page"] { color: var(--accent); font-weight: 600; }
 .tabbar button:active { transform: none; }
+button.icon.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }

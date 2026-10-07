@@ -220,6 +220,7 @@
     if (!wasReview) interval = first === 'easy' ? 3 : 1;
     else if (first === 'again') { interval = 1; ease = Math.max(1.3, ease - 0.2); lapses++; }
     else if (first === 'easy') { interval = Math.ceil(Math.max(interval, 1) * ease * 1.3); ease += 0.15; }
+    else if (first === 'ok') interval = Math.max(interval + 1, Math.ceil(interval * 1.2)); // auto mode: a little further, less than Good
     else interval = interval <= 1 ? 3 : Math.ceil(interval * ease);
     store.items[id] = { ease, interval, lapses, reps: prev.reps + 1, due: startOfToday() + interval * DAY, updated: Date.now() };
   }
@@ -304,7 +305,7 @@
     await th(text); await wait(400);
     stage('speak', 'Repeat', it.en, romOf(it));
     await th(text); await wait(repeatGap(text));
-    const g = S.handsFree ? (ok === false ? 'again' : 'good') : await awaitGrade();
+    const g = S.handsFree ? (ok === false ? 'again' : 'ok') : await awaitGrade();
     grade(s, a, g);
   }
 
@@ -640,6 +641,7 @@
     $('setMic').checked = S.mic && !!SR; $('setMic').disabled = !SR;
     $('micNote').textContent = SR ? '' : '(not supported in this browser — try Chrome)';
     $('setHands').checked = S.handsFree;
+    renderAuto();
     $('setPeek').checked = S.peek;
   }
 
@@ -648,7 +650,22 @@
   $('setPause').oninput = e => { S.pause = +e.target.value; $('pauseVal').textContent = S.pause + ' s'; save(); };
   $('setNew').oninput = e => { S.maxNew = +e.target.value; $('newVal').textContent = S.maxNew; save(); };
   $('setMic').onchange = e => { S.mic = e.target.checked; save(); };
-  $('setHands').onchange = e => { S.handsFree = e.target.checked; save(); };
+  $('setHands').onchange = e => { S.handsFree = e.target.checked; save(); renderAuto(); };
+  // Auto: mark every phrase OK and keep going, for listening without using your hands.
+  function renderAuto() {
+    const b = $('autoBtn');
+    b.textContent = S.handsFree ? '✓ Auto' : 'Auto';
+    b.classList.toggle('on', !!S.handsFree);
+    b.setAttribute('aria-pressed', String(!!S.handsFree));
+  }
+  $('autoBtn').onclick = () => {
+    S.handsFree = !S.handsFree;
+    save();
+    renderAuto();
+    $('setHands').checked = S.handsFree;
+    ui.feedback.textContent = S.handsFree ? 'Auto on: phrases are marked OK and the session keeps going.' : 'Auto off: rate each phrase yourself.';
+    if (S.handsFree && run?.canGrade && !run.paused && ui.orb.dataset.stage === 'grade') { run.grade = 'ok'; } // waiting on a rating right now: move on
+  };
   $('setPeek').onchange = e => { S.peek = e.target.checked; save(); };
   $('testVoice').onclick = () => { silence(); speakThai(fill('สวัสดี{P}')); };
   $('vocabSearch').oninput = renderVocab;
@@ -864,6 +881,7 @@
     else if (['1', '2', '3'].includes(e.key)) pressGrade(['again', 'good', 'easy'][+e.key - 1]);
     else if (e.key.toLowerCase() === 'k') pressKnow();
     else if (e.key.toLowerCase() === 'v') $('voiceBtn').click();
+    else if (e.key.toLowerCase() === 'a') $('autoBtn').click();
     else if (!ui.grades.hidden && e.key.toLowerCase() === 'r') $('replay').click();
   });
 

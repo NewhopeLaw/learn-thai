@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Learn Thai by Ear</title>
   <meta name="description" content="Free audio-first Thai course: listen, recall out loud, and review with spaced repetition. No reading required.">
-  <link rel="stylesheet" href="app/style.css?v=10">
+  <link rel="stylesheet" href="app/style.css?v=11">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#b5452b">
   <link rel="icon" type="image/png" href="app/icons/icon-192.png">
@@ -152,7 +152,7 @@
           <input id="setNew" type="range" min="2" max="15" step="1">
         </label>
         <label class="check"><input id="setMic" type="checkbox"> Check my answer with the microphone <span id="micNote" class="muted small"></span></label>
-        <label class="check"><input id="setHands" type="checkbox"> Hands-free (no rating, for walks)</label>
+        <label class="check"><input id="setHands" type="checkbox"> Auto mode: mark every phrase OK and keep going (for listening hands-free)</label>
         <label class="check"><input id="setPeek" type="checkbox"> Show romanization during sessions</label>
         <div class="row">
           <button id="testVoice">Test voice</button>
@@ -178,10 +178,10 @@
           <li><b>Listen.</b> A new phrase is built up from the end, piece by piece.</li>
           <li><b>Recall out loud.</b> When asked "How do you say…?", say it in the pause.</li>
           <li><b>Check and repeat.</b> Hear the answer twice and copy the tones.</li>
-          <li><b>Rate yourself.</b> Good or Easy finishes it for today; Again brings it back.</li>
+          <li><b>Rate yourself.</b> Good or Easy finishes it for today; Again brings it back. Turn on <b>Auto</b> to mark everything OK and listen without touching anything.</li>
         </ol>
         <p class="small">Already know something? <b>I know this</b> skips it for a week. In <b>Words</b>, <b>Study next</b> picks which unit comes next.</p>
-        <p class="muted small">Keys: <kbd>1</kbd> Again · <kbd>2</kbd> Good · <kbd>3</kbd> Easy · <kbd>K</kbd> know it · <kbd>V</kbd> voice · <kbd>R</kbd> replay · <kbd>Space</kbd> pause · <kbd>Esc</kbd> end</p>
+        <p class="muted small">Keys: <kbd>1</kbd> Again · <kbd>2</kbd> Good · <kbd>3</kbd> Easy · <kbd>K</kbd> know it · <kbd>A</kbd> auto · <kbd>V</kbd> voice · <kbd>R</kbd> replay · <kbd>Space</kbd> pause · <kbd>Esc</kbd> end</p>
       </details>
 
       <p class="center small"><a href="lessons/">Reading and writing Thai →</a></p>
@@ -192,6 +192,7 @@
       <div class="session-bar">
         <button id="stop" class="icon" aria-label="End session" title="End session (Esc)">✕</button>
         <div class="progress" aria-hidden="true"><div id="bar"></div></div>
+        <button id="autoBtn" class="icon wide" title="Auto: mark everything OK and keep going (A)" aria-pressed="false">Auto</button>
         <button id="voiceBtn" class="icon wide" title="Switch voice (V)">Voice</button>
         <button id="pause" class="icon" aria-label="Pause" title="Pause (Space)">⏸</button>
       </div>
@@ -230,8 +231,8 @@
     <button data-tab="more"><span aria-hidden="true">⋯</span>More</button>
   </nav>
 
-  <script src="app/course.js?v=10"></script>
-  <script src="app/audio-manifest.js?v=10"></script>
-  <script src="app/app.js?v=10"></script>
+  <script src="app/course.js?v=11"></script>
+  <script src="app/audio-manifest.js?v=11"></script>
+  <script src="app/app.js?v=11"></script>
 </body>
 </html>
