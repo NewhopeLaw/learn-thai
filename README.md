@@ -66,3 +66,7 @@ python tools/generate_audio.py
 ```
 
 The English narrator uses the browser's built-in voice.
+
+### Install and offline use
+
+The site is an installable web app. In Chrome or Edge (PC or Android), press **Install app** on the home screen, or use the browser menu → *Install app* / *Add to Home screen*. Press **Download for offline** once to save all the audio (about 9 MB) on the device; after that, lessons work with no internet. `sw.js` handles caching (app files network-first, audio cache-first).

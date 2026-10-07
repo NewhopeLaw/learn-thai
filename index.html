@@ -6,7 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Learn Thai by Ear</title>
   <meta name="description" content="Free audio-first Thai course: listen, recall out loud, and review with spaced repetition. No reading required.">
-  <link rel="stylesheet" href="app/style.css?v=7">
+  <link rel="stylesheet" href="app/style.css?v=8">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#b5452b">
+  <link rel="icon" type="image/png" href="app/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="app/icons/apple-touch-icon.png">
 </head>
 <body>
   <main>
@@ -44,6 +48,15 @@
       </div>
       <button id="start" class="primary">Start session</button>
       <p id="nextUp" class="muted center"></p>
+
+      <div class="card app-card">
+        <div class="row">
+          <button id="installBtn" class="primary" hidden>Install app</button>
+          <button id="offlineBtn" hidden>Download for offline</button>
+        </div>
+        <p id="offlineStatus" class="muted small"></p>
+        <p id="installHint" class="muted small" hidden>To install on this device, open the browser menu (⋮) and choose <b>Install app</b> or <b>Add to Home screen</b>.</p>
+      </div>
 
       <details class="card" id="planCard" open>
         <summary>30-day plan</summary>
@@ -182,9 +195,9 @@
     </section>
   </main>
 
-  <script src="app/course.js?v=7"></script>
-  <script src="app/audio-manifest.js?v=7"></script>
-  <script src="app/plan.js?v=7"></script>
-  <script src="app/app.js?v=7"></script>
+  <script src="app/course.js?v=8"></script>
+  <script src="app/audio-manifest.js?v=8"></script>
+  <script src="app/plan.js?v=8"></script>
+  <script src="app/app.js?v=8"></script>
 </body>
 </html>

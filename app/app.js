@@ -816,6 +816,80 @@
     else if (!ui.grades.hidden && e.key.toLowerCase() === 'r') $('replay').click();
   });
 
+  // ---------- install & offline ----------
+  const AUDIO_CACHE = 'learn-thai-audio-v1'; // must match sw.js
+  let installEvt = null;
+  const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    installEvt = e;
+    $('installBtn').hidden = false;
+    $('installHint').hidden = true;
+  });
+  window.addEventListener('appinstalled', () => { installEvt = null; $('installBtn').hidden = true; });
+  $('installBtn').onclick = async () => {
+    if (!installEvt) return;
+    installEvt.prompt();
+    await installEvt.userChoice;
+    installEvt = null;
+    $('installBtn').hidden = true;
+  };
+  if (!standalone()) setTimeout(() => { if (!installEvt) $('installHint').hidden = false; }, 3000);
+
+  const audioUrls = () => [...new Set(Object.values(AUDIO))]
+    .flatMap(id => ['male', 'female'].map(v => new URL(`audio/${v}/${id}.mp3`, location.href).href));
+  async function offlineState() {
+    if (!('caches' in window)) return null;
+    const c = await caches.open(AUDIO_CACHE);
+    const have = new Set((await c.keys()).map(r => r.url));
+    const urls = audioUrls();
+    const missing = urls.filter(u => !have.has(u));
+    return { total: urls.length, have: urls.length - missing.length, missing };
+  }
+  async function renderOffline() {
+    const st = await offlineState();
+    if (!st || !st.total) return;
+    if (!st.missing.length) {
+      $('offlineStatus').textContent = `✓ Ready offline: all ${st.total} audio files are saved on this device.`;
+      $('offlineBtn').hidden = true;
+    } else {
+      $('offlineStatus').textContent = st.have
+        ? `${st.have} of ${st.total} audio files saved. Download the rest to use lessons without internet.`
+        : 'Save all the audio (about 9 MB) so lessons work without internet.';
+      $('offlineBtn').hidden = false;
+    }
+  }
+  let downloading = false;
+  $('offlineBtn').onclick = async () => {
+    if (downloading) return;
+    downloading = true;
+    $('offlineBtn').disabled = true;
+    try {
+      try { await navigator.storage?.persist?.(); } catch {} // ask the browser not to evict it
+      const st = await offlineState();
+      const c = await caches.open(AUDIO_CACHE);
+      const queue = [...st.missing];
+      let done = st.have, failed = 0;
+      const worker = async () => {
+        while (queue.length) {
+          const u = queue.shift();
+          try { const r = await fetch(u, { cache: 'no-store' }); if (r.status === 200) await c.put(u, r); else failed++; }
+          catch { failed++; }
+          done++;
+          $('offlineStatus').textContent = `Downloading… ${done} / ${st.total}`;
+        }
+      };
+      await Promise.all(Array.from({ length: 6 }, worker));
+      if (failed) $('offlineStatus').textContent = `${failed} files didn't download. Check your connection and press the button again.`;
+      else await renderOffline();
+    } finally {
+      downloading = false;
+      $('offlineBtn').disabled = false;
+    }
+  };
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  renderOffline();
+
   renderVoiceInfo();
   show(profile && S.gender ? 'home' : 'setup');
 })();
