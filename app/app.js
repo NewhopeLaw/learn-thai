@@ -871,7 +871,7 @@
   // ---------- GitHub repo sync ----------
   // Each learner's progress (the same JSON as the backup file) is saved as
   // progress/<name>.json on the repo's "progress" branch, so it never triggers a site rebuild.
-  const REPO = 'wonilsart/learn-thai';
+  const REPO = 'NewhopeLaw/learn-thai';
   const BRANCH = 'progress';
   const SYNC_KEY = 'learn-thai-sync';
   let sync;

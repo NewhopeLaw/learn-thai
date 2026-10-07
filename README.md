@@ -2,7 +2,7 @@
 
 A free, audio-first Thai course for English speakers. It works like Pimsleur and Anki combined: **you learn by listening and speaking, with no reading required at the start.**
 
-**Start learning:** https://wonilsart.github.io/learn-thai/
+**Start learning:** https://newhopelaw.github.io/learn-thai/
 
 ## The method
 
