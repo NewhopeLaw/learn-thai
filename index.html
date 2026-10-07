@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Learn Thai by Ear</title>
   <meta name="description" content="Free audio-first Thai course: listen, recall out loud, and review with spaced repetition. No reading required.">
-  <link rel="stylesheet" href="app/style.css?v=9">
+  <link rel="stylesheet" href="app/style.css?v=10">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#b5452b">
   <link rel="icon" type="image/png" href="app/icons/icon-192.png">
@@ -14,90 +14,104 @@
 </head>
 <body>
   <main>
-    <header>
-      <h1>Learn Thai by Ear</h1>
-      <p class="tagline">Listen. Recall out loud. Repeat. No reading needed.</p>
-    </header>
-
     <!-- First run -->
-    <section id="setup" class="card" hidden>
-      <div id="existing" hidden>
-        <h2>Who's learning?</h2>
-        <div id="profileList" class="row"></div>
-        <h3 class="small muted">Or add a new learner</h3>
+    <section id="setup" class="view" hidden>
+      <header class="brand">
+        <h1>Learn Thai by Ear</h1>
+        <p class="muted">Listen. Recall out loud. Repeat. No reading needed.</p>
+      </header>
+      <div class="card">
+        <div id="existing" hidden>
+          <h2>Who's learning?</h2>
+          <div id="profileList" class="stack-buttons"></div>
+          <p class="divider-label">or add a new learner</p>
+        </div>
+        <label class="field">Your name
+          <input id="nameInput" type="text" autocomplete="given-name" maxlength="30">
+        </label>
+        <p>Thai uses different polite words for men and women. Which should the course teach you?</p>
+        <div class="row">
+          <button class="big" data-gender="male">Speak as a man</button>
+          <button class="big" data-gender="female">Speak as a woman</button>
+        </div>
+        <p class="muted small">No password needed. This browser remembers you.</p>
       </div>
-      <label class="field">Your name
-        <input id="nameInput" type="text" autocomplete="given-name" maxlength="30">
-      </label>
-      <p>Thai speakers use different polite words depending on whether they're a man or a woman. Which should the course teach you?</p>
-      <div class="row">
-        <button class="big" data-gender="male">Speak as a man</button>
-        <button class="big" data-gender="female">Speak as a woman</button>
-      </div>
-      <p class="muted small">No password needed. This browser remembers who you are.</p>
     </section>
 
-    <!-- Home -->
-    <section id="home" hidden>
-      <p class="center small muted">Learning as <b id="whoName"></b> · <button id="switchUser" class="link">switch learner</button></p>
+    <!-- Today -->
+    <section id="today" class="view" hidden>
+      <p class="eyebrow"><span id="whoName"></span> · <span id="statStreak">0</span>-day streak</p>
+      <h1 class="next-title" id="nextUp"></h1>
       <div class="stats">
-        <div><b id="statDue">0</b><span>due for review</span></div>
-        <div><b id="statLearned">0</b><span>phrases learned</span></div>
-        <div><b id="statNew">0</b><span>new to learn</span></div>
-        <div><b id="statStreak">0</b><span>day streak</span></div>
+        <div><b id="statDue">0</b><span>reviews due</span></div>
+        <div><b id="statNewToday">0</b><span>new today</span></div>
+        <div><b id="statLearned">0</b><span>learned</span></div>
       </div>
-      <button id="start" class="primary">Start session</button>
-      <p id="nextUp" class="muted center"></p>
+      <button id="start" class="primary start">▶&nbsp; Start today's session</button>
+      <p id="estimate" class="muted small center"></p>
+      <button id="statusChip" class="chip" type="button"></button>
+      <p id="voiceInfo" class="muted small"></p>
+    </section>
 
-      <div class="card app-card">
+    <!-- Progress -->
+    <section id="progressView" class="view" hidden>
+      <h1>Progress</h1>
+      <div class="card">
+        <h2 class="card-title">Last 14 days</h2>
+        <div id="activity" class="activity"></div>
+        <p id="totals" class="muted small"></p>
+      </div>
+      <div class="card">
+        <h2 class="card-title">Units</h2>
+        <p class="legend small"><i class="mastered"></i> mastered <i class="known"></i> known <i class="learning"></i> learning</p>
+        <div id="units"></div>
+      </div>
+    </section>
+
+    <!-- Words -->
+    <section id="words" class="view" hidden>
+      <h1>Words</h1>
+      <div id="wordsHome">
+        <div id="vocabPanel">
+          <input id="vocabSearch" type="search" placeholder="Search words" aria-label="Search words">
+          <div class="row tight">
+            <label class="check"><input id="vocabLearned" type="checkbox"> Learned only</label>
+            <label class="check"><input id="vocabRom" type="checkbox"> Romanization</label>
+          </div>
+          <div id="vocabList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- More -->
+    <section id="more" class="view" hidden>
+      <h1>More</h1>
+
+      <div class="card">
+        <h2 class="card-title">This device</h2>
         <div class="row">
           <button id="installBtn" class="primary" hidden>Install app</button>
           <button id="offlineBtn" hidden>Download for offline</button>
         </div>
         <p id="offlineStatus" class="muted small"></p>
-        <p id="installHint" class="muted small" hidden>To install on this device, open the browser menu (⋮) and choose <b>Install app</b> or <b>Add to Home screen</b>.</p>
+        <p id="installHint" class="muted small" hidden>To install, open the browser menu (⋮) and choose <b>Install app</b> or <b>Add to Home screen</b>.</p>
       </div>
 
-      <details class="card" id="planCard" open>
-        <summary>30-day plan</summary>
-        <div id="planToday"></div>
-        <div class="row">
-          <button id="planStart" class="primary">Start the plan today</button>
-          <button id="planReset" class="ghost" hidden>Restart plan</button>
-        </div>
-        <h3 class="small muted">Every day, about 1 hour</h3>
-        <ul id="planDaily" class="plan-daily small"></ul>
-        <h3 class="small muted">Day by day</h3>
-        <ol id="planDays" class="plan-days small"></ol>
-      </details>
-      <p id="voiceInfo" class="muted"></p>
-
-      <details class="card" id="progressCard" open>
-        <summary>Your progress</summary>
-        <div id="units"></div>
-        <p class="legend small"><i class="mastered"></i> mastered (3+ weeks) <i class="known"></i> known (1+ week) <i class="learning"></i> learning</p>
-        <h3 class="small muted">Last 14 days</h3>
-        <div id="activity" class="activity"></div>
-        <p id="totals" class="muted small"></p>
-        <div class="row">
-          <button id="exportBtn">Back up progress</button>
-          <button id="importBtn">Restore from backup</button>
-          <input id="importFile" type="file" accept="application/json,.json" hidden>
-        </div>
-        <p class="muted small">Your progress is saved in this browser. Download a backup file, or connect GitHub below to back it up automatically.</p>
-
-        <h3 class="small muted">Back up to GitHub</h3>
+      <div class="card">
+        <h2 class="card-title">Sync with GitHub</h2>
         <div id="syncOff">
-          <p class="small">Saves your progress to the <code>learn-thai</code> repo after every session, so it's backed up and shared between your devices. Set this up once per device:</p>
-          <ol class="small">
-            <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → new access key</a> (a "fine-grained token").</li>
-            <li>Pick the longest expiration. Under <b>Repository access</b>, choose <b>Only select repositories</b> → <b>learn-thai</b>.</li>
-            <li>Under <b>Permissions → Repository permissions</b>, set <b>Contents</b> to <b>Read and write</b>.</li>
-            <li>Generate it and paste it here. This browser remembers it from then on.</li>
-            <li>Then press <b>Connect my phone</b> and scan the code. No need to paste the key on your phone.</li>
-          </ol>
+          <p class="small">Saves your progress to the <code>learn-thai</code> repo and keeps your devices in sync.</p>
+          <details class="small">
+            <summary>How to get a key</summary>
+            <ol>
+              <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → new fine-grained token</a>.</li>
+              <li>Under <b>Repository access</b>, choose <b>Only select repositories</b> → <b>learn-thai</b>.</li>
+              <li>Under <b>Add permissions</b>, search <b>Contents</b> and set it to <b>Read and write</b>.</li>
+              <li>Generate it and paste it below.</li>
+            </ol>
+          </details>
           <div class="row">
-            <input id="ghToken" type="password" placeholder="Paste key (github_pat_…)" autocomplete="off" aria-label="GitHub access key">
+            <input id="ghToken" type="password" placeholder="github_pat_…" autocomplete="off" aria-label="GitHub access key">
             <button id="ghConnect" class="primary">Connect</button>
           </div>
         </div>
@@ -108,29 +122,16 @@
             <button id="ghDisconnect" class="ghost">Disconnect</button>
           </div>
           <div id="linkBox" hidden>
-            <p class="small">Scan this with your phone's camera. Your phone opens the app as you, with syncing turned on.</p>
+            <p class="small">Scan with your phone's camera. It opens the app as you, with sync on.</p>
             <div id="linkQR" class="qr"></div>
-            <p class="muted small">This code contains your GitHub key. Don't share it or post a photo of it. Press the button again to hide it.</p>
+            <p class="muted small">This code contains your GitHub key. Don't share it. Press the button again to hide it.</p>
           </div>
         </div>
         <p id="syncStatus" class="muted small"></p>
-      </details>
+      </div>
 
-      <details class="card">
-        <summary>How it works</summary>
-        <ol>
-          <li><b>Listen.</b> You hear a new Thai phrase. Long ones are built up from the end, a piece at a time.</li>
-          <li><b>Recall out loud.</b> The narrator asks, “How do you say…?” Say the Thai <i>out loud</i> during the pause, before you hear the answer.</li>
-          <li><b>Check and repeat.</b> You hear the right answer twice. Repeat it, copying the tones.</li>
-          <li><b>Rate yourself:</b> Again, Good or Easy. Phrases you find hard come back sooner.</li>
-        </ol>
-        <p><b>Good</b> or <b>Easy</b> finishes a phrase for today. <b>Again</b> brings it back later in the session until you get it. Across days, a spaced-repetition schedule brings each one back just before you'd forget it. Try one session a day.</p>
-        <p>Already know a phrase? Press <b>I know this</b> to skip it for a week, or use <b>I know this unit</b> under Your progress. During a quiz you can press <b>Good</b> as soon as you know the answer, without waiting for the audio.</p>
-        <p class="muted small">Keyboard: <kbd>1</kbd> Again · <kbd>2</kbd> Good · <kbd>3</kbd> Easy · <kbd>K</kbd> I know this · <kbd>V</kbd> switch voice · <kbd>R</kbd> replay · <kbd>Space</kbd> pause · <kbd>Esc</kbd> stop</p>
-      </details>
-
-      <details class="card">
-        <summary>Settings</summary>
+      <div class="card">
+        <h2 class="card-title">Settings</h2>
         <label class="field">Polite speech
           <select id="setGender"><option value="male">Speak as a man</option><option value="female">Speak as a woman</option></select>
         </label>
@@ -138,75 +139,99 @@
           <select id="setVoice">
             <option value="male">Niwat (male)</option>
             <option value="female">Premwadee (female)</option>
-            <option value="both">Both, alternating (trains your ear on each)</option>
+            <option value="both">Both, alternating</option>
           </select>
         </label>
         <label class="field">Thai speaking speed <output id="rateVal"></output>
           <input id="setRate" type="range" min="0.5" max="1.2" step="0.05">
         </label>
-        <label class="field">Thinking pause before the answer <output id="pauseVal"></output>
+        <label class="field">Thinking pause <output id="pauseVal"></output>
           <input id="setPause" type="range" min="2" max="10" step="1">
         </label>
         <label class="field">New phrases per session <output id="newVal"></output>
           <input id="setNew" type="range" min="2" max="15" step="1">
         </label>
-        <label class="check"><input id="setMic" type="checkbox"> Listen to me with the microphone <span id="micNote" class="muted small"></span></label>
-        <label class="check"><input id="setHands" type="checkbox"> Hands-free: don't ask me to rate (good for walking or driving)</label>
-        <label class="check"><input id="setPeek" type="checkbox"> Show romanization (off is better for training your ear)</label>
+        <label class="check"><input id="setMic" type="checkbox"> Check my answer with the microphone <span id="micNote" class="muted small"></span></label>
+        <label class="check"><input id="setHands" type="checkbox"> Hands-free (no rating, for walks)</label>
+        <label class="check"><input id="setPeek" type="checkbox"> Show romanization during sessions</label>
         <div class="row">
-          <button id="testVoice">Test Thai voice</button>
-          <button id="reset" class="danger">Reset progress</button>
+          <button id="testVoice">Test voice</button>
         </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Backup</h2>
+        <div class="row">
+          <button id="exportBtn">Download backup</button>
+          <button id="importBtn">Restore backup</button>
+          <input id="importFile" type="file" accept="application/json,.json" hidden>
+        </div>
+        <div class="row">
+          <button id="switchUser" class="ghost">Switch learner</button>
+          <button id="reset" class="ghost danger">Reset progress</button>
+        </div>
+      </div>
+
+      <details class="card">
+        <summary class="card-title">How it works</summary>
+        <ol>
+          <li><b>Listen.</b> A new phrase is built up from the end, piece by piece.</li>
+          <li><b>Recall out loud.</b> When asked "How do you say…?", say it in the pause.</li>
+          <li><b>Check and repeat.</b> Hear the answer twice and copy the tones.</li>
+          <li><b>Rate yourself.</b> Good or Easy finishes it for today; Again brings it back.</li>
+        </ol>
+        <p class="small">Already know something? <b>I know this</b> skips it for a week. In <b>Words</b>, <b>Study next</b> picks which unit comes next.</p>
+        <p class="muted small">Keys: <kbd>1</kbd> Again · <kbd>2</kbd> Good · <kbd>3</kbd> Easy · <kbd>K</kbd> know it · <kbd>V</kbd> voice · <kbd>R</kbd> replay · <kbd>Space</kbd> pause · <kbd>Esc</kbd> end</p>
       </details>
 
-      <p class="center small"><a href="lessons/">Stage 2: Reading and writing Thai →</a></p>
+      <p class="center small"><a href="lessons/">Reading and writing Thai →</a></p>
     </section>
 
     <!-- Session -->
-    <section id="session" hidden>
-      <p id="unit" class="muted center"></p>
-      <div class="progress"><div id="bar"></div></div>
-      <p id="count" class="muted center small"></p>
-
-      <div id="orb" data-stage="listen" aria-live="polite">
-        <span class="icon" aria-hidden="true"></span>
-        <span id="orbLabel">Listen</span>
+    <section id="session" class="view" hidden>
+      <div class="session-bar">
+        <button id="stop" class="icon" aria-label="End session" title="End session (Esc)">✕</button>
+        <div class="progress" aria-hidden="true"><div id="bar"></div></div>
+        <button id="voiceBtn" class="icon wide" title="Switch voice (V)">Voice</button>
+        <button id="pause" class="icon" aria-label="Pause" title="Pause (Space)">⏸</button>
       </div>
-      <p id="prompt" class="prompt"></p>
-      <p id="peek" class="peek"></p>
-      <p id="feedback" class="feedback" aria-live="polite"></p>
-
+      <p id="unit" class="muted small center"></p>
+      <div class="stage">
+        <div id="orb" data-stage="listen" aria-live="polite">
+          <span class="icon" aria-hidden="true"></span>
+          <span id="orbLabel">Listen</span>
+        </div>
+        <p id="prompt" class="prompt"></p>
+        <p id="peek" class="peek"></p>
+        <p id="feedback" class="feedback" aria-live="polite"></p>
+        <p class="links">
+          <button id="know" class="link">I know this</button>
+          <span aria-hidden="true">·</span>
+          <button id="replay" class="link">Replay</button>
+        </p>
+        <p id="count" class="muted small center"></p>
+      </div>
       <div id="grades" class="grades" hidden>
-        <button data-grade="again">Again <kbd>1</kbd></button>
-        <button data-grade="good" class="primary">Good <kbd>2</kbd></button>
-        <button data-grade="easy">Easy <kbd>3</kbd></button>
-        <button id="replay" class="ghost">Replay <kbd>R</kbd></button>
+        <button data-grade="again">Again</button>
+        <button data-grade="good" class="primary">Good</button>
+        <button data-grade="easy">Easy</button>
       </div>
-
-      <div class="row center">
-        <button id="voiceBtn" title="Switch the Thai voice (V)">Voice</button>
-        <button id="know">I know this <kbd>K</kbd></button>
-        <button id="pause">Pause</button>
-        <button id="stop" class="ghost">End session</button>
-      </div>
-    </section>
-
-    <!-- Always visible, including during a session: tap to replay any phrase. -->
-    <section id="vocab" class="card">
-      <h2>Vocabulary</h2>
-      <p class="muted small">Tap ▶ to hear a phrase. If a session is running, it pauses first.</p>
-      <input id="vocabSearch" type="search" placeholder="Search…" aria-label="Search vocabulary">
-      <div class="row">
-        <label class="check"><input id="vocabLearned" type="checkbox"> Learned only</label>
-        <label class="check"><input id="vocabRom" type="checkbox"> Show romanization</label>
-      </div>
-      <div id="vocabList"></div>
+      <details id="sessionWordsBox" class="card">
+        <summary>Word list</summary>
+        <div id="sessionWords"></div>
+      </details>
     </section>
   </main>
 
-  <script src="app/course.js?v=9"></script>
-  <script src="app/audio-manifest.js?v=9"></script>
-  <script src="app/plan.js?v=9"></script>
-  <script src="app/app.js?v=9"></script>
+  <nav id="tabbar" class="tabbar" hidden>
+    <button data-tab="today"><span aria-hidden="true">⌂</span>Today</button>
+    <button data-tab="progressView"><span aria-hidden="true">▤</span>Progress</button>
+    <button data-tab="words"><span aria-hidden="true">≡</span>Words</button>
+    <button data-tab="more"><span aria-hidden="true">⋯</span>More</button>
+  </nav>
+
+  <script src="app/course.js?v=10"></script>
+  <script src="app/audio-manifest.js?v=10"></script>
+  <script src="app/app.js?v=10"></script>
 </body>
 </html>

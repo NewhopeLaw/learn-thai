@@ -19,9 +19,11 @@ Optional extras:
 - **Hands-free mode:** no rating buttons, for walking or driving.
 - **Gendered politeness:** the course teaches ครับ/ค่ะ and ผม/ฉัน to match you.
 
-**Tracking progress:** the home screen shows phrases due, learned, new and your streak. The *Your progress* panel shows each unit's phrases as learning / known / mastered, the last 14 days of practice, and totals. Progress is saved in your browser (no account needed); use *Back up progress* / *Restore from backup* to move it between devices.
+**Screens:** *Today* (start button, reviews due, new today, streak), *Progress*, *Words* (play any phrase, choose the next unit) and *More* (install, sync, settings, backup).
 
-Course: 14 units, 196 phrases: greetings, getting by, food & shopping, numbers, money & bargaining, want/have/can, getting around, taxis & transport, hotel, ordering food, about you, time & feelings, health & help, small talk. A 30-day trip-prep plan and a playable vocabulary list are built in.
+**Tracking progress:** the *Progress* tab shows each unit's phrases as learning / known / mastered, the last 14 days of practice, and totals. Progress is saved in your browser (no account needed); use *Back up progress* / *Restore from backup* to move it between devices.
+
+Course: 26 units, 359 phrases. Core travel units 1–14 (greetings through small talk), then extras: question words, everyday verbs, days and times, places, street food, clothes, massage, beaches, temples, phone and internet, making friends, reactions. Pick any unit with **Study next** in the Words tab. A suggested month-long schedule is in [30-DAY-PLAN.md](30-DAY-PLAN.md).
 
 Once you're comfortable speaking, **[Stage 2: Reading](lessons/)** teaches the Thai script, vowels and tone rules.
 

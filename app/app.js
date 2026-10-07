@@ -204,6 +204,15 @@
       .map(([id]) => id);
   }
   const unseen = () => ALL.filter(i => !store.items[i.id]);
+  // New phrases in the order they'll be taught: the "Study next" unit first, then course order.
+  function upcoming() {
+    const u = unseen();
+    const f = S.focusUnit;
+    if (f == null) return u;
+    const mine = u.filter(i => i.unit === f);
+    if (!mine.length) { delete S.focusUnit; return u; }
+    return [...mine, ...u.filter(i => i.unit !== f)];
+  }
 
   function commit(id, first, wasReview) {
     const prev = store.items[id] || { ease: 2.5, interval: 0, reps: 0, lapses: 0 };
@@ -334,7 +343,7 @@
     const qi = s.newQ.indexOf(id);
     if (qi >= 0) {
       s.newQ.splice(qi, 1);
-      const extra = unseen().find(x => !s.newQ.includes(x.id)); // keep the session's new material topped up
+      const extra = upcoming().find(x => !s.newQ.includes(x.id)); // keep the session's new material topped up
       if (extra) { s.newQ.push(extra.id); s.total++; }
     }
     const ai = s.active.findIndex(a => a.id === id);
@@ -350,7 +359,7 @@
   async function startSession() {
     if (!synth) return alert('This browser has no speech support. Try Chrome or Edge.');
     const due = dueIds().slice(0, 30);
-    const fresh = unseen().slice(0, S.maxNew).map(i => i.id);
+    const fresh = upcoming().slice(0, S.maxNew).map(i => i.id);
     if (!due.length && !fresh.length) return alert('Nothing to study right now — come back tomorrow!');
     sess = {
       active: due.map(id => ({ id, step: LADDER.length - 1, nextAt: 0, review: true })),
@@ -366,6 +375,7 @@
       player.play().then(() => { player.pause(); player.muted = false; }, () => { player.muted = false; });
     }
     show('session');
+    $('sessionWords').appendChild($('vocabPanel'));
     ui.unit.textContent = due.length ? 'Review' : '';
     progress(sess);
     synth.cancel();
@@ -403,6 +413,8 @@
     sess = null; run = null;
     synth.cancel();
     ui.grades.hidden = true;
+    $('wordsHome').appendChild($('vocabPanel'));
+    $('sessionWordsBox').open = false;
     show('home');
     syncNow();
   }
@@ -412,24 +424,45 @@
     if (!run) return;
     run.paused = !run.paused;
     if (run.paused) { silence(); try { recognizer?.abort(); } catch {} }
-    ui.pause.textContent = run.paused ? 'Resume' : 'Pause';
+    ui.pause.textContent = run.paused ? '▶' : '⏸';
+    ui.pause.setAttribute('aria-label', run.paused ? 'Resume' : 'Pause');
   }
 
   // ---------- UI ----------
   const $ = id => document.getElementById(id);
   const ui = {
-    home: $('home'), session: $('session'), setup: $('setup'),
+    session: $('session'), setup: $('setup'),
     orb: $('orb'), orbLabel: $('orbLabel'), prompt: $('prompt'), peek: $('peek'), feedback: $('feedback'),
     grades: $('grades'), unit: $('unit'), bar: $('bar'), count: $('count'), pause: $('pause'),
   };
 
+  const TABS = ['today', 'progressView', 'words', 'more'];
+  let tab = 'today';
+  let offlineReady = null; // set by the offline section
   function show(view) {
-    ui.setup.hidden = view !== 'setup';
-    ui.home.hidden = view !== 'home';
-    ui.session.hidden = view !== 'session';
-    if (view === 'home') renderHome();
-    ui.pause.textContent = 'Pause';
+    if (view === 'home') view = tab;
+    if (TABS.includes(view)) tab = view;
+    for (const v of ['setup', 'session', ...TABS]) $(v).hidden = v !== view;
+    $('tabbar').hidden = !TABS.includes(view);
+    document.querySelectorAll('#tabbar [data-tab]').forEach(b => b.setAttribute('aria-current', b.dataset.tab === view ? 'page' : 'false'));
+    if (TABS.includes(view)) renderHome();
+    ui.pause.textContent = '⏸';
+    ui.pause.setAttribute('aria-label', 'Pause');
+    window.scrollTo(0, 0);
   }
+  document.querySelectorAll('#tabbar [data-tab]').forEach(b => b.onclick = () => show(b.dataset.tab));
+  // One-line status on Today; tap it to open More.
+  function renderChip() {
+    const el = $('statusChip');
+    if (!el) return;
+    try { void sync; } catch { return; } // sync section not initialised yet
+    const parts = [];
+    if (sync.token) parts.push(sync.last ? '✓ Synced' : 'Sync on');
+    else parts.push('Not backed up');
+    if (offlineReady === true) parts.push('offline ready');
+    el.textContent = parts.join(' · ');
+  }
+  $('statusChip').onclick = () => show('more');
   function stage(kind, label, prompt, rom) {
     ui.orb.dataset.stage = kind;
     ui.orbLabel.textContent = label;
@@ -439,7 +472,7 @@
   function progress(s) {
     const pct = s.total ? Math.round((s.done / s.total) * 100) : 0;
     ui.bar.style.width = pct + '%';
-    ui.count.textContent = `${s.done} / ${s.total} learned this session`;
+    ui.count.textContent = `${s.done} of ${s.total} done`;
   }
   function streak() {
     let n = 0, t = Date.now();
@@ -450,59 +483,18 @@
   function renderHome() {
     $('statLearned').textContent = Object.keys(store.items).length;
     $('statDue').textContent = dueIds().length;
-    $('statNew').textContent = unseen().length;
+    const due = Math.min(dueIds().length, 30);
+    const fresh = Math.min(S.maxNew, upcoming().length);
+    $('statNewToday').textContent = fresh;
     $('statStreak').textContent = streak();
-    const nxt = unseen()[0];
-    $('nextUp').textContent = nxt ? `Next new material: ${window.COURSE.units[nxt.unit].title}` : 'You have started every unit — keep reviewing!';
+    const nxt = upcoming()[0];
+    $('nextUp').textContent = nxt ? window.COURSE.units[nxt.unit].title : 'Every unit started. Keep reviewing!';
+    const mins = Math.max(1, Math.round(due * 0.4 + fresh * 2));
+    $('estimate').textContent = due || fresh ? `About ${mins} min · ${due} reviews, ${fresh} new` : 'All done for today. Come back tomorrow.';
     renderProgress();
-    renderPlan();
     renderVocab();
+    renderChip();
     syncSettings();
-  }
-
-  // ---------- 30-day plan ----------
-  function planDay() {
-    if (!S.planStart) return 0;
-    return Math.floor((startOfToday() - S.planStart) / DAY) + 1;
-  }
-  function renderPlan() {
-    const P = window.PLAN;
-    if (!P) return;
-    const day = planDay();
-    const today = $('planToday');
-    if (!day) {
-      today.innerHTML = '<p>A day-by-day plan for the month before your trip: about 1 hour a day, around 10 new phrases a session.</p>';
-    } else if (day > P.days.length) {
-      today.innerHTML = `<p class="plan-now"><b>Plan complete!</b> Keep doing a short review session each day so you don't forget.</p>`;
-    } else {
-      const d = P.days[day - 1];
-      today.innerHTML = `<p class="plan-now"><span class="muted small">Today · Day ${day} of ${P.days.length}</span><br><b></b><br><span></span></p>`;
-      today.querySelector('b').textContent = d.focus;
-      today.querySelector('span:last-child').textContent = d.tip;
-    }
-    $('planStart').hidden = !!day;
-    $('planReset').hidden = !day;
-    $('planDaily').innerHTML = '';
-    for (const [mins, what] of P.daily) {
-      const li = document.createElement('li');
-      li.innerHTML = '<b></b> ';
-      li.firstChild.textContent = mins;
-      li.append(what);
-      $('planDaily').appendChild(li);
-    }
-    const list = $('planDays');
-    list.innerHTML = '';
-    P.days.forEach((d, i) => {
-      const li = document.createElement('li');
-      const date = S.planStart ? S.planStart + i * DAY : 0;
-      const practised = date && store.log[dayKey(date)];
-      li.className = (i + 1 === day ? 'today ' : '') + (practised ? 'done ' : '') + (d.review ? 'review' : '');
-      li.innerHTML = '<span class="mark"></span><span class="what"></span>';
-      li.querySelector('.mark').textContent = practised ? '✓' : String(i + 1);
-      li.querySelector('.what').textContent = d.focus + (date ? ` · ${new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : '');
-      li.title = d.tip;
-      list.appendChild(li);
-    });
   }
 
   // ---------- vocabulary list ----------
@@ -513,7 +505,7 @@
     const showRom = $('vocabRom').checked;
     const list = $('vocabList');
     list.innerHTML = '';
-    const current = unseen()[0]?.unit ?? 0;
+    const current = upcoming()[0]?.unit ?? 0;
     window.COURSE.units.forEach((u, ui_) => {
       const items = ALL.filter(i => i.unit === ui_)
         .filter(i => !learnedOnly || store.items[i.id])
@@ -523,7 +515,23 @@
       det.open = q ? true : vocabOpen.size ? vocabOpen.has(ui_) : ui_ === current;
       det.ontoggle = () => (det.open ? vocabOpen.add(ui_) : vocabOpen.delete(ui_));
       const sum = document.createElement('summary');
-      sum.textContent = `${u.title} (${items.length})`;
+      const name = document.createElement('span');
+      name.className = 'unit-name';
+      name.textContent = `${u.title} (${items.length})`;
+      sum.appendChild(name);
+      if (!sess && ALL.some(i => i.unit === ui_ && !store.items[i.id])) {
+        const on = S.focusUnit === ui_;
+        const b = document.createElement('button');
+        b.className = 'study-next' + (on ? ' on' : '');
+        b.textContent = on ? '✓ Up next' : 'Study next';
+        b.onclick = e => {
+          e.preventDefault();
+          if (on) delete S.focusUnit; else S.focusUnit = ui_;
+          save();
+          on ? renderVocab() : show('today');
+        };
+        sum.appendChild(b);
+      }
       det.appendChild(sum);
       for (const it of items) {
         const row = document.createElement('div');
@@ -646,15 +654,6 @@
   $('vocabSearch').oninput = renderVocab;
   $('vocabLearned').onchange = renderVocab;
   $('vocabRom').onchange = renderVocab;
-  $('planStart').onclick = () => {
-    S.planStart = startOfToday();
-    S.maxNew = Math.max(S.maxNew, 10);
-    save(); renderHome(); syncNow();
-  };
-  $('planReset').onclick = () => {
-    if (!confirm('Restart the 30-day plan from today? Your learning progress is kept.')) return;
-    S.planStart = startOfToday(); save(); renderHome();
-  };
   $('reset').onclick = () => {
     if (!confirm('Erase all progress on this device?')) return;
     store.items = {}; store.log = {}; store.secs = {}; save(); renderHome();
@@ -729,6 +728,7 @@
     if (msg !== undefined) $('syncStatus').textContent = msg;
     else if (sync.token) $('syncStatus').textContent = `Saving to GitHub as ${PROFILE_FILE}` + (sync.last ? ` · last saved ${new Date(sync.last).toLocaleString()}` : '');
     else $('syncStatus').textContent = '';
+    renderChip();
   }
   async function syncOnce() {
     await ensureBranch();
@@ -749,7 +749,7 @@
       catch (e) { if (e.status === 409 || e.status === 422) await syncOnce(); else throw e; } // file changed on another device: merge again
       sync.last = Date.now();
       saveSync(); save();
-      if (!ui.home.hidden) renderHome();
+      if (!sess && ui.session.hidden && ui.setup.hidden) renderHome();
       renderSync();
     } catch (e) {
       renderSync('Save to GitHub failed: ' + e.message);
@@ -849,7 +849,8 @@
   function setVoice(v) {
     S.voice = v; save();
     const label = VOICE_NAMES[v];
-    $('voiceBtn').textContent = `Voice: ${label}`;
+    $('voiceBtn').textContent = { male: '♂ Niwat', female: '♀ Premwadee', both: '♂♀ Both' }[v];
+    $('voiceBtn').setAttribute('aria-label', `Voice: ${label}`);
     $('setVoice').value = v;
   }
   $('voiceBtn').onclick = () => setVoice(VOICE_ORDER[(VOICE_ORDER.indexOf(S.voice) + 1) % VOICE_ORDER.length]);
@@ -902,11 +903,13 @@
     if (!st.missing.length) {
       $('offlineStatus').textContent = `✓ Ready offline: all ${st.total} audio files are saved on this device.`;
       $('offlineBtn').hidden = true;
+      offlineReady = true; renderChip();
     } else {
       $('offlineStatus').textContent = st.have
         ? `${st.have} of ${st.total} audio files saved. Download the rest to use lessons without internet.`
         : 'Save all the audio (about 9 MB) so lessons work without internet.';
       $('offlineBtn').hidden = false;
+      offlineReady = false; renderChip();
     }
   }
   let downloading = false;
