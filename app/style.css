@@ -161,3 +161,29 @@ button.link { background: none; border: none; padding: 0; color: var(--accent); 
   border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text);
 }
 #switchUser { margin-left: 0; }
+
+.plan-now { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+.plan-daily { padding-left: 18px; margin: 4px 0; }
+.plan-daily b { display: inline-block; min-width: 52px; }
+.plan-days { list-style: none; padding: 0; margin: 4px 0; display: grid; gap: 2px; }
+.plan-days li { display: flex; gap: 10px; align-items: baseline; padding: 4px 6px; border-radius: 6px; }
+.plan-days .mark { min-width: 22px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.plan-days .review .what { color: var(--muted); }
+.plan-days .done .mark { color: var(--ok); font-weight: 700; }
+.plan-days .today { background: var(--bg); outline: 2px solid var(--accent); font-weight: 600; }
+
+#vocab h2 { margin: 0 0 4px; font-size: 1.2rem; }
+#vocabSearch {
+  display: block; width: 100%; margin-top: 8px; padding: 10px 12px; font: inherit;
+  border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text);
+}
+#vocabList details { border-top: 1px solid var(--border); padding: 8px 0; }
+#vocabList summary { font-weight: 600; }
+.vocab-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+.vocab-row .play { width: 40px; height: 40px; padding: 0; border-radius: 50%; flex: none; }
+.vocab-text { flex: 1; min-width: 0; }
+.vocab-rom { display: block; font-style: italic; }
+.dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--border); }
+.dot.mastered { background: var(--ok); }
+.dot.known { background: var(--listen); }
+.dot.learning { background: var(--speak); opacity: 0.7; }

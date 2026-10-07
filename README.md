@@ -21,7 +21,7 @@ Optional extras:
 
 **Tracking progress:** the home screen shows phrases due, learned, new and your streak. The *Your progress* panel shows each unit's phrases as learning / known / mastered, the last 14 days of practice, and totals. Progress is saved in your browser (no account needed); use *Back up progress* / *Restore from backup* to move it between devices.
 
-Course: 8 units, 92 phrases — greetings, getting by, food & shopping, numbers, want/have/can, getting around, about you, time & feelings.
+Course: 14 units, 196 phrases: greetings, getting by, food & shopping, numbers, money & bargaining, want/have/can, getting around, taxis & transport, hotel, ordering food, about you, time & feelings, health & help, small talk. A 30-day trip-prep plan and a playable vocabulary list are built in.
 
 Once you're comfortable speaking, **[Stage 2: Reading](lessons/)** teaches the Thai script, vowels and tone rules.
 

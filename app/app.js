@@ -435,7 +435,107 @@
     const nxt = unseen()[0];
     $('nextUp').textContent = nxt ? `Next new material: ${window.COURSE.units[nxt.unit].title}` : 'You have started every unit — keep reviewing!';
     renderProgress();
+    renderPlan();
+    renderVocab();
     syncSettings();
+  }
+
+  // ---------- 30-day plan ----------
+  function planDay() {
+    if (!S.planStart) return 0;
+    return Math.floor((startOfToday() - S.planStart) / DAY) + 1;
+  }
+  function renderPlan() {
+    const P = window.PLAN;
+    if (!P) return;
+    const day = planDay();
+    const today = $('planToday');
+    if (!day) {
+      today.innerHTML = '<p>A day-by-day plan for the month before your trip: about 1 hour a day, around 10 new phrases a session.</p>';
+    } else if (day > P.days.length) {
+      today.innerHTML = `<p class="plan-now"><b>Plan complete!</b> Keep doing a short review session each day so you don't forget.</p>`;
+    } else {
+      const d = P.days[day - 1];
+      today.innerHTML = `<p class="plan-now"><span class="muted small">Today · Day ${day} of ${P.days.length}</span><br><b></b><br><span></span></p>`;
+      today.querySelector('b').textContent = d.focus;
+      today.querySelector('span:last-child').textContent = d.tip;
+    }
+    $('planStart').hidden = !!day;
+    $('planReset').hidden = !day;
+    $('planDaily').innerHTML = '';
+    for (const [mins, what] of P.daily) {
+      const li = document.createElement('li');
+      li.innerHTML = '<b></b> ';
+      li.firstChild.textContent = mins;
+      li.append(what);
+      $('planDaily').appendChild(li);
+    }
+    const list = $('planDays');
+    list.innerHTML = '';
+    P.days.forEach((d, i) => {
+      const li = document.createElement('li');
+      const date = S.planStart ? S.planStart + i * DAY : 0;
+      const practised = date && store.log[dayKey(date)];
+      li.className = (i + 1 === day ? 'today ' : '') + (practised ? 'done ' : '') + (d.review ? 'review' : '');
+      li.innerHTML = '<span class="mark"></span><span class="what"></span>';
+      li.querySelector('.mark').textContent = practised ? '✓' : String(i + 1);
+      li.querySelector('.what').textContent = d.focus + (date ? ` · ${new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : '');
+      li.title = d.tip;
+      list.appendChild(li);
+    });
+  }
+
+  // ---------- vocabulary list ----------
+  const vocabOpen = new Set();
+  function renderVocab() {
+    const q = $('vocabSearch').value.trim().toLowerCase();
+    const learnedOnly = $('vocabLearned').checked;
+    const showRom = $('vocabRom').checked;
+    const list = $('vocabList');
+    list.innerHTML = '';
+    const current = unseen()[0]?.unit ?? 0;
+    window.COURSE.units.forEach((u, ui_) => {
+      const items = ALL.filter(i => i.unit === ui_)
+        .filter(i => !learnedOnly || store.items[i.id])
+        .filter(i => !q || i.en.toLowerCase().includes(q) || romOf(i).toLowerCase().includes(q));
+      if (!items.length) return;
+      const det = document.createElement('details');
+      det.open = q ? true : vocabOpen.size ? vocabOpen.has(ui_) : ui_ === current;
+      det.ontoggle = () => (det.open ? vocabOpen.add(ui_) : vocabOpen.delete(ui_));
+      const sum = document.createElement('summary');
+      sum.textContent = `${u.title} (${items.length})`;
+      det.appendChild(sum);
+      for (const it of items) {
+        const row = document.createElement('div');
+        row.className = 'vocab-row';
+        const play = document.createElement('button');
+        play.className = 'play';
+        play.textContent = '▶';
+        play.setAttribute('aria-label', `Play: ${it.en}`);
+        play.onclick = () => playVocab(thOf(it));
+        const text = document.createElement('span');
+        text.className = 'vocab-text';
+        text.textContent = it.en;
+        if (showRom) {
+          const r = document.createElement('span');
+          r.className = 'muted small vocab-rom';
+          r.textContent = romOf(it);
+          text.appendChild(r);
+        }
+        const dot = document.createElement('span');
+        dot.className = `dot ${strength(it.id)}`;
+        dot.title = strength(it.id);
+        row.append(play, text, dot);
+        det.appendChild(row);
+      }
+      list.appendChild(det);
+    });
+    if (!list.children.length) list.innerHTML = '<p class="muted small">Nothing here yet. Phrases appear as you learn them.</p>';
+  }
+  function playVocab(text) {
+    if (run && !run.paused) togglePause(); // listening to the list pauses the lesson
+    silence();
+    speakThai(text);
   }
 
   // Strength of a phrase, from its review interval.
@@ -523,6 +623,18 @@
   $('setHands').onchange = e => { S.handsFree = e.target.checked; save(); };
   $('setPeek').onchange = e => { S.peek = e.target.checked; save(); };
   $('testVoice').onclick = () => { silence(); speakThai(fill('สวัสดี{P}')); };
+  $('vocabSearch').oninput = renderVocab;
+  $('vocabLearned').onchange = renderVocab;
+  $('vocabRom').onchange = renderVocab;
+  $('planStart').onclick = () => {
+    S.planStart = startOfToday();
+    S.maxNew = Math.max(S.maxNew, 10);
+    save(); renderHome(); syncNow();
+  };
+  $('planReset').onclick = () => {
+    if (!confirm('Restart the 30-day plan from today? Your learning progress is kept.')) return;
+    S.planStart = startOfToday(); save(); renderHome();
+  };
   $('reset').onclick = () => {
     if (!confirm('Erase all progress on this device?')) return;
     store.items = {}; store.log = {}; store.secs = {}; save(); renderHome();

@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Learn Thai by Ear</title>
   <meta name="description" content="Free audio-first Thai course: listen, recall out loud, and review with spaced repetition. No reading required.">
-  <link rel="stylesheet" href="app/style.css?v=6">
+  <link rel="stylesheet" href="app/style.css?v=7">
 </head>
 <body>
   <main>
@@ -44,6 +44,19 @@
       </div>
       <button id="start" class="primary">Start session</button>
       <p id="nextUp" class="muted center"></p>
+
+      <details class="card" id="planCard" open>
+        <summary>30-day plan</summary>
+        <div id="planToday"></div>
+        <div class="row">
+          <button id="planStart" class="primary">Start the plan today</button>
+          <button id="planReset" class="ghost" hidden>Restart plan</button>
+        </div>
+        <h3 class="small muted">Every day, about 1 hour</h3>
+        <ul id="planDaily" class="plan-daily small"></ul>
+        <h3 class="small muted">Day by day</h3>
+        <ol id="planDays" class="plan-days small"></ol>
+      </details>
       <p id="voiceInfo" class="muted"></p>
 
       <details class="card" id="progressCard" open>
@@ -155,10 +168,23 @@
         <button id="stop" class="ghost">End session</button>
       </div>
     </section>
+
+    <!-- Always visible, including during a session: tap to replay any phrase. -->
+    <section id="vocab" class="card">
+      <h2>Vocabulary</h2>
+      <p class="muted small">Tap ▶ to hear a phrase. If a session is running, it pauses first.</p>
+      <input id="vocabSearch" type="search" placeholder="Search…" aria-label="Search vocabulary">
+      <div class="row">
+        <label class="check"><input id="vocabLearned" type="checkbox"> Learned only</label>
+        <label class="check"><input id="vocabRom" type="checkbox"> Show romanization</label>
+      </div>
+      <div id="vocabList"></div>
+    </section>
   </main>
 
-  <script src="app/course.js?v=6"></script>
-  <script src="app/audio-manifest.js?v=6"></script>
-  <script src="app/app.js?v=6"></script>
+  <script src="app/course.js?v=7"></script>
+  <script src="app/audio-manifest.js?v=7"></script>
+  <script src="app/plan.js?v=7"></script>
+  <script src="app/app.js?v=7"></script>
 </body>
 </html>
