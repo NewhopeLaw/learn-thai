@@ -27,7 +27,7 @@ Optional extras:
 
 **Tracking progress:** the *Progress* tab shows each unit's phrases as learning / known / mastered, the last 14 days of practice, and totals. Progress is saved in your browser (no account needed); use *Back up progress* / *Restore from backup* to move it between devices.
 
-Course: 30 units, 421 phrases, and a Talk lesson for every unit. Core travel units 1–14 (greetings through small talk), then question words, everyday verbs, days and times, places, street food, clothes, massage, beaches, temples, phone and internet, making friends, reactions, family, telling the time, airport and immigration, describing and comparing. Pick any unit with **Learn next** in the Words tab; replay any lesson from the Talk tab. A suggested month-long schedule is in [30-DAY-PLAN.md](30-DAY-PLAN.md).
+Course: 30 units, 422 phrases, and a Talk lesson for every unit. Core travel units 1–14 (greetings through small talk), then question words, everyday verbs, days and times, places, street food, clothes, massage, beaches, temples, phone and internet, making friends, reactions, family, telling the time, airport and immigration, describing and comparing. Pick any unit with **Learn next** in the Words tab; replay any lesson from the Talk tab. A suggested month-long schedule is in [30-DAY-PLAN.md](30-DAY-PLAN.md).
 
 Once you're comfortable speaking, **[Stage 2: Reading](lessons/)** teaches the Thai script, vowels and tone rules.
 
