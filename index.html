@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Learn Thai by Ear</title>
   <meta name="description" content="Free audio-first Thai course: listen, recall out loud, and review with spaced repetition. No reading required.">
-  <link rel="stylesheet" href="app/style.css?v=12">
+  <link rel="stylesheet" href="app/style.css?v=13">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#b5452b">
   <link rel="icon" type="image/png" href="app/icons/icon-192.png">
@@ -152,9 +152,6 @@
         <label class="field">Thinking pause <output id="pauseVal"></output>
           <input id="setPause" type="range" min="2" max="10" step="1">
         </label>
-        <label class="field" hidden>New phrases per session <output id="newVal"></output>
-          <input id="setNew" type="range" min="2" max="15" step="1">
-        </label>
         <label class="check"><input id="setMic" type="checkbox"> Check my answer with the microphone <span id="micNote" class="muted small"></span></label>
         <label class="check"><input id="setHands" type="checkbox"> Auto mode: mark every phrase OK and keep going (for listening hands-free)</label>
         <label class="check"><input id="setPeek" type="checkbox"> Show romanization during sessions</label>
@@ -179,11 +176,19 @@
       <details class="card">
         <summary class="card-title">How it works</summary>
         <ol>
-          <li><b>Review</b> (like Anki): phrases that are due come back. Say each one out loud, then rate it: Again, OK, Good or Easy.</li>
-          <li><b>Lesson</b> (like Pimsleur): first hear a short conversation between Niwat and Premwadee. Then learn its phrases, with a few old ones mixed in. Then role-play your side of the conversation. Finally, hear it once more.</li>
+          <li><b>Review</b> (like Anki): every phrase has two cards. <i>What does this mean?</i> trains your ear; <i>How do you say…?</i> trains your mouth. Each card comes back just before you'd forget it. Rate it Again, Good or Easy.</li>
+          <li><b>Lesson</b> (like Pimsleur): learn a unit's phrases, meaning first and then speaking, with a few older ones mixed in. Then a short conversation between Niwat and Premwadee ties the unit together: listen, role-play your side, listen again.</li>
         </ol>
-        <p class="small"><b>Auto</b> marks everything OK and keeps going, for listening hands-free. <b>Next ▸</b> skips ahead, <b>I know this</b> skips a phrase for a week. In <b>Words</b>, <b>Make next lesson</b> chooses which lesson comes next.</p>
-        <p class="muted small">Keys: <kbd>1</kbd> Again · <kbd>2</kbd> OK · <kbd>3</kbd> Good · <kbd>4</kbd> Easy · <kbd>N</kbd> next · <kbd>K</kbd> know it · <kbd>A</kbd> auto · <kbd>V</kbd> voice · <kbd>R</kbd> replay · <kbd>Space</kbd> pause · <kbd>Esc</kbd> end</p>
+        <p class="small"><b>Auto</b> hides the rating buttons, marks everything OK and keeps going, for hands-free listening. Outside a quiz the rating buttons just move ahead. <b>I know this</b> skips a phrase for a week. In <b>Words</b>, <b>Make next lesson</b> chooses which lesson comes next.</p>
+        <h3 class="card-title" style="margin-top:12px">Learning Thai fast</h3>
+        <ul class="small">
+          <li><b>Always out loud.</b> Whispering or thinking the answer doesn't build the mouth memory you'll need.</li>
+          <li><b>Copy the tone exactly,</b> even exaggerate it. A wrong tone is a different word.</li>
+          <li><b>Ears before mouth.</b> Understanding comes first; that's why the meaning card comes before the speaking card.</li>
+          <li><b>15 minutes every day</b> beats 2 hours on Sunday. Keep the streak.</li>
+          <li><b>Use it immediately.</b> Say today's phrases to a Thai person, a friend, or yourself in the mirror.</li>
+        </ul>
+        <p class="muted small">Keys: <kbd>1</kbd> Again · <kbd>2</kbd> Good · <kbd>3</kbd> Easy · <kbd>N</kbd> next · <kbd>K</kbd> know it · <kbd>A</kbd> auto · <kbd>V</kbd> voice · <kbd>R</kbd> replay · <kbd>Space</kbd> pause · <kbd>Esc</kbd> end</p>
       </details>
 
       <p class="center small"><a href="lessons/">Reading and writing Thai →</a></p>
@@ -207,18 +212,17 @@
         <p id="prompt" class="prompt"></p>
         <p id="peek" class="peek"></p>
         <p id="feedback" class="feedback" aria-live="polite"></p>
-        <p class="links"><button id="replay" class="link">Replay</button></p>
+        <p class="links">
+          <button id="knowLink" class="link">I know this</button>
+          <button id="replay" class="link">Replay</button>
+          <button id="nextLink" class="link">Next ▸</button>
+        </p>
         <p id="count" class="muted small center"></p>
       </div>
       <div id="grades" class="bottombar grades" hidden>
         <button data-grade="again">Again</button>
-        <button data-grade="ok">OK</button>
         <button data-grade="good" class="primary">Good</button>
         <button data-grade="easy">Easy</button>
-      </div>
-      <div id="nextBar" class="bottombar nextbar" hidden>
-        <button id="knowBtn">I know this</button>
-        <button id="nextBtn">Next ▸</button>
       </div>
       <details id="sessionWordsBox" class="card">
         <summary>Word list</summary>
@@ -234,9 +238,9 @@
     <button data-tab="more"><span aria-hidden="true">⋯</span>More</button>
   </nav>
 
-  <script src="app/course.js?v=12"></script>
-  <script src="app/dialogues.js?v=12"></script>
-  <script src="app/audio-manifest.js?v=12"></script>
-  <script src="app/app.js?v=12"></script>
+  <script src="app/course.js?v=13"></script>
+  <script src="app/dialogues.js?v=13"></script>
+  <script src="app/audio-manifest.js?v=13"></script>
+  <script src="app/app.js?v=13"></script>
 </body>
 </html>

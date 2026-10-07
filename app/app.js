@@ -41,7 +41,7 @@
   const PROFILE_FILE = `progress/${profile}.json`;
   const DAY = 86400000;
   const LADDER = [8, 30, 90, 240]; // seconds between in-session recalls
-  const DEFAULTS = { name: '', gender: null, voice: 'both', thaiRate: 0.8, pause: 4, maxNew: 6, mic: false, handsFree: false, peek: false };
+  const DEFAULTS = { name: '', gender: null, voice: 'both', thaiRate: 0.8, pause: 4, mic: false, handsFree: false, peek: false };
 
   // ---------- storage ----------
   let store;
@@ -55,6 +55,15 @@
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch {} };
   const startOfToday = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
   const dayKey = (t = Date.now()) => { const d = new Date(t); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+  // A card id is a phrase id (speaking card, EN→TH) or phrase id + "~r" (meaning card, TH→EN).
+  const cardOf = cid => { const i = cid.indexOf('~'); const id = i < 0 ? cid : cid.slice(0, i); return { id, it: BY_ID[id], dir: i < 0 ? 'p' : 'r' }; };
+  // v2: phrases learned before meaning cards existed get one, on the same schedule.
+  if (!(store.v >= 2)) {
+    for (const [id, st] of Object.entries(store.items)) {
+      if (!id.includes('~') && BY_ID[id] && !store.items[id + '~r']) store.items[id + '~r'] = { ...st, updated: Date.now() };
+    }
+    store.v = 2; save();
+  }
 
   // ---------- gendered text ----------
   function fill(s, roman) {
@@ -205,21 +214,11 @@
   function dueIds() {
     const now = Date.now();
     return Object.entries(store.items)
-      .filter(([id, s]) => BY_ID[id] && s.due <= now)
+      .filter(([id, s]) => cardOf(id).it && s.due <= now)
       .sort((a, b) => a[1].due - b[1].due)
       .map(([id]) => id);
   }
   const unseen = () => ALL.filter(i => !store.items[i.id]);
-  // New phrases in the order they'll be taught: the "Study next" unit first, then course order.
-  function upcoming() {
-    const u = unseen();
-    const f = S.focusUnit;
-    if (f == null) return u;
-    const mine = u.filter(i => i.unit === f);
-    if (!mine.length) { delete S.focusUnit; return u; }
-    return [...mine, ...u.filter(i => i.unit !== f)];
-  }
-
   function commit(id, first, wasReview) {
     const prev = store.items[id] || { ease: 2.5, interval: 0, reps: 0, lapses: 0 };
     let { ease, interval, lapses } = prev;
@@ -231,16 +230,18 @@
     store.items[id] = { ease, interval, lapses, reps: prev.reps + 1, due: startOfToday() + interval * DAY, updated: Date.now() };
   }
 
-  // "I already know this": skip it and bring it back in a week.
+  // "I already know this": skip both cards and bring them back in a week.
   function markKnown(id) {
-    const prev = store.items[id] || { ease: 2.5, interval: 0, reps: 0, lapses: 0 };
-    const interval = Math.max(7, prev.interval);
-    store.items[id] = { ...prev, interval, reps: prev.reps + 1, due: startOfToday() + interval * DAY, updated: Date.now() };
+    for (const cid of [id, id + '~r']) {
+      const prev = store.items[cid] || { ease: 2.5, interval: 0, reps: 0, lapses: 0 };
+      const interval = Math.max(7, prev.interval);
+      store.items[cid] = { ...prev, interval, reps: prev.reps + 1, due: startOfToday() + interval * DAY, updated: Date.now() };
+    }
   }
 
   function pick(s) {
     const now = Date.now();
-    const learning = s.active.filter(a => !a.review).length;
+    const learning = new Set(s.active.filter(a => !a.review).map(a => cardOf(a.id).id)).size;
     const due = s.active.filter(a => a.nextAt <= now && a.id !== s.last).sort((a, b) => a.nextAt - b.nextAt);
     const canIntro = s.newQ.length > 0 && learning < 4;
     if (canIntro && (due.length === 0 || s.sinceIntro >= 4)) return { kind: 'intro', id: s.newQ[0] };
@@ -287,22 +288,40 @@
   function introduced(s, id) {
     const qi = s.newQ.indexOf(id);
     if (qi >= 0) s.newQ.splice(qi, 1);
-    if (!s.active.some(a => a.id === id)) s.active.push({ id, nextAt: Date.now() + LADDER[0] * 1000, review: false });
-    commit(id, 'again', false); // provisional: due tomorrow unless answered this session
+    // Meaning first (easier), then speaking.
+    [id + '~r', id].forEach((cid, k) => {
+      if (!s.active.some(a => a.id === cid)) s.active.push({ id: cid, nextAt: Date.now() + LADDER[0] * 1000 * (k + 1), review: false });
+      commit(cid, 'again', false); // provisional: due tomorrow unless answered this session
+    });
     save();
     s.sinceIntro = 0;
     s.last = id;
   }
 
   async function recall(s, a) {
-    const it = BY_ID[a.id];
+    const { it, dir } = cardOf(a.id);
     const text = thOf(it);
     if (a.nextAt > Date.now() && s.active.length === 1) await wait(Math.min(a.nextAt - Date.now(), 4000));
     currentText = text; currentFolder = null;
     run.canGrade = true;
     setBar('grade');
-    stage('listen', 'Listen', it.en);
     ui.feedback.textContent = '';
+    if (dir === 'r') {
+      // Meaning card: hear Thai, say the meaning, then hear the answer and repeat the Thai.
+      stage('listen', 'Listen', '');
+      await en('What does this mean?');
+      await th(text);
+      stage('speak', 'Say the meaning', '', romOf(it));
+      await wait(S.pause * 1000);
+      stage('listen', 'Listen', it.en, romOf(it));
+      await en(it.en);
+      await th(text);
+      stage('speak', 'Repeat', it.en, romOf(it));
+      await wait(repeatGap(text));
+      grade(s, a, S.handsFree ? 'ok' : await awaitGrade());
+      return;
+    }
+    stage('listen', 'Listen', it.en);
     await en(`How do you say: ${it.en}?`);
     stage('speak', 'Your turn — say it', it.en);
     let heard = null;
@@ -355,14 +374,11 @@
   function skipItem(s, id) {
     markKnown(id);
     const qi = s.newQ.indexOf(id);
-    if (qi >= 0) {
-      s.newQ.splice(qi, 1);
-      const extra = upcoming().find(x => !s.newQ.includes(x.id)); // keep the session's new material topped up
-      if (extra) { s.newQ.push(extra.id); s.total++; }
+    if (qi >= 0) { s.newQ.splice(qi, 1); s.done += 2; }
+    for (const cid of [id, id + '~r']) {
+      const ai = s.active.findIndex(a => a.id === cid);
+      if (ai >= 0) { const [a] = s.active.splice(ai, 1); if (!a.practice) s.done++; }
     }
-    const ai = s.active.findIndex(a => a.id === id);
-    if (ai >= 0) s.active.splice(ai, 1);
-    s.done++;
     s.last = id;
     save();
     progress(s);
@@ -373,11 +389,14 @@
   let inSession = false;
   let currentText = null, currentFolder = null; // what Replay plays
 
-  // Bottom bar: rating buttons while a phrase is quizzed; I know this / Next while teaching or playing a conversation.
+  // The rating buttons stay on screen for the whole session unless Auto mode is on.
+  // Outside a quiz they just move ahead (Easy while a phrase is taught = I know this).
+  let barMode = 'none';
   function setBar(mode) {
-    ui.grades.hidden = mode !== 'grade';
-    $('nextBar').hidden = !(mode === 'intro' || mode === 'line');
-    $('knowBtn').hidden = mode !== 'intro';
+    barMode = mode;
+    ui.grades.hidden = !inSession || !!S.handsFree || mode === 'none';
+    $('nextLink').hidden = mode === 'none';
+    $('knowLink').hidden = !(mode === 'intro' || mode === 'grade');
   }
 
   // Runs one step; handles pause (the step restarts), Next, I know this and early ratings.
@@ -400,7 +419,7 @@
 
   function newRound(active, newQ, unit = -1) {
     return {
-      active, newQ, total: active.filter(a => !a.practice).length + newQ.length, done: 0, cards: 0,
+      active, newQ, total: active.filter(a => !a.practice).length + newQ.length * 2, done: 0, cards: 0,
       first: {}, last: null, sinceIntro: 0, unit, tick: Date.now(),
     };
   }
@@ -418,7 +437,11 @@
         if (r === 'next') introduced(s, c.id);
       } else {
         setBar('grade');
-        await step(() => recall(s, c.a), { grade: g => grade(s, c.a, g) });
+        const r = await step(() => recall(s, c.a), {
+          grade: g => grade(s, c.a, g),
+          skip: () => { skipItem(s, cardOf(c.a.id).id); ui.feedback.textContent = 'Marked as known. It comes back in a week.'; },
+        });
+        if (r === 'next') { c.a.nextAt = Date.now() + LADDER[1] * 1000; s.last = c.a.id; } // skipped: ask again a little later
       }
     }
     sess = null;
@@ -479,32 +502,31 @@
     const label = lessonName(u);
     ui.unit.textContent = label;
     setBar('line');
-    phase('Listen', 3);
+    phase('Vocabulary', 3);
     await narrate(label.replace('·', '.') + '.');
-    if (d) {
-      await narrate(`${d.scene} First, just listen. You don't need to understand everything yet.`);
-      await playDialogue(d, false);
-    }
     const fresh = ALL.filter(i => i.unit === u && !store.items[i.id]).map(i => i.id);
     if (fresh.length) {
-      setBar('line');
-      await narrate(`Now let's learn the phrases.`);
+      await narrate(`Let's learn the phrases.`);
       // Recycle a few phrases from earlier lessons, Pimsleur style, without touching their schedule.
       const now = Date.now();
       const old = ALL.filter(i => i.unit < u && store.items[i.id] && store.items[i.id].due > now)
         .sort(() => Math.random() - 0.5).slice(0, 4)
-        .map((i, k) => ({ id: i.id, nextAt: now + (90 + k * 120) * 1000, review: true, practice: true }));
+        .map((i, k) => ({ id: k % 2 ? i.id + '~r' : i.id, nextAt: now + (90 + k * 120) * 1000, review: true, practice: true }));
       ui.unit.textContent = label;
       await runCards(newRound(old, fresh, u));
     }
     if (d) {
       setBar('line');
-      phase('Your turn: role-play', 85);
+      phase('Conversation', 80);
+      await narrate(`Now let's put it all together. ${d.scene} Listen first.`);
+      await playDialogue(d, true);
+      setBar('line');
+      phase('Your turn: role-play', 88);
       await narrate(`Now it's your turn. You are ${d.you}. Say your lines in the pause, then listen to check.`);
       await rolePlay(d);
       setBar('line');
-      phase('Listen again', 95);
-      await narrate('Listen to the whole conversation one more time.');
+      phase('Listen again', 96);
+      await narrate('One more time, all together.');
       await playDialogue(d, true);
     }
     store.lessons[u] = Date.now();
@@ -623,7 +645,7 @@
     return n;
   }
   function renderHome() {
-    $('statLearned').textContent = Object.keys(store.items).length;
+    $('statLearned').textContent = Object.keys(store.items).filter(k => !k.includes('~') && BY_ID[k]).length;
     $('statDue').textContent = dueIds().length;
     const due = Math.min(dueIds().length, 30);
     const lesson = nextLesson();
@@ -632,7 +654,7 @@
     $('statStreak').textContent = streak();
     $('nextUp').textContent = lesson != null ? lessonName(lesson) : 'Every lesson done. Keep reviewing!';
     const fresh = lesson != null ? ALL.filter(i => i.unit === lesson && !store.items[i.id]).length : 0;
-    const reviewMin = Math.round(due * 0.4), lessonMin = lesson != null ? 5 + Math.round(fresh * 1.6) : 0;
+    const reviewMin = Math.round(due * 0.4), lessonMin = lesson != null ? 4 + Math.round(fresh * 1.3) : 0;
     $('start').textContent = due && lesson != null ? '▶  Start: review + lesson' : due ? '▶  Start review' : lesson != null ? '▶  Start lesson' : '▶  Start';
     $('startReview').textContent = due ? `Review only · ${due}` : 'No reviews due';
     $('startLesson').textContent = lesson != null ? `Lesson only · ${lessonMin} min` : 'All lessons done';
@@ -653,7 +675,7 @@
     const showRom = $('vocabRom').checked;
     const list = $('vocabList');
     list.innerHTML = '';
-    const current = upcoming()[0]?.unit ?? 0;
+    const current = nextLesson() ?? 0;
     window.COURSE.units.forEach((u, ui_) => {
       const items = ALL.filter(i => i.unit === ui_)
         .filter(i => !learnedOnly || store.items[i.id])
@@ -716,9 +738,10 @@
 
   // Strength of a phrase, from its review interval.
   function strength(id) {
-    const st = store.items[id];
-    if (!st) return 'new';
-    return st.interval >= 21 ? 'mastered' : st.interval >= 7 ? 'known' : 'learning';
+    const cards = [store.items[id], store.items[id + '~r']].filter(Boolean);
+    if (!cards.length) return 'new';
+    const iv = Math.min(...cards.map(c => c.interval));
+    return iv >= 21 ? 'mastered' : iv >= 7 ? 'known' : 'learning';
   }
   function renderProgress() {
     const units = $('units');
@@ -784,10 +807,10 @@
     $('setGender').value = S.gender || 'male';
     $('setRate').value = S.thaiRate; $('rateVal').textContent = S.thaiRate.toFixed(2) + '×';
     $('setPause').value = S.pause; $('pauseVal').textContent = S.pause + ' s';
-    $('setNew').value = S.maxNew; $('newVal').textContent = S.maxNew;
     $('setMic').checked = S.mic && !!SR; $('setMic').disabled = !SR;
     $('micNote').textContent = SR ? '' : '(not supported in this browser — try Chrome)';
     $('setHands').checked = S.handsFree;
+    if (inSession) setBar(barMode);
     renderAuto();
     $('setPeek').checked = S.peek;
   }
@@ -795,7 +818,6 @@
   $('setGender').onchange = e => { S.gender = e.target.value; save(); };
   $('setRate').oninput = e => { S.thaiRate = +e.target.value; $('rateVal').textContent = S.thaiRate.toFixed(2) + '×'; save(); };
   $('setPause').oninput = e => { S.pause = +e.target.value; $('pauseVal').textContent = S.pause + ' s'; save(); };
-  $('setNew').oninput = e => { S.maxNew = +e.target.value; $('newVal').textContent = S.maxNew; save(); };
   $('setMic').onchange = e => { S.mic = e.target.checked; save(); };
   $('setHands').onchange = e => { S.handsFree = e.target.checked; save(); renderAuto(); };
   // Auto: mark every phrase OK and keep going, for listening without using your hands.
@@ -811,6 +833,7 @@
     renderAuto();
     $('setHands').checked = S.handsFree;
     ui.feedback.textContent = S.handsFree ? 'Auto on: phrases are marked OK and the session keeps going.' : 'Auto off: rate each phrase yourself.';
+    if (inSession) setBar(barMode);
     if (S.handsFree && run?.canGrade && !run.paused && ui.orb.dataset.stage === 'grade') { run.grade = 'ok'; } // waiting on a rating right now: move on
   };
   $('setPeek').onchange = e => { S.peek = e.target.checked; save(); };
@@ -1007,12 +1030,17 @@
   $('stop').onclick = stopSession;
   ui.pause.onclick = togglePause;
   function interrupt() { silence(); try { recognizer?.abort(); } catch {} }
-  function pressGrade(g) { if (run?.canGrade && !run.paused) { run.grade = g; interrupt(); } }
+  function pressGrade(g) {
+    if (!run || run.paused) return;
+    if (run.canGrade) { run.grade = g; interrupt(); }
+    else if (g === 'easy' && barMode === 'intro') pressKnow();
+    else pressNext();
+  }
   function pressKnow() { if (run && !run.paused) { run.skip = true; interrupt(); } }
   document.querySelectorAll('[data-grade]').forEach(b => b.onclick = () => pressGrade(b.dataset.grade));
-  $('knowBtn').onclick = pressKnow;
+  $('knowLink').onclick = pressKnow;
   function pressNext() { if (run && !run.paused) { run.next = true; interrupt(); } }
-  $('nextBtn').onclick = pressNext;
+  $('nextLink').onclick = pressNext;
   $('replay').onclick = () => { if (currentText) { silence(); speakThai(currentText, currentFolder); } };
   function setVoice(v) {
     S.voice = v; save();
@@ -1029,7 +1057,7 @@
     if (ui.session.hidden || e.target.closest('input,select,button')) return;
     if (e.key === ' ') { e.preventDefault(); togglePause(); }
     else if (e.key === 'Escape') stopSession();
-    else if (['1', '2', '3', '4'].includes(e.key)) pressGrade(['again', 'ok', 'good', 'easy'][+e.key - 1]);
+    else if (['1', '2', '3'].includes(e.key)) pressGrade(['again', 'good', 'easy'][+e.key - 1]);
     else if (e.key === 'n' || e.key === 'ArrowRight') pressNext();
     else if (e.key.toLowerCase() === 'k') pressKnow();
     else if (e.key.toLowerCase() === 'v') $('voiceBtn').click();
