@@ -4,7 +4,7 @@
 //   intro:  narrator names the meaning → Thai played → back-chained parts → learner repeats
 //   recall: narrator asks "How do you say …?" → learner answers out loud in the pause →
 //           Thai played twice (second time to repeat) → learner grades (Again / Good / Easy)
-// Within a session each new item climbs a graduated-interval ladder; across days, a
+// Within a session, missed items come back at growing gaps (Good/Easy retires them); across days, a
 // simplified SM-2 schedule decides when it comes back.
 (() => {
   'use strict';
@@ -255,17 +255,16 @@
     store.secs[dayKey()] = (store.secs[dayKey()] || 0) + Math.round(Math.min(now - s.tick, 120000) / 1000);
     s.tick = now;
     if (g === 'again') {
+      // Missed: keep it in rotation, coming back at growing gaps until it's answered.
       if (a.review && !a.lapsed) { a.lapsed = true; commit(a.id, 'again', true); } // forgot: due tomorrow
-      a.step = 0; a.nextAt = now + LADDER[0] * 1000;
+      a.nextAt = now + LADDER[Math.min(a.misses = (a.misses || 0) + 1, LADDER.length) - 1] * 1000;
       save();
       return;
     }
-    a.step += g === 'easy' ? 2 : 1;
-    if (a.step >= LADDER.length) {
-      s.active.splice(s.active.indexOf(a), 1);
-      s.done++;
-      if (!a.lapsed) commit(a.id, s.first[a.id], a.review);
-    } else a.nextAt = now + LADDER[a.step] * 1000;
+    // Good / Easy: done for this session; the long-term schedule decides when it returns.
+    s.active.splice(s.active.indexOf(a), 1);
+    s.done++;
+    if (!a.lapsed) commit(a.id, s.first[a.id], a.review);
     save();
     progress(s);
   }

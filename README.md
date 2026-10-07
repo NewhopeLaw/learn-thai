@@ -11,7 +11,7 @@ A free, audio-first Thai course for English speakers. It works like Pimsleur and
 3. **Check and repeat.** The correct answer plays twice. Copy it.
 4. **Rate yourself** (Again / Good / Easy), like Anki audio flashcards.
 5. **Spaced repetition.**
-   - *Within a session*: graduated-interval recall brings items back after ~8 s, 30 s, 90 s and 4 min.
+   - *Within a session*: Good/Easy finishes a phrase for the day; Again brings it back after ~8 s, 30 s, 90 s, 4 min until you get it.
    - *Across days*: an SM-2-style schedule brings each phrase back just before you'd forget it.
 
 Optional extras:
