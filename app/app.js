@@ -119,7 +119,7 @@
   player.preload = 'auto';
   let alt = 0, hush = 0;
   const voiceFolder = () => (S.voice === 'both' ? (alt++ % 2 ? 'female' : 'male') : S.voice === 'female' ? 'female' : 'male');
-  function playRecorded(text, folder) {
+  function playRecorded(text, folder, rate) {
     const id = AUDIO[text];
     if (!id) return Promise.resolve(false);
     const h = hush;
@@ -136,11 +136,11 @@
       player.onerror = () => fin(false);
       player.src = `audio/${folder || voiceFolder()}/${id}.mp3`;
       player.preservesPitch = true;
-      player.defaultPlaybackRate = player.playbackRate = Math.min(2, Math.max(0.5, S.thaiRate / THAI_BASE_RATE));
+      player.defaultPlaybackRate = player.playbackRate = Math.min(2, Math.max(0.5, (rate || S.thaiRate) / THAI_BASE_RATE));
       player.play().catch(() => fin(false));
     });
   }
-  async function speakThai(text, folder) { if (!(await playRecorded(text, folder))) await rawSpeak(text, 'th', S.thaiRate); }
+  async function speakThai(text, folder, rate) { if (!(await playRecorded(text, folder, rate))) await rawSpeak(text, 'th', rate || S.thaiRate); }
   function silence() { hush++; synth?.cancel(); player.pause(); }
 
   // ---------- run control (pause / stop) ----------
@@ -392,9 +392,10 @@
   // The rating buttons stay on screen for the whole session unless Auto mode is on.
   // Outside a quiz they just move ahead (Easy while a phrase is taught = I know this).
   let barMode = 'none';
+  let talkMode = false; // Talk lessons have no self-rating
   function setBar(mode) {
     barMode = mode;
-    ui.grades.hidden = !inSession || !!S.handsFree || mode === 'none';
+    ui.grades.hidden = !inSession || !!S.handsFree || mode === 'none' || talkMode;
     $('nextLink').hidden = mode === 'none';
     $('knowLink').hidden = !(mode === 'intro' || mode === 'grade');
   }
@@ -447,35 +448,44 @@
     sess = null;
   }
 
-  // ----- lessons -----
+  // ----- Words: which unit's vocabulary comes next -----
+  const hasNewWords = u => ALL.some(i => i.unit === u && !store.items[i.id]);
+  function nextWordsUnit() {
+    if (S.focusUnit != null && hasNewWords(S.focusUnit)) return S.focusUnit;
+    for (let u = 0; u < window.COURSE.units.length; u++) if (hasNewWords(u)) return u;
+    return null;
+  }
+
+  // ----- Talk: Pimsleur-style lessons -----
   const DIALOGUES = window.DIALOGUES || {};
-  function nextLesson() {
-    if (S.focusUnit != null && !store.lessons[S.focusUnit]) return S.focusUnit;
-    const n = window.COURSE.units.length;
-    for (let u = 0; u < n; u++) if (!store.lessons[u]) return u;
+  const NATIVE_RATE = 1.0; // the opening and closing conversations play at natural speed
+  const TALK_LADDER = [8, 30, 90, 240]; // seconds: graduated interval recall within a lesson
+  function nextTalk() {
+    if (S.talkUnit != null && DIALOGUES[S.talkUnit] && !store.lessons[S.talkUnit]) return S.talkUnit;
+    for (let u = 0; u < window.COURSE.units.length; u++) if (DIALOGUES[u] && !store.lessons[u]) return u;
     return null;
   }
   const lessonName = u => `Lesson ${u + 1} · ${window.COURSE.units[u].title.replace(/^Unit \d+ · /, '')}`;
   const voiceOf = who => ((who === 'A') === (S.gender === 'female') ? 'female' : 'male');
   const speakerName = who => (voiceOf(who) === 'male' ? 'Niwat' : 'Premwadee');
+  const lineLabel = line => (line.who === 'A' ? `You · ${speakerName('A')}` : speakerName('B'));
   function phase(label, pct) {
     ui.bar.style.width = pct + '%';
     ui.count.textContent = label;
   }
-  async function sayLine(line) {
+  async function sayLine(line, rate) {
     currentText = fill(line.th); currentFolder = voiceOf(line.who);
     checkpoint();
-    await speakThai(currentText, currentFolder);
+    await speakThai(currentText, currentFolder, rate);
     checkpoint();
   }
-  async function playDialogue(d, showMeaning) {
+  async function playDialogue(d, showMeaning, rate) {
     for (const line of d.lines) {
       setBar('line');
       await step(async () => {
-        const who = line.who === 'A' ? `You · ${speakerName('A')}` : speakerName('B');
-        stage('listen', who, showMeaning ? line.en : '', fill(line.rom, true));
-        await sayLine(line);
-        await wait(700);
+        stage('listen', lineLabel(line), showMeaning ? line.en : '', fill(line.rom, true));
+        await sayLine(line, rate);
+        await wait(rate ? 450 : 700);
       });
     }
   }
@@ -490,58 +500,137 @@
         } else {
           stage('speak', 'Your line', line.en);
           await wait(S.pause * 1000 + fill(line.th).length * 60);
-          stage('listen', `You · ${speakerName('A')}`, line.en, fill(line.rom, true));
+          stage('listen', lineLabel(line), line.en, fill(line.rom, true));
           await sayLine(line);
           await wait(repeatGap(fill(line.th)) * 0.6);
         }
       });
     }
   }
-  async function runLesson(u) {
+  // Reverse building: the pieces of a line from the end backwards, ending with the whole line.
+  // Lines are split at spaces; if the last piece is a course phrase with parts, those come first.
+  function buildSteps(line) {
+    const text = fill(line.th);
+    const chunks = text.split(' ').filter(Boolean);
+    const steps = [];
+    const strip = t => t.replace(/(ครับ|ค่ะ|คะ)$/, ''); // match a course phrase whichever polite particle it ends with
+    const lastIt = ALL.find(i => strip(thOf(i)) === strip(chunks[chunks.length - 1]));
+    if (lastIt?.parts?.length) for (const p of lastIt.parts) steps.push({ th: fill(p.th), rom: fill(p.rom, true) });
+    for (let i = chunks.length - 1; i >= 0; i--) steps.push({ th: chunks.slice(i).join(' '), rom: i === 0 ? fill(line.rom, true) : '' });
+    return steps.filter((st, k) => !k || st.th !== steps[k - 1].th);
+  }
+  // Breakdown of one line: meaning, the line, then reverse building with the learner repeating each piece.
+  async function teachLine(line) {
+    setBar('line');
+    await step(async () => {
+      const text = fill(line.th);
+      const folder = voiceOf(line.who);
+      stage('listen', lineLabel(line), line.en, fill(line.rom, true));
+      await en(line.who === 'A' ? `You say: ${line.en}` : `${speakerName('B')} says: ${line.en}`);
+      await sayLine(line);
+      await wait(500);
+      const steps = buildSteps(line);
+      if (steps.length > 1) await en('Repeat after me, starting from the end.');
+      else await en('Repeat after me.');
+      for (const st of steps) {
+        stage('listen', 'Listen', line.en, st.rom);
+        currentText = st.th; currentFolder = folder;
+        checkpoint(); await speakThai(st.th, folder); checkpoint();
+        stage('speak', 'Repeat', line.en, st.rom);
+        await wait(repeatGap(st.th));
+      }
+      stage('listen', 'Listen', line.en, fill(line.rom, true));
+      await sayLine(line);
+      stage('speak', 'Once more', line.en, fill(line.rom, true));
+      await wait(repeatGap(text));
+    });
+  }
+  // Anticipation: say the line (yours) or its meaning (theirs) before hearing the answer.
+  async function promptLine(line) {
+    setBar('line');
+    await step(async () => {
+      const text = fill(line.th), rom = fill(line.rom, true);
+      if (line.who === 'A') {
+        stage('listen', 'Listen', line.en);
+        await en(`How do you say: ${line.en}?`);
+        stage('speak', 'Your turn — say it', line.en);
+        await wait(S.pause * 1000 + text.length * 40);
+        stage('listen', 'Listen', line.en, rom);
+        await sayLine(line);
+      } else {
+        stage('listen', 'Listen', '');
+        await en(`${speakerName('B')} says:`);
+        await sayLine(line);
+        stage('speak', 'What does it mean?', '');
+        await wait(S.pause * 1000);
+        stage('listen', 'Listen', line.en, rom);
+        await en(line.en);
+        await sayLine(line);
+      }
+      stage('speak', 'Repeat', line.en, rom);
+      await wait(repeatGap(text));
+    });
+  }
+  // Graduated interval recall: each taught line is re-prompted at growing gaps.
+  async function recallDue(q, max) {
+    const now = Date.now();
+    const due = q.filter(e => e.nextAt <= now).sort((a, b) => a.nextAt - b.nextAt).slice(0, max);
+    for (const e of due) {
+      await promptLine(e.line);
+      e.step++;
+      e.nextAt = Date.now() + (TALK_LADDER[e.step] || TALK_LADDER[TALK_LADDER.length - 1]) * 1000;
+    }
+  }
+  async function runTalk(u) {
     const d = DIALOGUES[u];
     const label = lessonName(u);
+    const t0 = Date.now();
+    talkMode = true;
     ui.unit.textContent = label;
     setBar('line');
-    phase('Vocabulary', 3);
-    await narrate(label.replace('·', '.') + '.');
-    const fresh = ALL.filter(i => i.unit === u && !store.items[i.id]).map(i => i.id);
-    if (fresh.length) {
-      await narrate(`Let's learn the phrases.`);
-      // Recycle a few phrases from earlier lessons, Pimsleur style, without touching their schedule.
-      const now = Date.now();
-      const old = ALL.filter(i => i.unit < u && store.items[i.id] && store.items[i.id].due > now)
-        .sort(() => Math.random() - 0.5).slice(0, 4)
-        .map((i, k) => ({ id: k % 2 ? i.id + '~r' : i.id, nextAt: now + (90 + k * 120) * 1000, review: true, practice: true }));
-      ui.unit.textContent = label;
-      await runCards(newRound(old, fresh, u));
+    phase('Opening conversation', 2);
+    await narrate(`${label.replace('·', '.')}. ${d.scene} Listen to the conversation at natural speed. Don't worry about understanding everything yet.`);
+    await playDialogue(d, false, NATIVE_RATE);
+    // A few lines from the most recent lesson, so they carry across lessons.
+    const prev = Object.keys(store.lessons).map(Number).filter(k => k !== u && DIALOGUES[k]).sort((a, b) => store.lessons[b] - store.lessons[a])[0];
+    if (prev != null) {
+      phase('From last time', 8);
+      await narrate('First, a few lines from last time.');
+      const lines = DIALOGUES[prev].lines.filter(l => l.who === 'A').sort(() => Math.random() - 0.5).slice(0, 3);
+      for (const line of lines) await promptLine(line);
     }
-    if (d) {
-      setBar('line');
-      phase('Conversation', 80);
-      await narrate(`Now let's put it all together. ${d.scene} Listen first.`);
-      await playDialogue(d, true);
-      setBar('line');
-      phase('Your turn: role-play', 88);
-      await narrate(`Now it's your turn. You are ${d.you}. Say your lines in the pause, then listen to check.`);
-      await rolePlay(d);
-      setBar('line');
-      phase('Listen again', 96);
-      await narrate('One more time, all together.');
-      await playDialogue(d, true);
+    const q = [];
+    const n = d.lines.length;
+    for (let i = 0; i < n; i++) {
+      phase(`Line ${i + 1} of ${n}`, 10 + Math.round((70 * i) / n));
+      await teachLine(d.lines[i]);
+      q.push({ line: d.lines[i], step: 0, nextAt: Date.now() + TALK_LADDER[0] * 1000 });
+      await recallDue(q, 2);
     }
+    phase('Putting it together', 80);
+    await narrate(`Now let's practise all of it.`);
+    // Everyone gets recalled at least twice more; wait for the next due line if nothing is ready.
+    while (q.some(e => e.step < 3)) {
+      const next = q.filter(e => e.step < 3).sort((a, b) => a.nextAt - b.nextAt)[0];
+      if (next.nextAt > Date.now()) await step(() => wait(Math.min(next.nextAt - Date.now(), 12000))); // pause/next-safe
+      next.nextAt = 0;
+      await recallDue(q, 1);
+    }
+    phase('Your turn', 90);
+    await narrate(`Now you are ${d.you}. Say your lines in the pause, then listen.`);
+    await rolePlay(d);
+    phase('Closing conversation', 96);
+    await narrate(`Here's the conversation again at natural speed. Notice how much more you understand now.`);
+    await playDialogue(d, true, NATIVE_RATE);
     store.lessons[u] = Date.now();
-    if (S.focusUnit === u) delete S.focusUnit;
+    if (S.talkUnit === u) delete S.talkUnit;
+    store.log[dayKey()] = (store.log[dayKey()] || 0) + n;
+    store.secs[dayKey()] = (store.secs[dayKey()] || 0) + Math.round((Date.now() - t0) / 1000);
     save();
     phase('Lesson complete', 100);
   }
 
-  async function startSession(mode = 'both') {
-    if (!synth) return alert('This browser has no speech support. Try Chrome or Edge.');
-    const due = dueIds().slice(0, 30);
-    const lesson = nextLesson();
-    const doReview = mode !== 'lesson' && due.length > 0;
-    const doLesson = mode !== 'review' && lesson != null;
-    if (!doReview && !doLesson) return alert(mode === 'review' ? 'No reviews are due right now.' : 'Nothing to study right now. Come back tomorrow!');
+  function beginSession() {
     inSession = true;
     run = { stopped: false, paused: false };
     // Unlock audio playback on phones while we're still inside the tap.
@@ -555,6 +644,18 @@
     $('sessionWords').appendChild($('vocabPanel'));
     ui.feedback.textContent = '';
     synth.cancel();
+  }
+
+  // Words: due cards (both directions), then the next unit's new words.
+  async function startWords(mode = 'both') {
+    if (!synth) return alert('This browser has no speech support. Try Chrome or Edge.');
+    const due = dueIds().slice(0, 30);
+    const unit = nextWordsUnit();
+    const doReview = mode !== 'new' && due.length > 0;
+    const doNew = mode !== 'review' && unit != null;
+    if (!doReview && !doNew) return alert(mode === 'review' ? 'No reviews are due right now.' : mode === 'new' ? 'Every word has been learned. Keep reviewing!' : 'Nothing to study right now. Come back tomorrow!');
+    beginSession();
+    talkMode = false;
     try {
       if (doReview) {
         ui.unit.textContent = 'Review';
@@ -562,7 +663,13 @@
         await narrate(`Let's start with a review.`);
         await runCards(newRound(due.map(id => ({ id, nextAt: 0, review: true })), []));
       }
-      if (doLesson) await runLesson(lesson);
+      if (doNew) {
+        const fresh = ALL.filter(i => i.unit === unit && !store.items[i.id]).map(i => i.id);
+        setBar('line');
+        await narrate('Now some new words.');
+        await runCards(newRound([], fresh));
+        if (S.focusUnit === unit && !hasNewWords(unit)) delete S.focusUnit;
+      }
       stage('listen', 'Done!', '');
       setBar('none');
       await narrate(`Great work. That's the end of this session.`);
@@ -570,9 +677,24 @@
     finish();
   }
 
+  async function startTalk(u) {
+    if (!synth) return alert('This browser has no speech support. Try Chrome or Edge.');
+    if (u == null) u = nextTalk();
+    if (u == null || !DIALOGUES[u]) return alert('Every lesson is done. Replay any of them from the list.');
+    beginSession();
+    try {
+      await runTalk(u);
+      stage('listen', 'Done!', '');
+      setBar('none');
+      await narrate(`Great work. That's the end of the lesson.`);
+    } catch (e) { if (e !== STOP) console.error(e); }
+    finish();
+  }
+
   function finish() {
     if (!inSession) return;
     inSession = false;
+    talkMode = false;
     save();
     sess = null; run = null; currentText = null;
     synth.cancel();
@@ -600,8 +722,8 @@
     grades: $('grades'), unit: $('unit'), bar: $('bar'), count: $('count'), pause: $('pause'),
   };
 
-  const TABS = ['today', 'progressView', 'words', 'more'];
-  let tab = 'today';
+  const TABS = ['words', 'talk', 'more'];
+  let tab = 'words';
   let offlineReady = null; // set by the offline section
   function show(view) {
     if (view === 'home') view = tab;
@@ -645,26 +767,59 @@
     return n;
   }
   function renderHome() {
-    $('statLearned').textContent = Object.keys(store.items).filter(k => !k.includes('~') && BY_ID[k]).length;
-    $('statDue').textContent = dueIds().length;
-    const due = Math.min(dueIds().length, 30);
-    const lesson = nextLesson();
     const nUnits = window.COURSE.units.length;
-    $('statLessons').textContent = `${Object.keys(store.lessons).length}/${nUnits}`;
+    // Words
+    $('statLearned').textContent = Object.keys(store.items).filter(k => !k.includes('~') && BY_ID[k]).length;
+    const due = Math.min(dueIds().length, 30);
+    $('statDue').textContent = due;
     $('statStreak').textContent = streak();
-    $('nextUp').textContent = lesson != null ? lessonName(lesson) : 'Every lesson done. Keep reviewing!';
-    const fresh = lesson != null ? ALL.filter(i => i.unit === lesson && !store.items[i.id]).length : 0;
-    const reviewMin = Math.round(due * 0.4), lessonMin = lesson != null ? 4 + Math.round(fresh * 1.3) : 0;
-    $('start').textContent = due && lesson != null ? '▶  Start: review + lesson' : due ? '▶  Start review' : lesson != null ? '▶  Start lesson' : '▶  Start';
-    $('startReview').textContent = due ? `Review only · ${due}` : 'No reviews due';
-    $('startLesson').textContent = lesson != null ? `Lesson only · ${lessonMin} min` : 'All lessons done';
-    $('estimate').textContent = due || lesson != null
-      ? `About ${Math.max(1, reviewMin + lessonMin)} min` + (due ? ` · review ${reviewMin} min` : '') + (lesson != null ? ` · lesson ${lessonMin} min` : '')
+    const unit = nextWordsUnit();
+    const fresh = unit != null ? ALL.filter(i => i.unit === unit && !store.items[i.id]).length : 0;
+    $('statNew').textContent = fresh;
+    $('nextUp').textContent = unit != null ? window.COURSE.units[unit].title : 'All words learned';
+    const reviewMin = Math.round(due * 0.4), newMin = Math.round(fresh * 1.1);
+    $('start').textContent = due && fresh ? '▶  Start: review + new words' : due ? '▶  Start review' : fresh ? '▶  Learn new words' : '▶  Start';
+    $('startReview').textContent = due ? `Review only · ${due} cards` : 'No reviews due';
+    $('startNew').textContent = fresh ? `New words only · ${fresh}` : 'No new words';
+    $('estimate').textContent = due || fresh
+      ? `About ${Math.max(1, reviewMin + newMin)} min` + (due ? ` · review ${reviewMin} min` : '') + (fresh ? ` · new words ${newMin} min` : '')
       : 'All done for today. Come back tomorrow.';
+    // Talk
+    const t = nextTalk();
+    const doneTalk = Object.keys(store.lessons).filter(k => DIALOGUES[k]).length;
+    $('statTalk').textContent = `${doneTalk} of ${Object.keys(DIALOGUES).length}`;
+    $('talkNext').textContent = t != null ? lessonName(t) : 'All lessons done';
+    $('talkScene').textContent = t != null ? DIALOGUES[t].scene : 'Replay any lesson from the list below.';
+    $('startTalk').hidden = t == null;
+    $('talkEstimate').textContent = t != null ? `About ${8 + DIALOGUES[t].lines.length * 2} min · no buttons needed, just listen and speak` : '';
+    renderLessons();
     renderProgress();
     renderVocab();
     renderChip();
     syncSettings();
+  }
+  function renderLessons() {
+    const list = $('lessonList');
+    list.innerHTML = '';
+    for (const [k, d] of Object.entries(DIALOGUES)) {
+      const u = +k;
+      const row = document.createElement('div');
+      row.className = 'lesson-row' + (store.lessons[u] ? ' done' : '');
+      const text = document.createElement('div');
+      text.className = 'lesson-text';
+      const title = document.createElement('b');
+      title.textContent = (store.lessons[u] ? '✓ ' : '') + lessonName(u);
+      const scene = document.createElement('span');
+      scene.className = 'muted small';
+      scene.textContent = d.scene;
+      text.append(title, scene);
+      const b = document.createElement('button');
+      b.className = 'study-next';
+      b.textContent = store.lessons[u] ? 'Replay' : 'Play';
+      b.onclick = () => startTalk(u);
+      row.append(text, b);
+      list.appendChild(row);
+    }
   }
 
   // ---------- vocabulary list ----------
@@ -675,7 +830,7 @@
     const showRom = $('vocabRom').checked;
     const list = $('vocabList');
     list.innerHTML = '';
-    const current = nextLesson() ?? 0;
+    const current = nextWordsUnit() ?? 0;
     window.COURSE.units.forEach((u, ui_) => {
       const items = ALL.filter(i => i.unit === ui_)
         .filter(i => !learnedOnly || store.items[i.id])
@@ -689,16 +844,16 @@
       name.className = 'unit-name';
       name.textContent = `${u.title} (${items.length})`;
       sum.appendChild(name);
-      if (!inSession && !store.lessons[ui_]) {
+      if (!inSession && hasNewWords(ui_)) {
         const on = S.focusUnit === ui_;
         const b = document.createElement('button');
         b.className = 'study-next' + (on ? ' on' : '');
-        b.textContent = on ? '✓ Next lesson' : 'Make next lesson';
+        b.textContent = on ? '✓ Learning next' : 'Learn next';
         b.onclick = e => {
           e.preventDefault();
           if (on) delete S.focusUnit; else S.focusUnit = ui_;
           save();
-          on ? renderVocab() : show('today');
+          on ? renderVocab() : show('words');
         };
         sum.appendChild(b);
       }
@@ -1024,9 +1179,10 @@
     try { localStorage.removeItem(PROFILE_KEY); } catch {}
     location.reload();
   };
-  $('start').onclick = () => startSession('both');
-  $('startReview').onclick = () => startSession('review');
-  $('startLesson').onclick = () => startSession('lesson');
+  $('start').onclick = () => startWords('both');
+  $('startReview').onclick = () => startWords('review');
+  $('startNew').onclick = () => startWords('new');
+  $('startTalk').onclick = () => startTalk();
   $('stop').onclick = stopSession;
   ui.pause.onclick = togglePause;
   function interrupt() { silence(); try { recognizer?.abort(); } catch {} }

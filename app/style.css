@@ -232,3 +232,9 @@ button.icon.wide { font-size: 0.85rem; white-space: nowrap; }
 .tabbar button[aria-current="page"] { color: var(--accent); font-weight: 600; }
 .tabbar button:active { transform: none; }
 button.icon.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+.section-title { margin-top: 24px; }
+.lesson-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border); }
+.lesson-row:first-child { border-top: none; }
+.lesson-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.lesson-row.done b { color: var(--muted); font-weight: 500; }

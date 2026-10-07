@@ -18,9 +18,14 @@ for (const unit of window.COURSE.units) {
     for (const [me, other] of [[MALE, FEMALE], [FEMALE, MALE]]) for (const t of raw) texts.add(fill(t, me, other));
   }
 }
+// Dialogue lines, plus every "from the end" piece used by reverse building (suffixes at spaces).
 for (const d of Object.values(window.DIALOGUES)) {
   for (const line of d.lines) {
-    for (const [me, other] of [[MALE, FEMALE], [FEMALE, MALE]]) texts.add(fill(line.th, me, other));
+    for (const [me, other] of [[MALE, FEMALE], [FEMALE, MALE]]) {
+      const text = fill(line.th, me, other);
+      const chunks = text.split(' ').filter(Boolean);
+      for (let i = 0; i < chunks.length; i++) texts.add(chunks.slice(i).join(' '));
+    }
   }
 }
 process.stdout.write(JSON.stringify([...texts]));

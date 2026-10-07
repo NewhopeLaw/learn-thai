@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Learn Thai by Ear</title>
   <meta name="description" content="Free audio-first Thai course: listen, recall out loud, and review with spaced repetition. No reading required.">
-  <link rel="stylesheet" href="app/style.css?v=14">
+  <link rel="stylesheet" href="app/style.css?v=15">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#b5452b">
   <link rel="icon" type="image/png" href="app/icons/icon-192.png">
@@ -38,43 +38,25 @@
       </div>
     </section>
 
-    <!-- Today -->
-    <section id="today" class="view" hidden>
+    <!-- Words: audio flashcards with spaced repetition -->
+    <section id="words" class="view" hidden>
       <p class="eyebrow"><span id="whoName"></span> · <span id="statStreak">0</span>-day streak</p>
       <h1 class="next-title" id="nextUp"></h1>
       <div class="stats">
         <div><b id="statDue">0</b><span>reviews due</span></div>
-        <div><b id="statLessons">0</b><span>lessons done</span></div>
+        <div><b id="statNew">0</b><span>new words</span></div>
         <div><b id="statLearned">0</b><span>learned</span></div>
       </div>
       <button id="start" class="primary start">▶&nbsp; Start</button>
       <div class="row split">
         <button id="startReview">Review only</button>
-        <button id="startLesson">Lesson only</button>
+        <button id="startNew">New words only</button>
       </div>
       <p id="estimate" class="muted small center"></p>
       <button id="statusChip" class="chip" type="button"></button>
       <p id="voiceInfo" class="muted small"></p>
-    </section>
 
-    <!-- Progress -->
-    <section id="progressView" class="view" hidden>
-      <h1>Progress</h1>
-      <div class="card">
-        <h2 class="card-title">Last 14 days</h2>
-        <div id="activity" class="activity"></div>
-        <p id="totals" class="muted small"></p>
-      </div>
-      <div class="card">
-        <h2 class="card-title">Units</h2>
-        <p class="legend small"><i class="mastered"></i> mastered <i class="known"></i> known <i class="learning"></i> learning</p>
-        <div id="units"></div>
-      </div>
-    </section>
-
-    <!-- Words -->
-    <section id="words" class="view" hidden>
-      <h1>Words</h1>
+      <h2 class="card-title section-title">All words</h2>
       <div id="wordsHome">
         <div id="vocabPanel">
           <input id="vocabSearch" type="search" placeholder="Search words" aria-label="Search words">
@@ -87,9 +69,29 @@
       </div>
     </section>
 
+    <!-- Talk: Pimsleur-style lessons -->
+    <section id="talk" class="view" hidden>
+      <p class="eyebrow">Talk · <span id="statTalk">0</span> lessons done</p>
+      <h1 class="next-title" id="talkNext"></h1>
+      <p id="talkScene" class="muted"></p>
+      <button id="startTalk" class="primary start">▶&nbsp; Start lesson</button>
+      <p id="talkEstimate" class="muted small center"></p>
+
+      <h2 class="card-title section-title">All lessons</h2>
+      <div id="lessonList"></div>
+    </section>
+
     <!-- More -->
     <section id="more" class="view" hidden>
       <h1>More</h1>
+
+      <div class="card">
+        <h2 class="card-title">Progress</h2>
+        <div id="activity" class="activity"></div>
+        <p id="totals" class="muted small"></p>
+        <p class="legend small"><i class="mastered"></i> mastered <i class="known"></i> known <i class="learning"></i> learning · ✓ talk lesson done</p>
+        <div id="units"></div>
+      </div>
 
       <div class="card">
         <h2 class="card-title">This device</h2>
@@ -139,7 +141,7 @@
         <label class="field">Polite speech
           <select id="setGender"><option value="male">Speak as a man</option><option value="female">Speak as a woman</option></select>
         </label>
-        <label class="field">Thai voice
+        <label class="field">Thai voice for words
           <select id="setVoice">
             <option value="male">Niwat (male)</option>
             <option value="female">Premwadee (female)</option>
@@ -153,7 +155,7 @@
           <input id="setPause" type="range" min="2" max="10" step="1">
         </label>
         <label class="check"><input id="setMic" type="checkbox"> Check my answer with the microphone <span id="micNote" class="muted small"></span></label>
-        <label class="check"><input id="setHands" type="checkbox"> Auto mode: mark every phrase OK and keep going (for listening hands-free)</label>
+        <label class="check"><input id="setHands" type="checkbox"> Auto mode for words: mark every card OK and keep going</label>
         <label class="check"><input id="setPeek" type="checkbox"> Show romanization during sessions</label>
         <div class="row">
           <button id="testVoice">Test voice</button>
@@ -175,11 +177,15 @@
 
       <details class="card">
         <summary class="card-title">How it works</summary>
-        <ol>
-          <li><b>Review</b> (like Anki): every phrase has two cards. <i>What does this mean?</i> trains your ear; <i>How do you say…?</i> trains your mouth. Each card comes back just before you'd forget it. Rate it Again, Good or Easy.</li>
-          <li><b>Lesson</b> (like Pimsleur): learn a unit's phrases, meaning first and then speaking, with a few older ones mixed in. Then a short conversation between Niwat and Premwadee ties the unit together: listen, role-play your side, listen again.</li>
+        <p class="small"><b>Words</b> is audio flashcards with spaced repetition. Every phrase has two cards: <i>What does this mean?</i> trains your ear, <i>How do you say…?</i> trains your mouth. Each card comes back just before you'd forget it. Rate it Again, Good or Easy; <b>Auto</b> hides the buttons, marks everything OK and keeps going. <b>I know this</b> skips a phrase for a week.</p>
+        <p class="small"><b>Talk</b> is a Pimsleur-style lesson for each unit, about 20–30 minutes, no buttons needed:</p>
+        <ol class="small">
+          <li><b>Opening conversation</b> between Niwat and Premwadee at natural speed. Just listen.</li>
+          <li><b>Breakdown and reverse building.</b> Each line is explained and built from its last piece backwards, so the rhythm and tones come out right.</li>
+          <li><b>Anticipation.</b> You're asked to say a line or its meaning before you hear the answer. Use the pause.</li>
+          <li><b>Graduated recall.</b> Lines come back at growing intervals through the lesson, and a few from the previous lesson return at the start of the next.</li>
+          <li><b>Closing conversation</b> at natural speed. Notice how much more you catch.</li>
         </ol>
-        <p class="small"><b>Auto</b> hides the rating buttons, marks everything OK and keeps going, for hands-free listening. Outside a quiz the rating buttons just move ahead. <b>I know this</b> skips a phrase for a week. In <b>Words</b>, <b>Make next lesson</b> chooses which lesson comes next.</p>
         <h3 class="card-title" style="margin-top:12px">Learning Thai fast</h3>
         <ul class="small">
           <li><b>Always out loud.</b> Whispering or thinking the answer doesn't build the mouth memory you'll need.</li>
@@ -194,7 +200,7 @@
       <p class="center small"><a href="lessons/">Reading and writing Thai →</a></p>
     </section>
 
-    <!-- Session -->
+    <!-- Session (shared by Words and Talk) -->
     <section id="session" class="view" hidden>
       <div class="session-bar">
         <button id="stop" class="icon" aria-label="End session" title="End session (Esc)">✕</button>
@@ -232,15 +238,14 @@
   </main>
 
   <nav id="tabbar" class="tabbar" hidden>
-    <button data-tab="today"><span aria-hidden="true">⌂</span>Today</button>
-    <button data-tab="progressView"><span aria-hidden="true">▤</span>Progress</button>
     <button data-tab="words"><span aria-hidden="true">≡</span>Words</button>
+    <button data-tab="talk"><span aria-hidden="true">❝</span>Talk</button>
     <button data-tab="more"><span aria-hidden="true">⋯</span>More</button>
   </nav>
 
-  <script src="app/course.js?v=14"></script>
-  <script src="app/dialogues.js?v=14"></script>
-  <script src="app/audio-manifest.js?v=14"></script>
-  <script src="app/app.js?v=14"></script>
+  <script src="app/course.js?v=15"></script>
+  <script src="app/dialogues.js?v=15"></script>
+  <script src="app/audio-manifest.js?v=15"></script>
+  <script src="app/app.js?v=15"></script>
 </body>
 </html>
