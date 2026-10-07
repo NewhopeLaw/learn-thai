@@ -44,20 +44,20 @@ About 1 hour a day, with roughly 10 new phrases per session. Set **New phrases p
 | 15 | Unit 11 · Getting around | Give yourself directions out loud on your next walk. Listen for tone: near and far sound almost the same. |
 | 16 | Unit 12 · Places and directions | Say where things are on your street: on the left, on the right, straight ahead. |
 | 17 | Unit 13 · At the hotel | Imagine your check-in, start to finish. |
-| 18 | Unit 14 · Problems and complaints | Practise complaining politely: "sorry to trouble you, there's a problem". |
-| 19 | Unit 15 · Ordering food | Order your own dinner out loud in Thai, even at home. |
-| 20 | Unit 16 · Street food | Switch to one voice only for a session and see if it's harder. |
+| 18 | Finish Unit 13, start Unit 14 · Ordering food | Role-play check-in, Wi-Fi and breakfast time, then order dinner. |
+| 19 | Unit 14 · Ordering food | Order your own dinner out loud in Thai, even at home. |
+| 20 | Unit 15 · Street food | Switch to one voice only for a session and see if it's harder. |
 | 21 | Review day | No new phrases. Hands-free review on a walk. |
 
 ### Week 4: people, feelings, health, polish
 
 | Day | Focus | Tip |
 |---|---|---|
-| 22 | Unit 17 · Clothes, colors and sizes | Describe what you're wearing. |
-| 23 | Unit 18 · About you and Unit 19 · Family | Prepare a 3-sentence introduction of yourself and your family. |
-| 24 | Unit 20 · Making friends and Unit 21 · Small talk | Thais love it when visitors try. Practise a modest reply to compliments. |
-| 25 | Unit 22 · Reactions and heart words | "Jai yen yen" and "greng jai" open doors. Use them. |
-| 26 | Unit 27 · Health and help | Learn these well, and hope you never need them. Add your own allergies or medicines. |
+| 22 | Unit 16 · Clothes, colors and sizes | Describe what you're wearing. |
+| 23 | Unit 17 · About you and Unit 18 · Family | Prepare a 3-sentence introduction of yourself and your family. |
+| 24 | Unit 19 · Making friends and Unit 20 · Small talk | Thais love it when visitors try. Practise a modest reply to compliments. |
+| 25 | Unit 21 · Reactions and heart words | "Jai yen yen" and "greng jai" open doors. Use them. |
+| 26 | Unit 26 · Health and help | Learn these well, and hope you never need them. Add your own allergies or medicines. |
 | 27 | Role-play: taxi, hotel, restaurant | Airport to hotel to dinner, all out loud, using the Talk lessons. |
 | 28 | Numbers and prices drill | Replay the Numbers and Money units in the word list. Say random prices out loud. |
 | 29 | Reviews and small talk | Introduce yourself out loud three times, in different ways. |
@@ -65,4 +65,4 @@ About 1 hour a day, with roughly 10 new phrases per session. Set **New phrases p
 
 ## After the core units
 
-The remaining units (question words, verbs, days, places, street food, clothes, massage, beaches, temples, phone, making friends, reactions, family, telling the time, weather, problems, airport, comparing) are extra. If you're ahead of schedule, pick the ones that match your trip in the **Words** tab with **Learn next**. Otherwise, keep them for the trip itself.
+The remaining units (question words, verbs, days, places, street food, clothes, massage, beaches, temples, phone, making friends, reactions, family, telling the time, weather, airport, comparing) are extra. If you're ahead of schedule, pick the ones that match your trip in the **Words** tab with **Learn next**. Otherwise, keep them for the trip itself.

@@ -29,7 +29,7 @@ Optional extras:
 
 **Tracking progress:** the *Progress* tab shows each unit's phrases as learning / known / mastered, the last 14 days of practice, and totals. Progress is saved in your browser (no account needed); use *Back up progress* / *Restore from backup* to move it between devices.
 
-Course: 32 units in a travel-shaped order (greetings and basics, numbers and money, arriving and getting around, hotel and food, people, time and weather, health and leisure, culture), 500+ phrases, a Talk lesson for every unit, plus songs. Pick any unit with **Learn next** in the Words tab; replay any lesson from the Talk tab. A suggested month-long schedule is in [30-DAY-PLAN.md](30-DAY-PLAN.md).
+Course: 31 units in a travel-shaped order (greetings and basics, numbers and money, arriving and getting around, hotel and food, people, time and weather, health and leisure, culture), 500+ phrases, a Talk lesson for every unit, plus songs. Pick any unit with **Learn next** in the Words tab; replay any lesson from the Talk tab. A suggested month-long schedule is in [30-DAY-PLAN.md](30-DAY-PLAN.md).
 
 Once you're comfortable speaking, **[Stage 2: Reading](lessons/)** teaches the Thai script, vowels and tone rules.
 

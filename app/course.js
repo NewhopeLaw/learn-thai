@@ -69,6 +69,9 @@ window.COURSE = {
         { id: 'yn-like-yes', en: 'yes, I do (I like it)', th: 'ชอบ{P}', rom: 'chɔ̂ɔp {P}' },
         { id: 'yn-like-no', en: "no, I don't (I don't like it)", th: 'ไม่ชอบ{P}', rom: 'mâi chɔ̂ɔp {P}' },
         { id: 'yn-have-yes', en: 'yes, there is (answering "is there…?")', th: 'มี{P}', rom: 'mii {P}' },
+        { id: 'problem', en: "there's a problem", th: 'มีปัญหา{P}', rom: 'mii pan-hǎa {P}' },
+        { id: 'sorry-trouble', en: 'sorry to trouble you', th: 'ขอโทษที่รบกวน{P}', rom: 'khɔ̌ɔ-thôot thîi róp-kuan {P}',
+          parts: [{ th: 'รบกวน', rom: 'róp-kuan' }, { th: 'ที่รบกวน', rom: 'thîi róp-kuan' }] },
       ],
     },
     {
@@ -367,31 +370,8 @@ window.COURSE = {
       ],
     },
     {
-      key: 'problems',
-      title: 'Unit 14 · Problems and complaints',
-      items: [
-        { id: 'problem', en: "there's a problem", th: 'มีปัญหา{P}', rom: 'mii pan-hǎa {P}' },
-        { id: 'doesnt-work', en: "it doesn't work", th: 'ใช้ไม่ได้', rom: 'chái mâi dâi' },
-        { id: 'key-doesnt-work', en: "the key doesn't work", th: 'กุญแจใช้ไม่ได้{P}', rom: 'kun-jɛɛ chái mâi dâi {P}' },
-        { id: 'room-dirty', en: 'the room is dirty', th: 'ห้องสกปรก{P}', rom: 'hɔ̂ng sòk-ka-pròk {P}' },
-        { id: 'shower-broken', en: 'the shower is broken', th: 'ฝักบัวเสีย{P}', rom: 'fàk-bua sǐa {P}' },
-        { id: 'toilet-paper', en: 'toilet paper', th: 'กระดาษทิชชู่', rom: 'kra-dàat thít-chûu' },
-        { id: 'no-toilet-paper', en: "there's no toilet paper", th: 'ไม่มีกระดาษทิชชู่{P}', rom: 'mâi mii kra-dàat thít-chûu {P}' },
-        { id: 'toilet-blocked', en: 'the toilet is blocked', th: 'ส้วมตัน{P}', rom: 'sûam tan {P}' },
-        { id: 'too-noisy', en: "it's too noisy", th: 'เสียงดังไป{P}', rom: 'sǐang dang pai {P}' },
-        { id: 'fix-q', en: 'can you fix it?', th: 'ซ่อมได้ไหม{Pq}', rom: 'sɔ̂m dâi mǎi {Pq}' },
-        { id: 'change-room-q', en: 'can I change rooms?', th: 'ขอเปลี่ยนห้องได้ไหม{Pq}', rom: 'khɔ̌ɔ plìan hɔ̂ng dâi mǎi {Pq}',
-          parts: [{ th: 'ได้ไหม', rom: 'dâi mǎi' }, { th: 'ห้องได้ไหม', rom: 'hɔ̂ng dâi mǎi' }, { th: 'เปลี่ยนห้องได้ไหม', rom: 'plìan hɔ̂ng dâi mǎi' }] },
-        { id: 'not-what-ordered', en: "this isn't what I ordered", th: 'ไม่ได้สั่งอันนี้{P}', rom: 'mâi dâi sàng an níi {P}' },
-        { id: 'bill-wrong', en: 'the bill is wrong', th: 'บิลผิด{P}', rom: 'bin phìt {P}' },
-        { id: 'refund', en: "I'd like a refund", th: 'ขอเงินคืน{P}', rom: 'khɔ̌ɔ ngoen khuuen {P}' },
-        { id: 'sorry-trouble', en: 'sorry to trouble you', th: 'ขอโทษที่รบกวน{P}', rom: 'khɔ̌ɔ-thôot thîi róp-kuan {P}',
-          parts: [{ th: 'รบกวน', rom: 'róp-kuan' }, { th: 'ที่รบกวน', rom: 'thîi róp-kuan' }] },
-      ],
-    },
-    {
       key: 'ordering-food',
-      title: 'Unit 15 · Ordering food',
+      title: 'Unit 14 · Ordering food',
       items: [
         { id: 'menu', en: 'the menu, please', th: 'ขอเมนูหน่อย{P}', rom: 'khɔ̌ɔ mee-nuu nɔ̀i {P}' },
         { id: 'order-this', en: "I'd like this one", th: 'เอาอันนี้{P}', rom: 'ao an-níi {P}' },
@@ -427,11 +407,13 @@ window.COURSE = {
         { id: 'no-milk', en: 'no milk', th: 'ไม่ใส่นม', rom: 'mâi sài nom' },
         { id: 'large-glass', en: 'a large one (drink)', th: 'แก้วใหญ่', rom: 'kɛ̂ɛo yài' },
         { id: 'small-glass', en: 'a small one (drink)', th: 'แก้วเล็ก', rom: 'kɛ̂ɛo lék' },
+        { id: 'not-what-ordered', en: "this isn't what I ordered", th: 'ไม่ได้สั่งอันนี้{P}', rom: 'mâi dâi sàng an níi {P}' },
+        { id: 'bill-wrong', en: 'the bill is wrong', th: 'บิลผิด{P}', rom: 'bin phìt {P}' },
       ],
     },
     {
       key: 'street-food',
-      title: 'Unit 16 · Street food',
+      title: 'Unit 15 · Street food',
       items: [
         { id: 'f-som-tam', en: 'papaya salad', th: 'ส้มตำ', rom: 'sôm-tam' },
         { id: 'f-sticky-rice', en: 'sticky rice', th: 'ข้าวเหนียว', rom: 'khâao-nǐao' },
@@ -451,7 +433,7 @@ window.COURSE = {
     },
     {
       key: 'clothes',
-      title: 'Unit 17 · Clothes, colors and sizes',
+      title: 'Unit 16 · Clothes, colors and sizes',
       items: [
         { id: 'c-shirt', en: 'shirt', th: 'เสื้อ', rom: 'sûea' },
         { id: 'c-pants', en: 'pants', th: 'กางเกง', rom: 'kaang-keeng' },
@@ -472,7 +454,7 @@ window.COURSE = {
     },
     {
       key: 'about-you',
-      title: 'Unit 18 · About you',
+      title: 'Unit 17 · About you',
       items: [
         { id: 'from-where', en: 'where are you from?', th: 'คุณมาจากไหน{Pq}', rom: 'khun maa jàak nǎi {Pq}',
           parts: [{ th: 'ไหน', rom: 'nǎi' }, { th: 'จากไหน', rom: 'jàak nǎi' }, { th: 'มาจากไหน', rom: 'maa jàak nǎi' }] },
@@ -490,7 +472,7 @@ window.COURSE = {
     },
     {
       key: 'family',
-      title: 'Unit 19 · Family',
+      title: 'Unit 18 · Family',
       items: [
         { id: 'fam-family', en: 'family', th: 'ครอบครัว', rom: 'khrɔ̂ɔp-khrua' },
         { id: 'fam-father', en: 'father', th: 'พ่อ', rom: 'phɔ̂ɔ' },
@@ -516,7 +498,7 @@ window.COURSE = {
     },
     {
       key: 'friends',
-      title: 'Unit 20 · Making friends',
+      title: 'Unit 19 · Making friends',
       items: [
         { id: 'r-where-live-q', en: 'where do you live?', th: 'อยู่ที่ไหน{Pq}', rom: 'yùu thîi-nǎi {Pq}' },
         { id: 'r-live-america', en: 'I live in America', th: '{I}อยู่อเมริกา{P}', rom: '{I} yùu a-mee-ri-kaa {P}' },
@@ -537,7 +519,7 @@ window.COURSE = {
     },
     {
       key: 'small-talk',
-      title: 'Unit 21 · Small talk',
+      title: 'Unit 20 · Small talk',
       items: [
         { id: 'holiday', en: "I'm here on holiday", th: 'มาเที่ยว{P}', rom: 'maa thîao {P}' },
         { id: 'first-time', en: 'this is my first time in Thailand', th: 'มาเมืองไทยครั้งแรก{P}', rom: 'maa mueang thai khráng rɛ̂ɛk {P}',
@@ -565,7 +547,7 @@ window.COURSE = {
     },
     {
       key: 'reactions',
-      title: 'Unit 22 · Reactions and heart words',
+      title: 'Unit 21 · Reactions and heart words',
       items: [
         { id: 'x-really-q', en: 'really?', th: 'จริงเหรอ', rom: 'jing rǒe' },
         { id: 'x-truly', en: 'truly, really', th: 'จริงๆ', rom: 'jing-jing' },
@@ -595,7 +577,7 @@ window.COURSE = {
     },
     {
       key: 'time-feelings',
-      title: 'Unit 23 · Time and feelings',
+      title: 'Unit 22 · Time and feelings',
       items: [
         { id: 'today', en: 'today', th: 'วันนี้', rom: 'wan-níi' },
         { id: 'tomorrow', en: 'tomorrow', th: 'พรุ่งนี้', rom: 'phrûng-níi' },
@@ -617,7 +599,7 @@ window.COURSE = {
     },
     {
       key: 'days-times',
-      title: 'Unit 24 · Days and times',
+      title: 'Unit 23 · Days and times',
       items: [
         { id: 'd-mon', en: 'Monday', th: 'วันจันทร์', rom: 'wan jan' },
         { id: 'd-tue', en: 'Tuesday', th: 'วันอังคาร', rom: 'wan ang-khaan' },
@@ -638,7 +620,7 @@ window.COURSE = {
     },
     {
       key: 'telling-time',
-      title: 'Unit 25 · Telling the time',
+      title: 'Unit 24 · Telling the time',
       items: [
         { id: 'time-7am', en: 'seven in the morning', th: 'เจ็ดโมงเช้า', rom: 'jèt moong cháao',
           note: [{ en: 'Thai splits the day into blocks. Morning hours use this word for o\'clock, plus morning:' }, { th: 'โมงเช้า' }] },
@@ -662,7 +644,7 @@ window.COURSE = {
     },
     {
       key: 'weather',
-      title: 'Unit 26 · Weather and seasons',
+      title: 'Unit 25 · Weather and seasons',
       items: [
         { id: 'weather', en: 'the weather', th: 'อากาศ', rom: 'aa-kàat' },
         { id: 'weather-q', en: "how's the weather today?", th: 'วันนี้อากาศเป็นยังไง{Pq}', rom: 'wan-níi aa-kàat pen yang-ngai {Pq}',
@@ -685,7 +667,7 @@ window.COURSE = {
     },
     {
       key: 'health',
-      title: 'Unit 27 · Health and help',
+      title: 'Unit 26 · Health and help',
       items: [
         { id: 'help', en: 'help!', th: 'ช่วยด้วย', rom: 'chûai dûai' },
         { id: 'sick', en: "I'm sick", th: 'ไม่สบาย{P}', rom: 'mâi sa-baai {P}' },
@@ -723,7 +705,7 @@ window.COURSE = {
     },
     {
       key: 'massage',
-      title: 'Unit 28 · Massage and spa',
+      title: 'Unit 27 · Massage and spa',
       items: [
         { id: 'm-massage', en: 'massage', th: 'นวด', rom: 'nûat' },
         { id: 'm-thai', en: 'Thai massage', th: 'นวดไทย', rom: 'nûat thai' },
@@ -743,7 +725,7 @@ window.COURSE = {
     },
     {
       key: 'beaches',
-      title: 'Unit 29 · Beaches and islands',
+      title: 'Unit 28 · Beaches and islands',
       items: [
         { id: 'b-island', en: 'island', th: 'เกาะ', rom: 'kɔ̀' },
         { id: 'b-sea', en: 'the sea', th: 'ทะเล', rom: 'tha-lee' },
@@ -763,7 +745,7 @@ window.COURSE = {
     },
     {
       key: 'temples',
-      title: 'Unit 30 · Temples, culture and faith',
+      title: 'Unit 29 · Temples, culture and faith',
       items: [
         { id: 't-monk', en: 'monk', th: 'พระ', rom: 'phrá' },
         { id: 't-buddha', en: 'Buddha image', th: 'พระพุทธรูป', rom: 'phrá-phút-tha-rûup' },
@@ -808,7 +790,7 @@ window.COURSE = {
     },
     {
       key: 'phone',
-      title: 'Unit 31 · Phone and internet',
+      title: 'Unit 30 · Phone and internet',
       items: [
         { id: 'i-sim', en: 'SIM card', th: 'ซิมการ์ด', rom: 'sim-káat' },
         { id: 'i-buy-sim', en: 'I want to buy a SIM card', th: 'อยากซื้อซิมการ์ด{P}', rom: 'yàak súue sim-káat {P}' },
@@ -827,7 +809,7 @@ window.COURSE = {
     },
     {
       key: 'comparing',
-      title: 'Unit 32 · Describing and comparing',
+      title: 'Unit 31 · Describing and comparing',
       items: [
         { id: 'cmp-cold', en: 'cold', th: 'หนาว', rom: 'nǎao' },
         { id: 'cmp-fast', en: 'fast', th: 'เร็ว', rom: 'reo' },

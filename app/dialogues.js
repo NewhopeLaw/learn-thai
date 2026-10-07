@@ -386,16 +386,4 @@ window.DIALOGUES = {
       { who: 'B', th: 'สบายๆ{Pb} หน้าหนาวอากาศดีกว่า', rom: 'sa-baai sa-baai {Pb}, nâa nǎao aa-kàat dii kwàa', en: 'No stress. The weather is better in the cool season.' },
     ],
   },
-  'problems': {
-    scene: 'Something is wrong with your hotel room.', you: 'the guest',
-    lines: [
-      { who: 'A', th: 'ขอโทษที่รบกวน{P} มีปัญหา{P}', rom: 'khɔ̌ɔ-thôot thîi róp-kuan {P}, mii pan-hǎa {P}', en: "Sorry to trouble you. There's a problem." },
-      { who: 'B', th: 'เป็นอะไร{Pbq}', rom: 'pen a-rai {Pbq}', en: "What's wrong?" },
-      { who: 'A', th: 'ฝักบัวเสีย และไม่มีกระดาษทิชชู่{P}', rom: 'fàk-bua sǐa, lɛ́ mâi mii kra-dàat thít-chûu {P}', en: "The shower is broken, and there's no toilet paper." },
-      { who: 'B', th: 'ขอโทษ{Pb} จะส่งคนไปซ่อม', rom: 'khɔ̌ɔ-thôot {Pb}, jà sòng khon pai sɔ̂m', en: "Sorry. I'll send someone to fix it." },
-      { who: 'A', th: 'ห้องเสียงดังไปด้วย ขอเปลี่ยนห้องได้ไหม{Pq}', rom: 'hɔ̂ng sǐang dang pai dûai, khɔ̌ɔ plìan hɔ̂ng dâi mǎi {Pq}', en: 'The room is too noisy as well. Can I change rooms?' },
-      { who: 'B', th: 'ได้{Pb} ใจเย็นๆ นะ{Pb}', rom: 'dâi {Pb}, jai yen yen ná {Pb}', en: "Yes. Don't worry, take it easy." },
-      { who: 'A', th: 'ขอบคุณมาก{P}', rom: 'khɔ̀ɔp-khun mâak {P}', en: 'Thank you very much.' },
-    ],
-  },
 };
