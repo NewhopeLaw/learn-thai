@@ -280,6 +280,9 @@ window.DIALOGUES = {
       { who: 'A', th: 'วัดนี้สวยมาก{P}', rom: 'wát níi sǔai mâak {P}', en: 'This temple is very beautiful.' },
       { who: 'B', th: 'มาไหว้พระเหรอ{Pbq}', rom: 'maa wâi phrá rǒe {Pbq}', en: 'Did you come to pay respects?' },
       { who: 'A', th: 'ใช่ มาทำบุญ{P}', rom: 'châi, maa tham-bun {P}', en: 'Yes, I came to make merit.' },
+      { who: 'B', th: 'นับถือศาสนาอะไร{Pbq}', rom: 'náp-thǔue sàat-sa-nǎa a-rai {Pbq}', en: 'What religion are you?' },
+      { who: 'A', th: '{I}เป็นคริสต์ แต่ชอบนั่งสมาธิ{P}', rom: '{I} pen khrít, tɛ̀ɛ chɔ̂ɔp nâng sa-maa-thí {P}', en: "I'm Christian, but I like to meditate." },
+      { who: 'B', th: 'ดีมาก{Pb} ใจสงบ', rom: 'dii mâak {Pb}, jai sa-ngòp', en: 'Very good. A calm mind.' },
     ],
   },
   23: {
