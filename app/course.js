@@ -36,6 +36,13 @@ window.COURSE = {
           parts: [{ th: 'โทษ', rom: 'thôot' }] },
         { id: 'no-problem', en: 'no problem, or never mind', th: 'ไม่เป็นไร', rom: 'mâi pen rai',
           parts: [{ th: 'ไร', rom: 'rai' }, { th: 'เป็นไร', rom: 'pen rai' }] },
+        { id: 'bye-casual', en: 'bye (casual, with friends)', th: 'บ๊ายบาย', rom: 'báai-baai',
+          note: [{ en: 'Sawatdee is polite and a little formal. With friends, Thais say bye-bye, no polite ending needed.' }] },
+        { id: 'see-you-later', en: 'see you later (casual)', th: 'แล้วเจอกัน', rom: 'lɛ́ɛo joe kan',
+          parts: [{ th: 'เจอกัน', rom: 'joe kan' }],
+          note: [{ en: 'Add na at the end to make it warmer:' }, { th: 'แล้วเจอกันนะ' }] },
+        { id: 'off-now', en: "I'm off now, see you (casual)", th: 'ไปก่อนนะ', rom: 'pai kɔ̀ɔn ná',
+          note: [{ en: 'Literally, going first. The normal way to leave a group of friends.' }] },
       ],
     },
     {
