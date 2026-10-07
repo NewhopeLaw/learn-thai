@@ -54,5 +54,5 @@ window.SONGS = [
 
 // Each song's key words become a Words unit, so they get spaced repetition like everything else.
 for (const song of window.SONGS) {
-  window.COURSE.units.push({ title: `Song · ${song.titleEn}`, items: song.words, song: song.id });
+  window.COURSE.units.push({ key: `song-${song.id}`, title: `Song · ${song.titleEn}`, items: song.words, song: song.id });
 }
