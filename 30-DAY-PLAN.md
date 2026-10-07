@@ -65,4 +65,4 @@ About 1 hour a day, with roughly 10 new phrases per session. Set **New phrases p
 
 ## After the core units
 
-Units 15–26 (question words, verbs, days, places, street food, clothes, massage, beaches, temples, phone, making friends, reactions) are extra. If you're ahead of schedule, pick the ones that match your trip in the **Words** tab with **Study next**. Otherwise, keep them for the trip itself.
+Units 15–30 (question words, verbs, days, places, street food, clothes, massage, beaches, temples, phone, making friends, reactions, family, telling the time, airport, comparing) are extra. If you're ahead of schedule, pick the ones that match your trip in the **Words** tab with **Learn next**. Otherwise, keep them for the trip itself.

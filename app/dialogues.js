@@ -319,4 +319,53 @@ window.DIALOGUES = {
       { who: 'A', th: 'ได้เลย{P}', rom: 'dâi loei {P}', en: 'Sure, of course.' },
     ],
   },
+  26: {
+    scene: "A friend introduces you to their family.", you: 'the visitor',
+    lines: [
+      { who: 'B', th: 'นี่ครอบครัว{Ib}{Pb}', rom: 'nîi khrɔ̂ɔp-khrua {Ib} {Pb}', en: 'This is my family.' },
+      { who: 'A', th: 'ยินดีที่ได้รู้จัก{P}', rom: 'yin-dii thîi dâi rúu-jàk {P}', en: 'Nice to meet you.' },
+      { who: 'B', th: 'มีพี่น้องกี่คน{Pbq}', rom: 'mii phîi-nɔ́ɔng kìi khon {Pbq}', en: 'How many brothers and sisters do you have?' },
+      { who: 'A', th: 'มีน้องหนึ่งคน{P}', rom: 'mii nɔ́ɔng nùeng khon {P}', en: 'I have one younger sibling.' },
+      { who: 'B', th: 'มีลูกไหม{Pbq}', rom: 'mii lûuk mǎi {Pbq}', en: 'Do you have children?' },
+      { who: 'A', th: 'มีลูกสองคน{P}', rom: 'mii lûuk sɔ̌ɔng khon {P}', en: 'I have two children.' },
+      { who: 'B', th: 'ลูกชายหรือลูกสาว{Pbq}', rom: 'lûuk-chaai rǔue lûuk-sǎao {Pbq}', en: 'Sons or daughters?' },
+      { who: 'A', th: 'ลูกชายหนึ่ง ลูกสาวหนึ่ง{P}', rom: 'lûuk-chaai nùeng, lûuk-sǎao nùeng {P}', en: 'One son and one daughter.' },
+    ],
+  },
+  27: {
+    scene: 'Arranging to meet a friend for dinner.', you: 'the friend',
+    lines: [
+      { who: 'A', th: 'เจอกันกี่โมง{Pq}', rom: 'joe kan kìi moong {Pq}', en: 'What time shall we meet?' },
+      { who: 'B', th: 'หนึ่งทุ่ม ได้ไหม{Pbq}', rom: 'nùeng thûm, dâi mǎi {Pbq}', en: 'Seven in the evening, is that OK?' },
+      { who: 'A', th: 'หนึ่งทุ่มครึ่งได้ไหม{Pq}', rom: 'nùeng thûm khrûeng dâi mǎi {Pq}', en: 'Could we make it half past seven?' },
+      { who: 'B', th: 'ได้{Pb} ร้านปิดสามทุ่ม', rom: 'dâi {Pb}, ráan pìt sǎam thûm', en: 'Sure. The restaurant closes at nine.' },
+      { who: 'A', th: 'ตอนนี้กี่โมงแล้ว{Pq}', rom: 'tɔɔn-níi kìi moong lɛ́ɛo {Pq}', en: 'What time is it now?' },
+      { who: 'B', th: 'บ่ายสามโมงครึ่ง{Pb}', rom: 'bàai sǎam moong khrûeng {Pb}', en: 'Half past three.' },
+      { who: 'A', th: 'โอเค เจอกันหนึ่งทุ่มครึ่ง{P}', rom: 'oo-khee, joe kan nùeng thûm khrûeng {P}', en: 'OK, see you at half past seven.' },
+    ],
+  },
+  28: {
+    scene: 'Arriving at the airport: immigration, then a missing bag.', you: 'the traveler',
+    lines: [
+      { who: 'B', th: 'ขอพาสปอร์ต{Pb}', rom: 'khɔ̌ɔ pháat-sa-pɔ̀ɔt {Pb}', en: 'Passport, please.' },
+      { who: 'A', th: 'นี่{P}', rom: 'nîi {P}', en: 'Here you are.' },
+      { who: 'B', th: 'อยู่กี่วัน{Pbq}', rom: 'yùu kìi wan {Pbq}', en: 'How many days are you staying?' },
+      { who: 'A', th: 'อยู่สิบวัน มาเที่ยว{P}', rom: 'yùu sìp wan, maa thîao {P}', en: "Ten days. I'm here on holiday." },
+      { who: 'B', th: 'ขอบคุณ{Pb} ทางออกอยู่ทางนั้น', rom: 'khɔ̀ɔp-khun {Pb}, thaang ɔ̀ɔk yùu thaang nán', en: 'Thank you. The exit is that way.' },
+      { who: 'A', th: 'ขอโทษ{P} กระเป๋าหาย{P}', rom: 'khɔ̌ɔ-thôot {P}, kra-pǎo hǎai {P}', en: 'Excuse me. My luggage is lost.' },
+      { who: 'B', th: 'เที่ยวบินอะไร{Pbq}', rom: 'thîao-bin a-rai {Pbq}', en: 'Which flight?' },
+      { who: 'A', th: 'เที่ยวบินจากเชียงใหม่{P}', rom: 'thîao-bin jàak chiang-mài {P}', en: 'The flight from Chiang Mai.' },
+    ],
+  },
+  29: {
+    scene: 'Choosing between two bags at a shop.', you: 'the shopper',
+    lines: [
+      { who: 'A', th: 'อันไหนดีกว่า{Pq}', rom: 'an nǎi dii kwàa {Pq}', en: 'Which one is better?' },
+      { who: 'B', th: 'อันนี้ดีกว่า แต่แพงกว่า{Pb}', rom: 'an níi dii kwàa, tɛ̀ɛ phɛɛng kwàa {Pb}', en: 'This one is better, but more expensive.' },
+      { who: 'A', th: 'อันนั้นถูกกว่าไหม{Pq}', rom: 'an nán thùuk kwàa mǎi {Pq}', en: 'Is that one cheaper?' },
+      { who: 'B', th: 'ถูกกว่า แต่เก่า{Pb}', rom: 'thùuk kwàa, tɛ̀ɛ kào {Pb}', en: "It's cheaper, but old." },
+      { who: 'A', th: 'เอาอันใหม่ อันนี้ดีที่สุด{P}', rom: 'ao an mài, an níi dii thîi-sùt {P}', en: "I'll take the new one. This is the best." },
+      { who: 'B', th: 'ใช่{Pb} ดีที่สุด', rom: 'châi {Pb}, dii thîi-sùt', en: 'Yes, the best.' },
+    ],
+  },
 };
