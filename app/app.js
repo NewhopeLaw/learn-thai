@@ -21,7 +21,8 @@
   try { store = JSON.parse(localStorage.getItem(KEY)) || {}; } catch { store = {}; }
   store.settings = { ...DEFAULTS, ...(store.settings || {}) };
   store.items = store.items || {};
-  store.log = store.log || {};
+  store.log = store.log || {};   // day -> cards reviewed
+  store.secs = store.secs || {};  // day -> seconds studied
   const S = store.settings;
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch {} };
   const startOfToday = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
@@ -262,7 +263,7 @@
     sess = {
       active: due.map(id => ({ id, step: LADDER.length - 1, nextAt: 0, review: true })),
       newQ: fresh, total: due.length + fresh.length, done: 0, cards: 0,
-      first: {}, last: null, sinceIntro: 0, unit: -1, current: null,
+      first: {}, last: null, sinceIntro: 0, unit: -1, current: null, start: Date.now(),
     };
     run = { stopped: false, paused: false };
     show('session');
@@ -296,7 +297,10 @@
       if (!a.review) commit(a.id, 'again', false); // introduced but not mastered: see it tomorrow
       else if (sess.first[a.id] === 'again') commit(a.id, 'again', true);
     }
-    if (sess.cards) store.log[dayKey()] = (store.log[dayKey()] || 0) + sess.cards;
+    if (sess.cards) {
+      store.log[dayKey()] = (store.log[dayKey()] || 0) + sess.cards;
+      store.secs[dayKey()] = (store.secs[dayKey()] || 0) + Math.round((Date.now() - sess.start) / 1000);
+    }
     save();
     sess = null; run = null;
     synth.cancel();
@@ -350,7 +354,50 @@
     $('statStreak').textContent = streak();
     const nxt = unseen()[0];
     $('nextUp').textContent = nxt ? `Next new material: ${window.COURSE.units[nxt.unit].title}` : 'You have started every unit — keep reviewing!';
+    renderProgress();
     syncSettings();
+  }
+
+  // Strength of a phrase, from its review interval.
+  function strength(id) {
+    const st = store.items[id];
+    if (!st) return 'new';
+    return st.interval >= 21 ? 'mastered' : st.interval >= 7 ? 'known' : 'learning';
+  }
+  function renderProgress() {
+    const units = $('units');
+    units.innerHTML = '';
+    window.COURSE.units.forEach((u, ui_) => {
+      const items = ALL.filter(i => i.unit === ui_);
+      const c = { learning: 0, known: 0, mastered: 0, new: 0 };
+      items.forEach(i => c[strength(i.id)]++);
+      const pct = k => (c[k] / items.length) * 100 + '%';
+      const row = document.createElement('div');
+      row.className = 'unit-row';
+      row.innerHTML = `<div class="unit-head"><span></span><span class="muted small">${items.length - c.new} / ${items.length}</span></div>
+        <div class="stack" role="img" aria-label="${c.mastered} mastered, ${c.known} known, ${c.learning} learning, ${c.new} new">
+          <i class="mastered" style="width:${pct('mastered')}"></i><i class="known" style="width:${pct('known')}"></i><i class="learning" style="width:${pct('learning')}"></i></div>`;
+      row.querySelector('.unit-head span').textContent = u.title;
+      units.appendChild(row);
+    });
+
+    const days = [];
+    for (let k = 13; k >= 0; k--) { const t = Date.now() - k * DAY; days.push({ t, n: store.log[dayKey(t)] || 0 }); }
+    const max = Math.max(1, ...days.map(d => d.n));
+    const act = $('activity');
+    act.innerHTML = '';
+    days.forEach(d => {
+      const b = document.createElement('div');
+      b.className = 'day' + (d.n ? '' : ' empty');
+      b.style.height = Math.max(4, (d.n / max) * 60) + 'px';
+      b.title = `${new Date(d.t).toLocaleDateString()}: ${d.n} cards`;
+      act.appendChild(b);
+    });
+
+    const totalCards = Object.values(store.log).reduce((a, b) => a + b, 0);
+    const totalMin = Math.round(Object.values(store.secs).reduce((a, b) => a + b, 0) / 60);
+    const mastered = ALL.filter(i => strength(i.id) === 'mastered').length;
+    $('totals').textContent = `${totalCards} cards reviewed · ${totalMin} min studied · ${mastered} phrases mastered · ${Object.keys(store.log).length} days practised`;
   }
   function renderVoiceInfo() {
     const el = document.getElementById('voiceInfo');
@@ -385,7 +432,29 @@
   $('testVoice').onclick = () => { synth?.cancel(); rawSpeak(fill('สวัสดี{P}'), 'th', S.thaiRate); };
   $('reset').onclick = () => {
     if (!confirm('Erase all progress on this device?')) return;
-    store.items = {}; store.log = {}; save(); renderHome();
+    store.items = {}; store.log = {}; store.secs = {}; save(); renderHome();
+  };
+  $('exportBtn').onclick = () => {
+    const blob = new Blob([JSON.stringify(store, null, 1)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `learn-thai-progress-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+  $('importBtn').onclick = () => $('importFile').click();
+  $('importFile').onchange = async e => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      if (!data.items || typeof data.items !== 'object') throw new Error('not a progress file');
+      if (!confirm('Replace the progress on this device with the backup?')) return;
+      store.items = data.items; store.log = data.log || {}; store.secs = data.secs || {};
+      Object.assign(S, data.settings || {});
+      save(); renderHome();
+    } catch (err) { alert('Could not read that file: ' + err.message); }
   };
   document.querySelectorAll('[data-gender]').forEach(b => b.onclick = () => {
     S.gender = b.dataset.gender; save(); show('home');

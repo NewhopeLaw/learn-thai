@@ -133,3 +133,17 @@ kbd {
 .feedback { text-align: center; min-height: 1.5em; margin: 4px 0; font-weight: 600; }
 .grades { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0; }
 .grades #replay { grid-column: 1 / -1; }
+
+.unit-row { margin: 10px 0; }
+.unit-head { display: flex; justify-content: space-between; gap: 8px; font-size: 0.9rem; }
+.stack { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--border); margin-top: 4px; }
+.stack i, .legend i { display: block; height: 100%; }
+.mastered { background: var(--ok); }
+.known { background: var(--listen); }
+.learning { background: var(--speak); opacity: 0.7; }
+.legend { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; color: var(--muted); }
+.legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-left: 6px; }
+.activity { display: flex; align-items: flex-end; gap: 4px; height: 64px; }
+.activity .day { flex: 1; background: var(--ok); border-radius: 3px 3px 0 0; }
+.activity .day.empty { background: var(--border); }
+h3 { margin: 16px 0 6px; }

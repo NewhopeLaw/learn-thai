@@ -37,6 +37,21 @@
       <p id="nextUp" class="muted center"></p>
       <p id="voiceInfo" class="muted"></p>
 
+      <details class="card" id="progressCard" open>
+        <summary>Your progress</summary>
+        <div id="units"></div>
+        <p class="legend small"><i class="mastered"></i> mastered (3+ weeks) <i class="known"></i> known (1+ week) <i class="learning"></i> learning</p>
+        <h3 class="small muted">Last 14 days</h3>
+        <div id="activity" class="activity"></div>
+        <p id="totals" class="muted small"></p>
+        <div class="row">
+          <button id="exportBtn">Back up progress</button>
+          <button id="importBtn">Restore from backup</button>
+          <input id="importFile" type="file" accept="application/json,.json" hidden>
+        </div>
+        <p class="muted small">Progress is saved in this browser only. Back up to move it to another device.</p>
+      </details>
+
       <details class="card">
         <summary>How it works</summary>
         <ol>

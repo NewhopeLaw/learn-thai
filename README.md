@@ -19,7 +19,9 @@ Optional extras:
 - **Hands-free mode:** no rating buttons, for walking or driving.
 - **Gendered politeness:** the course teaches ครับ/ค่ะ and ผม/ฉัน to match you.
 
-Progress is saved in your browser (no account needed).
+**Tracking progress:** the home screen shows phrases due, learned, new and your streak. The *Your progress* panel shows each unit's phrases as learning / known / mastered, the last 14 days of practice, and totals. Progress is saved in your browser (no account needed); use *Back up progress* / *Restore from backup* to move it between devices.
+
+Course: 8 units, 92 phrases — greetings, getting by, food & shopping, numbers, want/have/can, getting around, about you, time & feelings.
 
 Once you're comfortable speaking, **[Stage 2: Reading](lessons/)** teaches the Thai script, vowels and tone rules.
 
