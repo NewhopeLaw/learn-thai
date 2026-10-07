@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Learn Thai by Ear</title>
   <meta name="description" content="Free audio-first Thai course: listen, recall out loud, and review with spaced repetition. No reading required.">
-  <link rel="stylesheet" href="app/style.css?v=8">
+  <link rel="stylesheet" href="app/style.css?v=9">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#b5452b">
   <link rel="icon" type="image/png" href="app/icons/icon-192.png">
@@ -94,15 +94,24 @@
             <li>Pick the longest expiration. Under <b>Repository access</b>, choose <b>Only select repositories</b> → <b>learn-thai</b>.</li>
             <li>Under <b>Permissions → Repository permissions</b>, set <b>Contents</b> to <b>Read and write</b>.</li>
             <li>Generate it and paste it here. This browser remembers it from then on.</li>
+            <li>Then press <b>Connect my phone</b> and scan the code. No need to paste the key on your phone.</li>
           </ol>
           <div class="row">
             <input id="ghToken" type="password" placeholder="Paste key (github_pat_…)" autocomplete="off" aria-label="GitHub access key">
             <button id="ghConnect" class="primary">Connect</button>
           </div>
         </div>
-        <div id="syncOn" class="row" hidden>
-          <button id="syncBtn">Sync now</button>
-          <button id="ghDisconnect" class="ghost">Disconnect</button>
+        <div id="syncOn" hidden>
+          <div class="row">
+            <button id="linkPhone" class="primary">Connect my phone</button>
+            <button id="syncBtn">Sync now</button>
+            <button id="ghDisconnect" class="ghost">Disconnect</button>
+          </div>
+          <div id="linkBox" hidden>
+            <p class="small">Scan this with your phone's camera. Your phone opens the app as you, with syncing turned on.</p>
+            <div id="linkQR" class="qr"></div>
+            <p class="muted small">This code contains your GitHub key. Don't share it or post a photo of it. Press the button again to hide it.</p>
+          </div>
         </div>
         <p id="syncStatus" class="muted small"></p>
       </details>
@@ -195,9 +204,9 @@
     </section>
   </main>
 
-  <script src="app/course.js?v=8"></script>
-  <script src="app/audio-manifest.js?v=8"></script>
-  <script src="app/plan.js?v=8"></script>
-  <script src="app/app.js?v=8"></script>
+  <script src="app/course.js?v=9"></script>
+  <script src="app/audio-manifest.js?v=9"></script>
+  <script src="app/plan.js?v=9"></script>
+  <script src="app/app.js?v=9"></script>
 </body>
 </html>

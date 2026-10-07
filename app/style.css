@@ -192,3 +192,5 @@ button.link { background: none; border: none; padding: 0; color: var(--accent); 
 .app-card .row { margin-top: 0; }
 .app-card p { margin: 8px 0 0; }
 .app-card p:empty { display: none; }
+.qr { background: #fff; padding: 8px; border-radius: 10px; width: min(280px, 100%); margin: 8px 0; }
+.qr svg { display: block; width: 100%; height: auto; }

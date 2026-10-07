@@ -16,6 +16,26 @@
   const PROFILE_KEY = 'learn-thai-profile';
   const PROFILES_KEY = 'learn-thai-profiles';
   let profile = null, profiles = [];
+  // Opened from the "Connect my phone" QR code: #link=<base64url {t: token, p: slug, n: name, g: gender}>.
+  // Sets up the learner and GitHub sync on this device, then removes the key from the address bar.
+  let linkedDevice = false;
+  try {
+    const m = location.hash.match(/^#link=([\w-]+)$/);
+    if (m) {
+      const d = JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')))));
+      history.replaceState(null, '', location.pathname + location.search);
+      if (d.t && /^[a-z0-9-]+$/.test(d.p)) {
+        localStorage.setItem('learn-thai-sync', JSON.stringify({ token: d.t }));
+        const list = JSON.parse(localStorage.getItem(PROFILES_KEY) || '[]');
+        if (!list.some(p => p.slug === d.p)) list.push({ slug: d.p, name: d.n || d.p });
+        localStorage.setItem(PROFILES_KEY, JSON.stringify(list));
+        const key = `${BASE_KEY}:${d.p}`;
+        if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify({ settings: { name: d.n || d.p, gender: d.g || 'male' } }));
+        localStorage.setItem(PROFILE_KEY, d.p);
+        linkedDevice = true;
+      }
+    }
+  } catch {}
   try { profile = localStorage.getItem(PROFILE_KEY); profiles = JSON.parse(localStorage.getItem(PROFILES_KEY)) || []; } catch {}
   const KEY = profile ? `${BASE_KEY}:${profile}` : BASE_KEY;
   const PROFILE_FILE = `progress/${profile}.json`;
@@ -752,8 +772,38 @@
     if (!confirm('Disconnect GitHub on this device? Progress already saved on GitHub stays there.')) return;
     sync = {}; saveSync(); renderSync();
   };
-  renderSync();
+  // "Connect my phone": a QR code that sets up this learner + sync on another device.
+  function loadQrLib() {
+    if (window.qrcode) return Promise.resolve();
+    return new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'app/vendor/qrcode.min.js';
+      s.onload = res; s.onerror = () => rej(new Error('could not load the QR code maker'));
+      document.head.appendChild(s);
+    });
+  }
+  $('linkPhone').onclick = async () => {
+    const box = $('linkBox');
+    if (!box.hidden) { box.hidden = true; $('linkQR').innerHTML = ''; return; }
+    try {
+      await loadQrLib();
+      const payload = btoa(unescape(encodeURIComponent(JSON.stringify({ t: sync.token, p: profile, n: S.name, g: S.gender }))))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      const url = new URL(location.pathname, location.origin).href + '#link=' + payload;
+      const qr = window.qrcode(0, 'M');
+      qr.addData(url);
+      qr.make();
+      $('linkQR').innerHTML = qr.createSvgTag({ cellSize: 5, margin: 3, scalable: true });
+      box.hidden = false;
+    } catch (e) { renderSync('Could not make the code: ' + e.message); }
+  };
+
+  renderSync(linkedDevice ? 'Phone connected! Loading your progress from GitHub…' : undefined);
   syncNow();
+  // Coming back to the app (e.g. after practising on the other device): pull the latest.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && !run && Date.now() - (sync.last || 0) > 60000) syncNow();
+  });
   function useProfile(slug) {
     try { localStorage.setItem(PROFILE_KEY, slug); } catch {}
     location.reload();
