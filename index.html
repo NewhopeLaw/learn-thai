@@ -16,17 +16,25 @@
 
     <!-- First run -->
     <section id="setup" class="card" hidden>
-      <h2>One quick question</h2>
+      <div id="existing" hidden>
+        <h2>Who's learning?</h2>
+        <div id="profileList" class="row"></div>
+        <h3 class="small muted">Or add a new learner</h3>
+      </div>
+      <label class="field">Your name
+        <input id="nameInput" type="text" autocomplete="given-name" maxlength="30">
+      </label>
       <p>Thai speakers use different polite words depending on whether they're a man or a woman. Which should the course teach you?</p>
       <div class="row">
         <button class="big" data-gender="male">Speak as a man</button>
         <button class="big" data-gender="female">Speak as a woman</button>
       </div>
-      <p class="muted small">You can change this later in Settings.</p>
+      <p class="muted small">No password needed. This browser remembers who you are.</p>
     </section>
 
     <!-- Home -->
     <section id="home" hidden>
+      <p class="center small muted">Learning as <b id="whoName"></b> · <button id="switchUser" class="link">switch learner</button></p>
       <div class="stats">
         <div><b id="statDue">0</b><span>due for review</span></div>
         <div><b id="statLearned">0</b><span>phrases learned</span></div>
@@ -49,7 +57,27 @@
           <button id="importBtn">Restore from backup</button>
           <input id="importFile" type="file" accept="application/json,.json" hidden>
         </div>
-        <p class="muted small">Progress is saved in this browser only. Back up to move it to another device.</p>
+        <p class="muted small">Your progress is saved in this browser. Download a backup file, or connect GitHub below to back it up automatically.</p>
+
+        <h3 class="small muted">Back up to GitHub</h3>
+        <div id="syncOff">
+          <p class="small">Saves your progress to the <code>learn-thai</code> repo after every session, so it's backed up and shared between your devices. Set this up once per device:</p>
+          <ol class="small">
+            <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → new access key</a> (a "fine-grained token").</li>
+            <li>Pick the longest expiration. Under <b>Repository access</b>, choose <b>Only select repositories</b> → <b>learn-thai</b>.</li>
+            <li>Under <b>Permissions → Repository permissions</b>, set <b>Contents</b> to <b>Read and write</b>.</li>
+            <li>Generate it and paste it here. This browser remembers it from then on.</li>
+          </ol>
+          <div class="row">
+            <input id="ghToken" type="password" placeholder="Paste key (github_pat_…)" autocomplete="off" aria-label="GitHub access key">
+            <button id="ghConnect" class="primary">Connect</button>
+          </div>
+        </div>
+        <div id="syncOn" class="row" hidden>
+          <button id="syncBtn">Sync now</button>
+          <button id="ghDisconnect" class="ghost">Disconnect</button>
+        </div>
+        <p id="syncStatus" class="muted small"></p>
       </details>
 
       <details class="card">
@@ -61,7 +89,8 @@
           <li><b>Rate yourself:</b> Again, Good or Easy. Phrases you find hard come back sooner.</li>
         </ol>
         <p>Within a session, phrases come back at growing intervals. Across days, a spaced-repetition schedule brings each one back just before you'd forget it. Try one session a day.</p>
-        <p class="muted small">Keyboard: <kbd>1</kbd> Again · <kbd>2</kbd> Good · <kbd>3</kbd> Easy · <kbd>R</kbd> replay · <kbd>Space</kbd> pause · <kbd>Esc</kbd> stop</p>
+        <p>Already know a phrase? Press <b>I know this</b> to skip it for a week, or use <b>I know this unit</b> under Your progress. During a quiz you can press <b>Good</b> as soon as you know the answer, without waiting for the audio.</p>
+        <p class="muted small">Keyboard: <kbd>1</kbd> Again · <kbd>2</kbd> Good · <kbd>3</kbd> Easy · <kbd>K</kbd> I know this · <kbd>R</kbd> replay · <kbd>Space</kbd> pause · <kbd>Esc</kbd> stop</p>
       </details>
 
       <details class="card">
@@ -112,6 +141,7 @@
       </div>
 
       <div class="row center">
+        <button id="know">I know this <kbd>K</kbd></button>
         <button id="pause">Pause</button>
         <button id="stop" class="ghost">End session</button>
       </div>

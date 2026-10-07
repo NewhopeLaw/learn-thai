@@ -11,10 +11,17 @@
 
   const ALL = window.COURSE.units.flatMap((u, unit) => u.items.map(it => ({ ...it, unit })));
   const BY_ID = Object.fromEntries(ALL.map(i => [i.id, i]));
-  const KEY = 'learn-thai-audio.v1';
+  // Learner profiles (no passwords): the chosen name is remembered in this browser.
+  const BASE_KEY = 'learn-thai-audio.v1';
+  const PROFILE_KEY = 'learn-thai-profile';
+  const PROFILES_KEY = 'learn-thai-profiles';
+  let profile = null, profiles = [];
+  try { profile = localStorage.getItem(PROFILE_KEY); profiles = JSON.parse(localStorage.getItem(PROFILES_KEY)) || []; } catch {}
+  const KEY = profile ? `${BASE_KEY}:${profile}` : BASE_KEY;
+  const PROFILE_FILE = `progress/${profile}.json`;
   const DAY = 86400000;
   const LADDER = [8, 30, 90, 240]; // seconds between in-session recalls
-  const DEFAULTS = { gender: null, thaiRate: 0.8, pause: 4, maxNew: 6, mic: false, handsFree: false, peek: false };
+  const DEFAULTS = { name: '', gender: null, thaiRate: 0.8, pause: 4, maxNew: 6, mic: false, handsFree: false, peek: false };
 
   // ---------- storage ----------
   let store;
@@ -69,11 +76,16 @@
   }
 
   // ---------- run control (pause / stop) ----------
-  const STOP = Symbol('stop'), PAUSE = Symbol('pause');
+  const STOP = Symbol('stop'), PAUSE = Symbol('pause'), SKIP = Symbol('skip'), GRADE = Symbol('grade');
   let run = null;
   let recognizer = null;
   const tick = ms => new Promise(r => setTimeout(r, ms));
-  function checkpoint() { if (!run || run.stopped) throw STOP; if (run.paused) throw PAUSE; }
+  function checkpoint() {
+    if (!run || run.stopped) throw STOP;
+    if (run.paused) throw PAUSE;
+    if (run.skip) throw SKIP;               // "I know this" pressed
+    if (run.grade && run.canGrade) throw GRADE; // graded early, no need to wait
+  }
   async function wait(ms) {
     const end = Date.now() + ms;
     while (Date.now() < end) { checkpoint(); await tick(Math.min(100, end - Date.now())); }
@@ -146,7 +158,14 @@
     else if (first === 'again') { interval = 1; ease = Math.max(1.3, ease - 0.2); lapses++; }
     else if (first === 'easy') { interval = Math.ceil(Math.max(interval, 1) * ease * 1.3); ease += 0.15; }
     else interval = interval <= 1 ? 3 : Math.ceil(interval * ease);
-    store.items[id] = { ease, interval, lapses, reps: prev.reps + 1, due: startOfToday() + interval * DAY };
+    store.items[id] = { ease, interval, lapses, reps: prev.reps + 1, due: startOfToday() + interval * DAY, updated: Date.now() };
+  }
+
+  // "I already know this": skip it and bring it back in a week.
+  function markKnown(id) {
+    const prev = store.items[id] || { ease: 2.5, interval: 0, reps: 0, lapses: 0 };
+    const interval = Math.max(7, prev.interval);
+    store.items[id] = { ...prev, interval, reps: prev.reps + 1, due: startOfToday() + interval * DAY, updated: Date.now() };
   }
 
   function pick(s) {
@@ -194,6 +213,8 @@
     if (it.note) { stage('listen', 'Listen', it.en, romOf(it)); await note(it.note); }
     s.newQ.shift();
     s.active.push({ id, step: 0, nextAt: Date.now() + LADDER[0] * 1000, review: false });
+    commit(id, 'again', false); // provisional: due tomorrow unless mastered this session
+    save();
     s.sinceIntro = 0;
     s.last = id;
   }
@@ -202,6 +223,9 @@
     const it = BY_ID[a.id];
     const text = thOf(it);
     if (a.nextAt > Date.now() && s.active.length === 1) await wait(Math.min(a.nextAt - Date.now(), 4000));
+    s.current = text;
+    run.canGrade = true;
+    ui.grades.hidden = false;
     stage('listen', 'Listen', it.en);
     ui.feedback.textContent = '';
     await en(`How do you say: ${it.en}?`);
@@ -217,9 +241,7 @@
     await th(text); await wait(400);
     stage('speak', 'Repeat', it.en, romOf(it));
     await th(text); await wait(repeatGap(text));
-    s.current = text;
     const g = S.handsFree ? (ok === false ? 'again' : 'good') : await awaitGrade();
-    s.current = null;
     grade(s, a, g);
   }
 
@@ -228,29 +250,46 @@
     s.cards++;
     s.last = a.id;
     s.sinceIntro++;
-    if (g === 'again') { a.step = 0; a.nextAt = Date.now() + LADDER[0] * 1000; return; }
+    const now = Date.now();
+    store.log[dayKey()] = (store.log[dayKey()] || 0) + 1;
+    store.secs[dayKey()] = (store.secs[dayKey()] || 0) + Math.round(Math.min(now - s.tick, 120000) / 1000);
+    s.tick = now;
+    if (g === 'again') {
+      if (a.review && !a.lapsed) { a.lapsed = true; commit(a.id, 'again', true); } // forgot: due tomorrow
+      a.step = 0; a.nextAt = now + LADDER[0] * 1000;
+      save();
+      return;
+    }
     a.step += g === 'easy' ? 2 : 1;
     if (a.step >= LADDER.length) {
       s.active.splice(s.active.indexOf(a), 1);
       s.done++;
-      commit(a.id, s.first[a.id], a.review);
-      save();
-    } else a.nextAt = Date.now() + LADDER[a.step] * 1000;
+      if (!a.lapsed) commit(a.id, s.first[a.id], a.review);
+    } else a.nextAt = now + LADDER[a.step] * 1000;
+    save();
     progress(s);
   }
 
-  let pendingGrade = null;
+  // Waits until a grade button is pressed; checkpoint() throws GRADE when it is.
   async function awaitGrade() {
-    pendingGrade = null;
     stage('grade', 'How did you do?');
-    ui.grades.hidden = false;
-    try {
-      for (;;) {
-        checkpoint();
-        if (pendingGrade) return pendingGrade;
-        await tick(80);
-      }
-    } finally { ui.grades.hidden = true; pendingGrade = null; }
+    for (;;) { checkpoint(); await tick(80); }
+  }
+
+  function skipItem(s, id) {
+    markKnown(id);
+    const qi = s.newQ.indexOf(id);
+    if (qi >= 0) {
+      s.newQ.splice(qi, 1);
+      const extra = unseen().find(x => !s.newQ.includes(x.id)); // keep the session's new material topped up
+      if (extra) { s.newQ.push(extra.id); s.total++; }
+    }
+    const ai = s.active.findIndex(a => a.id === id);
+    if (ai >= 0) s.active.splice(ai, 1);
+    s.done++;
+    s.last = id;
+    save();
+    progress(s);
   }
 
   // ---------- session ----------
@@ -263,7 +302,7 @@
     sess = {
       active: due.map(id => ({ id, step: LADDER.length - 1, nextAt: 0, review: true })),
       newQ: fresh, total: due.length + fresh.length, done: 0, cards: 0,
-      first: {}, last: null, sinceIntro: 0, unit: -1, current: null, start: Date.now(),
+      first: {}, last: null, sinceIntro: 0, unit: -1, current: null, tick: Date.now(),
     };
     run = { stopped: false, paused: false };
     show('session');
@@ -275,14 +314,21 @@
       for (;;) {
         const c = pick(sess);
         if (!c) break;
+        const id = c.kind === 'intro' ? c.id : c.a.id;
         for (;;) {
-          try { c.kind === 'intro' ? await intro(sess, c.id) : await recall(sess, c.a); break; }
-          catch (e) {
-            if (e !== PAUSE) throw e;
-            stage('paused', 'Paused');
-            while (run && !run.stopped && run.paused) await tick(150);
-            checkpoint();
-          }
+          Object.assign(run, { skip: false, grade: null, canGrade: false });
+          ui.grades.hidden = true;
+          sess.current = null;
+          let err = null;
+          try { c.kind === 'intro' ? await intro(sess, c.id) : await recall(sess, c.a); }
+          catch (e) { err = e; }
+          if (err === null) break;
+          if (err === SKIP) { skipItem(sess, id); ui.feedback.textContent = 'Marked as known. It comes back in a week.'; break; }
+          if (err === GRADE) { grade(sess, c.a, run.grade); break; }
+          if (err !== PAUSE) throw err;
+          stage('paused', 'Paused');
+          while (run && !run.stopped && run.paused) await tick(150);
+          if (!run || run.stopped) throw STOP;
         }
       }
       stage('listen', 'Done!');
@@ -293,18 +339,12 @@
 
   function finish() {
     if (!sess) return;
-    for (const a of sess.active) {
-      if (!a.review) commit(a.id, 'again', false); // introduced but not mastered: see it tomorrow
-      else if (sess.first[a.id] === 'again') commit(a.id, 'again', true);
-    }
-    if (sess.cards) {
-      store.log[dayKey()] = (store.log[dayKey()] || 0) + sess.cards;
-      store.secs[dayKey()] = (store.secs[dayKey()] || 0) + Math.round((Date.now() - sess.start) / 1000);
-    }
     save();
     sess = null; run = null;
     synth.cancel();
+    ui.grades.hidden = true;
     show('home');
+    syncNow();
   }
 
   function stopSession() { if (run) { run.stopped = true; synth.cancel(); try { recognizer?.abort(); } catch {} } }
@@ -378,6 +418,18 @@
         <div class="stack" role="img" aria-label="${c.mastered} mastered, ${c.known} known, ${c.learning} learning, ${c.new} new">
           <i class="mastered" style="width:${pct('mastered')}"></i><i class="known" style="width:${pct('known')}"></i><i class="learning" style="width:${pct('learning')}"></i></div>`;
       row.querySelector('.unit-head span').textContent = u.title;
+      const weak = items.filter(i => ['new', 'learning'].includes(strength(i.id)));
+      if (weak.length) {
+        const b = document.createElement('button');
+        b.className = 'link small';
+        b.textContent = 'I know this unit';
+        b.onclick = () => {
+          if (!confirm(`Mark the ${weak.length} new or learning phrases in "${u.title}" as known? They'll come back for review in a week.`)) return;
+          weak.forEach(i => markKnown(i.id));
+          save(); renderHome(); syncNow();
+        };
+        row.querySelector('.unit-head').appendChild(b);
+      }
       units.appendChild(row);
     });
 
@@ -453,26 +505,154 @@
       if (!confirm('Replace the progress on this device with the backup?')) return;
       store.items = data.items; store.log = data.log || {}; store.secs = data.secs || {};
       Object.assign(S, data.settings || {});
-      save(); renderHome();
+      save(); renderHome(); syncNow();
     } catch (err) { alert('Could not read that file: ' + err.message); }
   };
+
+  // ---------- GitHub repo sync ----------
+  // Each learner's progress (the same JSON as the backup file) is saved as
+  // progress/<name>.json on the repo's "progress" branch, so it never triggers a site rebuild.
+  const REPO = 'wonilsart/learn-thai';
+  const BRANCH = 'progress';
+  const SYNC_KEY = 'learn-thai-sync';
+  let sync;
+  try { sync = JSON.parse(localStorage.getItem(SYNC_KEY)) || {}; } catch { sync = {}; }
+  const saveSync = () => { try { localStorage.setItem(SYNC_KEY, JSON.stringify(sync)); } catch {} };
+  let syncing = false;
+  const b64 = str => btoa(unescape(encodeURIComponent(str)));
+  const unb64 = str => decodeURIComponent(escape(atob(str.replace(/\s/g, ''))));
+
+  // Returns parsed JSON, or null for 404 when allow404 is set.
+  async function gh(path, opts = {}, allow404 = false) {
+    const r = await fetch('https://api.github.com' + path, {
+      ...opts,
+      cache: 'no-store',
+      headers: { Authorization: `Bearer ${sync.token}`, Accept: 'application/vnd.github+json', ...(opts.body ? { 'Content-Type': 'application/json' } : {}) },
+    });
+    if (allow404 && r.status === 404) return null;
+    if (r.status === 401) throw new Error('GitHub rejected the key. It may have expired. Disconnect and connect again with a new one.');
+    if (r.status === 403 || r.status === 404) throw new Error(`the key can't write to ${REPO}. Check it has Contents: Read and write for that repo.`);
+    if (!r.ok) { const e = new Error(`GitHub error ${r.status}`); e.status = r.status; throw e; }
+    return r.json();
+  }
+  async function ensureBranch() {
+    if (await gh(`/repos/${REPO}/git/ref/heads/${BRANCH}`, {}, true)) return;
+    const main = await gh(`/repos/${REPO}/git/ref/heads/main`);
+    await gh(`/repos/${REPO}/git/refs`, { method: 'POST', body: JSON.stringify({ ref: `refs/heads/${BRANCH}`, sha: main.object.sha }) });
+  }
+  // Newest change wins per phrase; daily activity keeps the larger count.
+  function merge(remote) {
+    for (const [id, r] of Object.entries(remote.items || {})) {
+      const l = store.items[id];
+      if (!l || (r.updated || 0) > (l.updated || 0) || ((r.updated || 0) === (l.updated || 0) && r.reps > l.reps)) store.items[id] = r;
+    }
+    for (const k of ['log', 'secs']) {
+      for (const [d, v] of Object.entries(remote[k] || {})) store[k][d] = Math.max(store[k][d] || 0, v);
+    }
+  }
+  function renderSync(msg) {
+    $('syncOff').hidden = !!sync.token;
+    $('syncOn').hidden = !sync.token;
+    if (msg !== undefined) $('syncStatus').textContent = msg;
+    else if (sync.token) $('syncStatus').textContent = `Saving to GitHub as ${PROFILE_FILE}` + (sync.last ? ` · last saved ${new Date(sync.last).toLocaleString()}` : '');
+    else $('syncStatus').textContent = '';
+  }
+  async function syncOnce() {
+    await ensureBranch();
+    const cur = await gh(`/repos/${REPO}/contents/${PROFILE_FILE}?ref=${BRANCH}`, {}, true);
+    if (cur) merge(JSON.parse(unb64(cur.content)));
+    const content = JSON.stringify({ name: S.name, items: store.items, log: store.log, secs: store.secs, settings: S, saved: new Date().toISOString() }, null, 1);
+    await gh(`/repos/${REPO}/contents/${PROFILE_FILE}`, {
+      method: 'PUT',
+      body: JSON.stringify({ message: `Progress: ${S.name || profile}`, content: b64(content), branch: BRANCH, ...(cur ? { sha: cur.sha } : {}) }),
+    });
+  }
+  async function syncNow() {
+    if (!sync.token || !profile || syncing) return;
+    syncing = true;
+    renderSync('Saving to GitHub…');
+    try {
+      try { await syncOnce(); }
+      catch (e) { if (e.status === 409 || e.status === 422) await syncOnce(); else throw e; } // file changed on another device: merge again
+      sync.last = Date.now();
+      saveSync(); save();
+      if (!ui.home.hidden) renderHome();
+      renderSync();
+    } catch (e) {
+      renderSync('Save to GitHub failed: ' + e.message);
+    } finally { syncing = false; }
+  }
+  $('ghConnect').onclick = async () => {
+    const token = $('ghToken').value.trim();
+    if (!token) return;
+    sync = { token };
+    renderSync('Connecting…');
+    try {
+      await gh(`/repos/${REPO}`);
+      $('ghToken').value = '';
+      saveSync();
+      await syncNow();
+    } catch (e) { sync = {}; saveSync(); renderSync('Could not connect: ' + e.message); }
+  };
+  $('syncBtn').onclick = syncNow;
+  $('ghDisconnect').onclick = () => {
+    if (!confirm('Disconnect GitHub on this device? Progress already saved on GitHub stays there.')) return;
+    sync = {}; saveSync(); renderSync();
+  };
+  renderSync();
+  syncNow();
+  function useProfile(slug) {
+    try { localStorage.setItem(PROFILE_KEY, slug); } catch {}
+    location.reload();
+  }
   document.querySelectorAll('[data-gender]').forEach(b => b.onclick = () => {
-    S.gender = b.dataset.gender; save(); show('home');
+    const name = $('nameInput').value.trim();
+    if (!name) { $('nameInput').focus(); $('nameInput').placeholder = 'Type your name first'; return; }
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'learner';
+    try {
+      const key = `${BASE_KEY}:${slug}`;
+      let data = JSON.parse(localStorage.getItem(key) || 'null');
+      // The first learner inherits any progress made before profiles existed.
+      if (!data) data = profiles.length ? {} : JSON.parse(localStorage.getItem(BASE_KEY) || '{}');
+      data.settings = { ...(data.settings || {}), name, gender: b.dataset.gender };
+      localStorage.setItem(key, JSON.stringify(data));
+      if (!profiles.some(p => p.slug === slug)) profiles.push({ slug, name });
+      localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
+    } catch {}
+    useProfile(slug);
   });
+  for (const p of profiles) {
+    const b = document.createElement('button');
+    b.className = 'big';
+    b.textContent = `I'm ${p.name}`;
+    b.onclick = () => useProfile(p.slug);
+    $('profileList').appendChild(b);
+  }
+  $('existing').hidden = !profiles.length;
+  $('whoName').textContent = S.name || profile || '';
+  $('switchUser').onclick = () => {
+    try { localStorage.removeItem(PROFILE_KEY); } catch {}
+    location.reload();
+  };
   $('start').onclick = startSession;
   $('stop').onclick = stopSession;
   ui.pause.onclick = togglePause;
-  document.querySelectorAll('[data-grade]').forEach(b => b.onclick = () => { pendingGrade = b.dataset.grade; });
+  function interrupt() { synth.cancel(); try { recognizer?.abort(); } catch {} }
+  function pressGrade(g) { if (run?.canGrade && !run.paused) { run.grade = g; interrupt(); } }
+  function pressKnow() { if (run && !run.paused) { run.skip = true; interrupt(); } }
+  document.querySelectorAll('[data-grade]').forEach(b => b.onclick = () => pressGrade(b.dataset.grade));
+  $('know').onclick = pressKnow;
   $('replay').onclick = () => { if (sess?.current) { synth.cancel(); rawSpeak(sess.current, 'th', S.thaiRate); } };
 
   document.addEventListener('keydown', e => {
     if (ui.session.hidden || e.target.closest('input,select,button')) return;
     if (e.key === ' ') { e.preventDefault(); togglePause(); }
     else if (e.key === 'Escape') stopSession();
-    else if (!ui.grades.hidden && ['1', '2', '3'].includes(e.key)) pendingGrade = ['again', 'good', 'easy'][+e.key - 1];
+    else if (['1', '2', '3'].includes(e.key)) pressGrade(['again', 'good', 'easy'][+e.key - 1]);
+    else if (e.key.toLowerCase() === 'k') pressKnow();
     else if (!ui.grades.hidden && e.key.toLowerCase() === 'r') $('replay').click();
   });
 
   renderVoiceInfo();
-  show(S.gender ? 'home' : 'setup');
+  show(profile && S.gender ? 'home' : 'setup');
 })();

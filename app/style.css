@@ -147,3 +147,17 @@ kbd {
 .activity .day { flex: 1; background: var(--ok); border-radius: 3px 3px 0 0; }
 .activity .day.empty { background: var(--border); }
 h3 { margin: 16px 0 6px; }
+
+.row input[type=password] {
+  flex: 1; min-width: 0; padding: 10px 12px; font: inherit;
+  border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text);
+}
+button.link { background: none; border: none; padding: 0; color: var(--accent); text-decoration: underline; margin-left: auto; }
+.unit-head { align-items: baseline; }
+.unit-head span:first-child { flex: 1; }
+
+.field input[type=text] {
+  display: block; width: 100%; margin-top: 4px; padding: 10px 12px; font: inherit;
+  border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text);
+}
+#switchUser { margin-left: 0; }
