@@ -203,14 +203,19 @@ button.icon.wide { font-size: 0.85rem; white-space: nowrap; }
 .peek { text-align: center; color: var(--muted); font-style: italic; min-height: 1.5em; margin: 2px 0; }
 .feedback { text-align: center; min-height: 1.5em; margin: 2px 0; font-weight: 600; }
 .links { display: flex; gap: 8px; align-items: center; justify-content: center; color: var(--muted); margin: 4px 0; }
-.grades {
+.bottombar {
   position: sticky; bottom: 0;
-  display: grid; grid-template-columns: 1fr 1.4fr 1fr; gap: 8px;
+  display: grid; gap: 8px;
   padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
   background: var(--bg);
 }
-.grades button { min-height: 60px; font-size: 1.05rem; border-radius: 16px; }
-.grades[hidden] { display: none; }
+.bottombar[hidden] { display: none; }
+.bottombar button { min-height: 60px; font-size: 1.05rem; border-radius: 16px; }
+.grades { grid-template-columns: 1fr 1fr 1.3fr 1fr; }
+.nextbar { grid-template-columns: 1fr 1fr; }
+.nextbar #knowBtn[hidden] { display: none; }
+.nextbar:has(#knowBtn[hidden]) { grid-template-columns: 1fr; }
+.row.split > button { flex: 1; }
 #sessionWordsBox { margin-top: 8px; }
 
 /* ---------- tab bar ---------- */

@@ -6,6 +6,13 @@ A free, audio-first Thai course for English speakers. It works like Pimsleur and
 
 ## The method
 
+Each day has two parts:
+
+- **Review (like Anki):** phrases that are due come back as audio flashcards. Say the answer out loud, hear it, then rate it: Again / OK / Good / Easy.
+- **Lesson (like Pimsleur):** each of the 26 units is a lesson built around a short conversation between Niwat and Premwadee ([app/dialogues.js](app/dialogues.js)). You listen to the conversation first, learn its phrases (with a few old ones recycled), role-play your side in the pauses, then listen once more.
+
+### Inside a phrase drill
+
 1. **Listen.** A new phrase is introduced by ear. Long phrases are *back-chained* (built from the last syllable forward) so you can say them with natural rhythm and tones.
 2. **Recall out loud (anticipation).** The narrator asks “How do you say…?” in English. You answer out loud in Thai during the pause, *before* you hear the answer.
 3. **Check and repeat.** The correct answer plays twice. Copy it.

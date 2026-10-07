@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Learn Thai by Ear</title>
   <meta name="description" content="Free audio-first Thai course: listen, recall out loud, and review with spaced repetition. No reading required.">
-  <link rel="stylesheet" href="app/style.css?v=11">
+  <link rel="stylesheet" href="app/style.css?v=12">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#b5452b">
   <link rel="icon" type="image/png" href="app/icons/icon-192.png">
@@ -44,10 +44,14 @@
       <h1 class="next-title" id="nextUp"></h1>
       <div class="stats">
         <div><b id="statDue">0</b><span>reviews due</span></div>
-        <div><b id="statNewToday">0</b><span>new today</span></div>
+        <div><b id="statLessons">0</b><span>lessons done</span></div>
         <div><b id="statLearned">0</b><span>learned</span></div>
       </div>
-      <button id="start" class="primary start">▶&nbsp; Start today's session</button>
+      <button id="start" class="primary start">▶&nbsp; Start</button>
+      <div class="row split">
+        <button id="startReview">Review only</button>
+        <button id="startLesson">Lesson only</button>
+      </div>
       <p id="estimate" class="muted small center"></p>
       <button id="statusChip" class="chip" type="button"></button>
       <p id="voiceInfo" class="muted small"></p>
@@ -148,7 +152,7 @@
         <label class="field">Thinking pause <output id="pauseVal"></output>
           <input id="setPause" type="range" min="2" max="10" step="1">
         </label>
-        <label class="field">New phrases per session <output id="newVal"></output>
+        <label class="field" hidden>New phrases per session <output id="newVal"></output>
           <input id="setNew" type="range" min="2" max="15" step="1">
         </label>
         <label class="check"><input id="setMic" type="checkbox"> Check my answer with the microphone <span id="micNote" class="muted small"></span></label>
@@ -175,13 +179,11 @@
       <details class="card">
         <summary class="card-title">How it works</summary>
         <ol>
-          <li><b>Listen.</b> A new phrase is built up from the end, piece by piece.</li>
-          <li><b>Recall out loud.</b> When asked "How do you say…?", say it in the pause.</li>
-          <li><b>Check and repeat.</b> Hear the answer twice and copy the tones.</li>
-          <li><b>Rate yourself.</b> Good or Easy finishes it for today; Again brings it back. Turn on <b>Auto</b> to mark everything OK and listen without touching anything.</li>
+          <li><b>Review</b> (like Anki): phrases that are due come back. Say each one out loud, then rate it: Again, OK, Good or Easy.</li>
+          <li><b>Lesson</b> (like Pimsleur): first hear a short conversation between Niwat and Premwadee. Then learn its phrases, with a few old ones mixed in. Then role-play your side of the conversation. Finally, hear it once more.</li>
         </ol>
-        <p class="small">Already know something? <b>I know this</b> skips it for a week. In <b>Words</b>, <b>Study next</b> picks which unit comes next.</p>
-        <p class="muted small">Keys: <kbd>1</kbd> Again · <kbd>2</kbd> Good · <kbd>3</kbd> Easy · <kbd>K</kbd> know it · <kbd>A</kbd> auto · <kbd>V</kbd> voice · <kbd>R</kbd> replay · <kbd>Space</kbd> pause · <kbd>Esc</kbd> end</p>
+        <p class="small"><b>Auto</b> marks everything OK and keeps going, for listening hands-free. <b>Next ▸</b> skips ahead, <b>I know this</b> skips a phrase for a week. In <b>Words</b>, <b>Make next lesson</b> chooses which lesson comes next.</p>
+        <p class="muted small">Keys: <kbd>1</kbd> Again · <kbd>2</kbd> OK · <kbd>3</kbd> Good · <kbd>4</kbd> Easy · <kbd>N</kbd> next · <kbd>K</kbd> know it · <kbd>A</kbd> auto · <kbd>V</kbd> voice · <kbd>R</kbd> replay · <kbd>Space</kbd> pause · <kbd>Esc</kbd> end</p>
       </details>
 
       <p class="center small"><a href="lessons/">Reading and writing Thai →</a></p>
@@ -205,17 +207,18 @@
         <p id="prompt" class="prompt"></p>
         <p id="peek" class="peek"></p>
         <p id="feedback" class="feedback" aria-live="polite"></p>
-        <p class="links">
-          <button id="know" class="link">I know this</button>
-          <span aria-hidden="true">·</span>
-          <button id="replay" class="link">Replay</button>
-        </p>
+        <p class="links"><button id="replay" class="link">Replay</button></p>
         <p id="count" class="muted small center"></p>
       </div>
-      <div id="grades" class="grades" hidden>
+      <div id="grades" class="bottombar grades" hidden>
         <button data-grade="again">Again</button>
+        <button data-grade="ok">OK</button>
         <button data-grade="good" class="primary">Good</button>
         <button data-grade="easy">Easy</button>
+      </div>
+      <div id="nextBar" class="bottombar nextbar" hidden>
+        <button id="knowBtn">I know this</button>
+        <button id="nextBtn">Next ▸</button>
       </div>
       <details id="sessionWordsBox" class="card">
         <summary>Word list</summary>
@@ -231,8 +234,9 @@
     <button data-tab="more"><span aria-hidden="true">⋯</span>More</button>
   </nav>
 
-  <script src="app/course.js?v=11"></script>
-  <script src="app/audio-manifest.js?v=11"></script>
-  <script src="app/app.js?v=11"></script>
+  <script src="app/course.js?v=12"></script>
+  <script src="app/dialogues.js?v=12"></script>
+  <script src="app/audio-manifest.js?v=12"></script>
+  <script src="app/app.js?v=12"></script>
 </body>
 </html>

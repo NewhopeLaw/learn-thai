@@ -50,6 +50,7 @@
   store.items = store.items || {};
   store.log = store.log || {};   // day -> cards reviewed
   store.secs = store.secs || {};  // day -> seconds studied
+  store.lessons = store.lessons || {}; // unit index -> time the lesson was finished
   const S = store.settings;
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch {} };
   const startOfToday = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
@@ -58,10 +59,14 @@
   // ---------- gendered text ----------
   function fill(s, roman) {
     const f = S.gender === 'female';
-    const map = roman
-      ? { '{Pq}': f ? 'khá' : 'khráp', '{P}': f ? 'khâ' : 'khráp', '{I}': f ? 'chǎn' : 'phǒm' }
-      : { '{Pq}': f ? 'คะ' : 'ครับ', '{P}': f ? 'ค่ะ' : 'ครับ', '{I}': f ? 'ฉัน' : 'ผม' };
-    return s.replace(/\{Pq\}|\{P\}|\{I\}/g, m => map[m]);
+    const forms = female => roman
+      ? { Pq: female ? 'khá' : 'khráp', P: female ? 'khâ' : 'khráp', I: female ? 'chǎn' : 'phǒm' }
+      : { Pq: female ? 'คะ' : 'ครับ', P: female ? 'ค่ะ' : 'ครับ', I: female ? 'ฉัน' : 'ผม' };
+    const me = forms(f), other = forms(!f);
+    return s.replace(/\{Pbq\}|\{Pb\}|\{Ib\}|\{Pq\}|\{P\}|\{I\}/g, m => {
+      const k = m.slice(1, -1);
+      return k === 'Pbq' ? other.Pq : k === 'Pb' ? other.P : k === 'Ib' ? other.I : me[k];
+    });
   }
   const thOf = it => fill(it.th, false);
   const romOf = it => fill(it.rom, true);
@@ -105,7 +110,7 @@
   player.preload = 'auto';
   let alt = 0, hush = 0;
   const voiceFolder = () => (S.voice === 'both' ? (alt++ % 2 ? 'female' : 'male') : S.voice === 'female' ? 'female' : 'male');
-  function playRecorded(text) {
+  function playRecorded(text, folder) {
     const id = AUDIO[text];
     if (!id) return Promise.resolve(false);
     const h = hush;
@@ -120,23 +125,24 @@
       player.onended = () => fin(true);
       player.onpause = () => fin(true);
       player.onerror = () => fin(false);
-      player.src = `audio/${voiceFolder()}/${id}.mp3`;
+      player.src = `audio/${folder || voiceFolder()}/${id}.mp3`;
       player.preservesPitch = true;
       player.defaultPlaybackRate = player.playbackRate = Math.min(2, Math.max(0.5, S.thaiRate / THAI_BASE_RATE));
       player.play().catch(() => fin(false));
     });
   }
-  async function speakThai(text) { if (!(await playRecorded(text))) await rawSpeak(text, 'th', S.thaiRate); }
+  async function speakThai(text, folder) { if (!(await playRecorded(text, folder))) await rawSpeak(text, 'th', S.thaiRate); }
   function silence() { hush++; synth?.cancel(); player.pause(); }
 
   // ---------- run control (pause / stop) ----------
-  const STOP = Symbol('stop'), PAUSE = Symbol('pause'), SKIP = Symbol('skip'), GRADE = Symbol('grade');
+  const STOP = Symbol('stop'), PAUSE = Symbol('pause'), SKIP = Symbol('skip'), GRADE = Symbol('grade'), NEXT = Symbol('next');
   let run = null;
   let recognizer = null;
   const tick = ms => new Promise(r => setTimeout(r, ms));
   function checkpoint() {
     if (!run || run.stopped) throw STOP;
     if (run.paused) throw PAUSE;
+    if (run.next) throw NEXT;               // "Next" pressed: skip ahead
     if (run.skip) throw SKIP;               // "I know this" pressed
     if (run.grade && run.canGrade) throw GRADE; // graded early, no need to wait
   }
@@ -275,9 +281,14 @@
       await wait(repeatGap(text));
     }
     if (it.note) { stage('listen', 'Listen', it.en, romOf(it)); await note(it.note); }
-    s.newQ.shift();
-    s.active.push({ id, step: 0, nextAt: Date.now() + LADDER[0] * 1000, review: false });
-    commit(id, 'again', false); // provisional: due tomorrow unless mastered this session
+    introduced(s, id);
+  }
+  // A new phrase has been taught (or skipped with Next): it joins the quiz rotation.
+  function introduced(s, id) {
+    const qi = s.newQ.indexOf(id);
+    if (qi >= 0) s.newQ.splice(qi, 1);
+    if (!s.active.some(a => a.id === id)) s.active.push({ id, nextAt: Date.now() + LADDER[0] * 1000, review: false });
+    commit(id, 'again', false); // provisional: due tomorrow unless answered this session
     save();
     s.sinceIntro = 0;
     s.last = id;
@@ -287,9 +298,9 @@
     const it = BY_ID[a.id];
     const text = thOf(it);
     if (a.nextAt > Date.now() && s.active.length === 1) await wait(Math.min(a.nextAt - Date.now(), 4000));
-    s.current = text;
+    currentText = text; currentFolder = null;
     run.canGrade = true;
-    ui.grades.hidden = false;
+    setBar('grade');
     stage('listen', 'Listen', it.en);
     ui.feedback.textContent = '';
     await en(`How do you say: ${it.en}?`);
@@ -320,15 +331,17 @@
     s.tick = now;
     if (g === 'again') {
       // Missed: keep it in rotation, coming back at growing gaps until it's answered.
-      if (a.review && !a.lapsed) { a.lapsed = true; commit(a.id, 'again', true); } // forgot: due tomorrow
+      if (a.review && !a.lapsed && !a.practice) { a.lapsed = true; commit(a.id, 'again', true); } // forgot: due tomorrow
       a.nextAt = now + LADDER[Math.min(a.misses = (a.misses || 0) + 1, LADDER.length) - 1] * 1000;
       save();
       return;
     }
     // Good / Easy: done for this session; the long-term schedule decides when it returns.
     s.active.splice(s.active.indexOf(a), 1);
-    s.done++;
-    if (!a.lapsed) commit(a.id, s.first[a.id], a.review);
+    if (!a.practice) {
+      s.done++;
+      if (!a.lapsed) commit(a.id, s.first[a.id], a.review);
+    }
     save();
     progress(s);
   }
@@ -355,18 +368,159 @@
     progress(s);
   }
 
-  // ---------- session ----------
-  let sess = null;
-  async function startSession() {
+  // ---------- session: Review (Anki) + Lesson (Pimsleur) ----------
+  let sess = null;        // the current round of cards
+  let inSession = false;
+  let currentText = null, currentFolder = null; // what Replay plays
+
+  // Bottom bar: rating buttons while a phrase is quizzed; I know this / Next while teaching or playing a conversation.
+  function setBar(mode) {
+    ui.grades.hidden = mode !== 'grade';
+    $('nextBar').hidden = !(mode === 'intro' || mode === 'line');
+    $('knowBtn').hidden = mode !== 'intro';
+  }
+
+  // Runs one step; handles pause (the step restarts), Next, I know this and early ratings.
+  async function step(fn, on = {}) {
+    for (;;) {
+      Object.assign(run, { skip: false, grade: null, canGrade: false, next: false });
+      let err = null;
+      try { await fn(); } catch (e) { err = e; }
+      if (err === null) return 'done';
+      if (err === NEXT) { silence(); return 'next'; }
+      if (err === SKIP) { silence(); on.skip?.(); return 'skip'; }
+      if (err === GRADE) { silence(); on.grade?.(run.grade); return 'grade'; }
+      if (err !== PAUSE) throw err;
+      stage('paused', 'Paused');
+      while (run && !run.stopped && run.paused) await tick(150);
+      if (!run || run.stopped) throw STOP;
+    }
+  }
+  const narrate = text => step(() => { stage('listen', 'Listen', ''); return en(text); });
+
+  function newRound(active, newQ, unit = -1) {
+    return {
+      active, newQ, total: active.filter(a => !a.practice).length + newQ.length, done: 0, cards: 0,
+      first: {}, last: null, sinceIntro: 0, unit, tick: Date.now(),
+    };
+  }
+  async function runCards(s) {
+    sess = s;
+    progress(s);
+    for (;;) {
+      const c = pick(s);
+      if (!c) break;
+      if (c.kind === 'intro') {
+        setBar('intro');
+        const r = await step(() => intro(s, c.id), {
+          skip: () => { skipItem(s, c.id); ui.feedback.textContent = 'Marked as known. It comes back in a week.'; },
+        });
+        if (r === 'next') introduced(s, c.id);
+      } else {
+        setBar('grade');
+        await step(() => recall(s, c.a), { grade: g => grade(s, c.a, g) });
+      }
+    }
+    sess = null;
+  }
+
+  // ----- lessons -----
+  const DIALOGUES = window.DIALOGUES || {};
+  function nextLesson() {
+    if (S.focusUnit != null && !store.lessons[S.focusUnit]) return S.focusUnit;
+    const n = window.COURSE.units.length;
+    for (let u = 0; u < n; u++) if (!store.lessons[u]) return u;
+    return null;
+  }
+  const lessonName = u => `Lesson ${u + 1} · ${window.COURSE.units[u].title.replace(/^Unit \d+ · /, '')}`;
+  const voiceOf = who => ((who === 'A') === (S.gender === 'female') ? 'female' : 'male');
+  const speakerName = who => (voiceOf(who) === 'male' ? 'Niwat' : 'Premwadee');
+  function phase(label, pct) {
+    ui.bar.style.width = pct + '%';
+    ui.count.textContent = label;
+  }
+  async function sayLine(line) {
+    currentText = fill(line.th); currentFolder = voiceOf(line.who);
+    checkpoint();
+    await speakThai(currentText, currentFolder);
+    checkpoint();
+  }
+  async function playDialogue(d, showMeaning) {
+    for (const line of d.lines) {
+      setBar('line');
+      await step(async () => {
+        const who = line.who === 'A' ? `You · ${speakerName('A')}` : speakerName('B');
+        stage('listen', who, showMeaning ? line.en : '', fill(line.rom, true));
+        await sayLine(line);
+        await wait(700);
+      });
+    }
+  }
+  async function rolePlay(d) {
+    for (const line of d.lines) {
+      setBar('line');
+      await step(async () => {
+        if (line.who === 'B') {
+          stage('listen', speakerName('B'), line.en, fill(line.rom, true));
+          await sayLine(line);
+          await wait(600);
+        } else {
+          stage('speak', 'Your line', line.en);
+          await wait(S.pause * 1000 + fill(line.th).length * 60);
+          stage('listen', `You · ${speakerName('A')}`, line.en, fill(line.rom, true));
+          await sayLine(line);
+          await wait(repeatGap(fill(line.th)) * 0.6);
+        }
+      });
+    }
+  }
+  async function runLesson(u) {
+    const d = DIALOGUES[u];
+    const label = lessonName(u);
+    ui.unit.textContent = label;
+    setBar('line');
+    phase('Listen', 3);
+    await narrate(label.replace('·', '.') + '.');
+    if (d) {
+      await narrate(`${d.scene} First, just listen. You don't need to understand everything yet.`);
+      await playDialogue(d, false);
+    }
+    const fresh = ALL.filter(i => i.unit === u && !store.items[i.id]).map(i => i.id);
+    if (fresh.length) {
+      setBar('line');
+      await narrate(`Now let's learn the phrases.`);
+      // Recycle a few phrases from earlier lessons, Pimsleur style, without touching their schedule.
+      const now = Date.now();
+      const old = ALL.filter(i => i.unit < u && store.items[i.id] && store.items[i.id].due > now)
+        .sort(() => Math.random() - 0.5).slice(0, 4)
+        .map((i, k) => ({ id: i.id, nextAt: now + (90 + k * 120) * 1000, review: true, practice: true }));
+      ui.unit.textContent = label;
+      await runCards(newRound(old, fresh, u));
+    }
+    if (d) {
+      setBar('line');
+      phase('Your turn: role-play', 85);
+      await narrate(`Now it's your turn. You are ${d.you}. Say your lines in the pause, then listen to check.`);
+      await rolePlay(d);
+      setBar('line');
+      phase('Listen again', 95);
+      await narrate('Listen to the whole conversation one more time.');
+      await playDialogue(d, true);
+    }
+    store.lessons[u] = Date.now();
+    if (S.focusUnit === u) delete S.focusUnit;
+    save();
+    phase('Lesson complete', 100);
+  }
+
+  async function startSession(mode = 'both') {
     if (!synth) return alert('This browser has no speech support. Try Chrome or Edge.');
     const due = dueIds().slice(0, 30);
-    const fresh = upcoming().slice(0, S.maxNew).map(i => i.id);
-    if (!due.length && !fresh.length) return alert('Nothing to study right now — come back tomorrow!');
-    sess = {
-      active: due.map(id => ({ id, step: LADDER.length - 1, nextAt: 0, review: true })),
-      newQ: fresh, total: due.length + fresh.length, done: 0, cards: 0,
-      first: {}, last: null, sinceIntro: 0, unit: -1, current: null, tick: Date.now(),
-    };
+    const lesson = nextLesson();
+    const doReview = mode !== 'lesson' && due.length > 0;
+    const doLesson = mode !== 'review' && lesson != null;
+    if (!doReview && !doLesson) return alert(mode === 'review' ? 'No reviews are due right now.' : 'Nothing to study right now. Come back tomorrow!');
+    inSession = true;
     run = { stopped: false, paused: false };
     // Unlock audio playback on phones while we're still inside the tap.
     const firstId = Object.values(AUDIO)[0];
@@ -377,43 +531,30 @@
     }
     show('session');
     $('sessionWords').appendChild($('vocabPanel'));
-    ui.unit.textContent = due.length ? 'Review' : '';
-    progress(sess);
+    ui.feedback.textContent = '';
     synth.cancel();
     try {
-      await en(due.length ? `Let's begin with a review.` : `Let's begin.`);
-      for (;;) {
-        const c = pick(sess);
-        if (!c) break;
-        const id = c.kind === 'intro' ? c.id : c.a.id;
-        for (;;) {
-          Object.assign(run, { skip: false, grade: null, canGrade: false });
-          ui.grades.hidden = true;
-          sess.current = null;
-          let err = null;
-          try { c.kind === 'intro' ? await intro(sess, c.id) : await recall(sess, c.a); }
-          catch (e) { err = e; }
-          if (err === null) break;
-          if (err === SKIP) { skipItem(sess, id); ui.feedback.textContent = 'Marked as known. It comes back in a week.'; break; }
-          if (err === GRADE) { grade(sess, c.a, run.grade); break; }
-          if (err !== PAUSE) throw err;
-          stage('paused', 'Paused');
-          while (run && !run.stopped && run.paused) await tick(150);
-          if (!run || run.stopped) throw STOP;
-        }
+      if (doReview) {
+        ui.unit.textContent = 'Review';
+        setBar('line');
+        await narrate(`Let's start with a review.`);
+        await runCards(newRound(due.map(id => ({ id, nextAt: 0, review: true })), []));
       }
-      stage('listen', 'Done!');
-      await en(`Great work. That's the end of this session.`);
+      if (doLesson) await runLesson(lesson);
+      stage('listen', 'Done!', '');
+      setBar('none');
+      await narrate(`Great work. That's the end of this session.`);
     } catch (e) { if (e !== STOP) console.error(e); }
     finish();
   }
 
   function finish() {
-    if (!sess) return;
+    if (!inSession) return;
+    inSession = false;
     save();
-    sess = null; run = null;
+    sess = null; run = null; currentText = null;
     synth.cancel();
-    ui.grades.hidden = true;
+    setBar('none');
     $('wordsHome').appendChild($('vocabPanel'));
     $('sessionWordsBox').open = false;
     show('home');
@@ -485,13 +626,19 @@
     $('statLearned').textContent = Object.keys(store.items).length;
     $('statDue').textContent = dueIds().length;
     const due = Math.min(dueIds().length, 30);
-    const fresh = Math.min(S.maxNew, upcoming().length);
-    $('statNewToday').textContent = fresh;
+    const lesson = nextLesson();
+    const nUnits = window.COURSE.units.length;
+    $('statLessons').textContent = `${Object.keys(store.lessons).length}/${nUnits}`;
     $('statStreak').textContent = streak();
-    const nxt = upcoming()[0];
-    $('nextUp').textContent = nxt ? window.COURSE.units[nxt.unit].title : 'Every unit started. Keep reviewing!';
-    const mins = Math.max(1, Math.round(due * 0.4 + fresh * 2));
-    $('estimate').textContent = due || fresh ? `About ${mins} min · ${due} reviews, ${fresh} new` : 'All done for today. Come back tomorrow.';
+    $('nextUp').textContent = lesson != null ? lessonName(lesson) : 'Every lesson done. Keep reviewing!';
+    const fresh = lesson != null ? ALL.filter(i => i.unit === lesson && !store.items[i.id]).length : 0;
+    const reviewMin = Math.round(due * 0.4), lessonMin = lesson != null ? 5 + Math.round(fresh * 1.6) : 0;
+    $('start').textContent = due && lesson != null ? '▶  Start: review + lesson' : due ? '▶  Start review' : lesson != null ? '▶  Start lesson' : '▶  Start';
+    $('startReview').textContent = due ? `Review only · ${due}` : 'No reviews due';
+    $('startLesson').textContent = lesson != null ? `Lesson only · ${lessonMin} min` : 'All lessons done';
+    $('estimate').textContent = due || lesson != null
+      ? `About ${Math.max(1, reviewMin + lessonMin)} min` + (due ? ` · review ${reviewMin} min` : '') + (lesson != null ? ` · lesson ${lessonMin} min` : '')
+      : 'All done for today. Come back tomorrow.';
     renderProgress();
     renderVocab();
     renderChip();
@@ -520,11 +667,11 @@
       name.className = 'unit-name';
       name.textContent = `${u.title} (${items.length})`;
       sum.appendChild(name);
-      if (!sess && ALL.some(i => i.unit === ui_ && !store.items[i.id])) {
+      if (!inSession && !store.lessons[ui_]) {
         const on = S.focusUnit === ui_;
         const b = document.createElement('button');
         b.className = 'study-next' + (on ? ' on' : '');
-        b.textContent = on ? '✓ Up next' : 'Study next';
+        b.textContent = on ? '✓ Next lesson' : 'Make next lesson';
         b.onclick = e => {
           e.preventDefault();
           if (on) delete S.focusUnit; else S.focusUnit = ui_;
@@ -586,7 +733,7 @@
       row.innerHTML = `<div class="unit-head"><span></span><span class="muted small">${items.length - c.new} / ${items.length}</span></div>
         <div class="stack" role="img" aria-label="${c.mastered} mastered, ${c.known} known, ${c.learning} learning, ${c.new} new">
           <i class="mastered" style="width:${pct('mastered')}"></i><i class="known" style="width:${pct('known')}"></i><i class="learning" style="width:${pct('learning')}"></i></div>`;
-      row.querySelector('.unit-head span').textContent = u.title;
+      row.querySelector('.unit-head span').textContent = u.title + (store.lessons[ui_] ? '  ✓' : '');
       const weak = items.filter(i => ['new', 'learning'].includes(strength(i.id)));
       if (weak.length) {
         const b = document.createElement('button');
@@ -766,7 +913,7 @@
       catch (e) { if (e.status === 409 || e.status === 422) await syncOnce(); else throw e; } // file changed on another device: merge again
       sync.last = Date.now();
       saveSync(); save();
-      if (!sess && ui.session.hidden && ui.setup.hidden) renderHome();
+      if (!inSession && ui.session.hidden && ui.setup.hidden) renderHome();
       renderSync();
     } catch (e) {
       renderSync('Save to GitHub failed: ' + e.message);
@@ -854,15 +1001,19 @@
     try { localStorage.removeItem(PROFILE_KEY); } catch {}
     location.reload();
   };
-  $('start').onclick = startSession;
+  $('start').onclick = () => startSession('both');
+  $('startReview').onclick = () => startSession('review');
+  $('startLesson').onclick = () => startSession('lesson');
   $('stop').onclick = stopSession;
   ui.pause.onclick = togglePause;
   function interrupt() { silence(); try { recognizer?.abort(); } catch {} }
   function pressGrade(g) { if (run?.canGrade && !run.paused) { run.grade = g; interrupt(); } }
   function pressKnow() { if (run && !run.paused) { run.skip = true; interrupt(); } }
   document.querySelectorAll('[data-grade]').forEach(b => b.onclick = () => pressGrade(b.dataset.grade));
-  $('know').onclick = pressKnow;
-  $('replay').onclick = () => { if (sess?.current) { silence(); speakThai(sess.current); } };
+  $('knowBtn').onclick = pressKnow;
+  function pressNext() { if (run && !run.paused) { run.next = true; interrupt(); } }
+  $('nextBtn').onclick = pressNext;
+  $('replay').onclick = () => { if (currentText) { silence(); speakThai(currentText, currentFolder); } };
   function setVoice(v) {
     S.voice = v; save();
     const label = VOICE_NAMES[v];
@@ -878,7 +1029,8 @@
     if (ui.session.hidden || e.target.closest('input,select,button')) return;
     if (e.key === ' ') { e.preventDefault(); togglePause(); }
     else if (e.key === 'Escape') stopSession();
-    else if (['1', '2', '3'].includes(e.key)) pressGrade(['again', 'good', 'easy'][+e.key - 1]);
+    else if (['1', '2', '3', '4'].includes(e.key)) pressGrade(['again', 'ok', 'good', 'easy'][+e.key - 1]);
+    else if (e.key === 'n' || e.key === 'ArrowRight') pressNext();
     else if (e.key.toLowerCase() === 'k') pressKnow();
     else if (e.key.toLowerCase() === 'v') $('voiceBtn').click();
     else if (e.key.toLowerCase() === 'a') $('autoBtn').click();
