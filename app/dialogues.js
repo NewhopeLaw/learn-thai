@@ -1,10 +1,10 @@
-// One short conversation per unit (keyed by unit index), used by the Pimsleur-style lessons.
+// One short conversation per unit (keyed by the unit's key in course.js), used by the Pimsleur-style lessons.
 //   who: 'A' = the learner (voiced to match the learner's gender), 'B' = the other person (the other voice)
 //   Placeholders: {P} {Pq} {I} = A's polite ending / question ending / "I";
 //                 {Pb} {Pbq} {Ib} = the same for B (the opposite gender to the learner).
 //   en: meaning, shown on screen and used as the role-play prompt for A's lines.
 window.DIALOGUES = {
-  0: {
+  'greetings': {
     scene: 'You meet someone in your hotel lobby.', you: 'the guest',
     lines: [
       { who: 'B', th: 'สวัสดี{Pb}', rom: 'sa-wàt-dii {Pb}', en: 'Hello.' },
@@ -15,7 +15,7 @@ window.DIALOGUES = {
       { who: 'A', th: 'สวัสดี{P}', rom: 'sa-wàt-dii {P}', en: 'Goodbye.' },
     ],
   },
-  1: {
+  'getting-by': {
     scene: 'A shopkeeper asks you something, a little too fast.', you: 'the visitor',
     lines: [
       { who: 'B', th: 'คุณชื่ออะไร{Pbq}', rom: 'khun chûue a-rai {Pbq}', en: "What's your name?" },
@@ -27,7 +27,7 @@ window.DIALOGUES = {
       { who: 'B', th: 'ยินดีที่ได้รู้จัก{Pb}', rom: 'yin-dii thîi dâi rúu-jàk {Pb}', en: 'Nice to meet you too.' },
     ],
   },
-  2: {
+  'food-shopping': {
     scene: 'You are eating at a small restaurant.', you: 'the customer',
     lines: [
       { who: 'A', th: 'ขอน้ำเปล่า{P}', rom: 'khɔ̌ɔ náam plàao {P}', en: 'May I have plain water, please?' },
@@ -40,7 +40,7 @@ window.DIALOGUES = {
       { who: 'B', th: 'หนึ่งร้อยบาท{Pb}', rom: 'nùeng rɔ́ɔi bàat {Pb}', en: 'One hundred baht.' },
     ],
   },
-  3: {
+  'numbers': {
     scene: 'Buying fruit at a market stall.', you: 'the shopper',
     lines: [
       { who: 'B', th: 'สวัสดี{Pb}', rom: 'sa-wàt-dii {Pb}', en: 'Hello.' },
@@ -52,7 +52,7 @@ window.DIALOGUES = {
       { who: 'B', th: 'ขอบคุณ{Pb}', rom: 'khɔ̀ɔp-khun {Pb}', en: 'Thank you.' },
     ],
   },
-  4: {
+  'money': {
     scene: 'Bargaining for a shirt at a night market.', you: 'the shopper',
     lines: [
       { who: 'A', th: 'อันนี้เท่าไร{Pq}', rom: 'an níi thâo-rài {Pq}', en: 'How much is this one?' },
@@ -65,7 +65,7 @@ window.DIALOGUES = {
       { who: 'B', th: 'ขอบคุณ{Pb}', rom: 'khɔ̀ɔp-khun {Pb}', en: 'Thank you.' },
     ],
   },
-  5: {
+  'want-have-can': {
     scene: 'A Thai friend checks in on you at lunchtime.', you: 'the visitor',
     lines: [
       { who: 'B', th: 'กินข้าวหรือยัง{Pbq}', rom: 'kin khâao rǔue yang {Pbq}', en: 'Have you eaten yet?' },
@@ -76,7 +76,7 @@ window.DIALOGUES = {
       { who: 'A', th: 'ได้{P}', rom: 'dâi {P}', en: 'OK, sure.' },
     ],
   },
-  6: {
+  'getting-around': {
     scene: 'Asking a passer-by the way back to your hotel.', you: 'the visitor',
     lines: [
       { who: 'A', th: 'ขอโทษ{P}', rom: 'khɔ̌ɔ-thôot {P}', en: 'Excuse me.' },
@@ -88,7 +88,7 @@ window.DIALOGUES = {
       { who: 'A', th: 'ขอบคุณ{P}', rom: 'khɔ̀ɔp-khun {P}', en: 'Thank you.' },
     ],
   },
-  7: {
+  'transport': {
     scene: 'Taking a taxi to the airport.', you: 'the passenger',
     lines: [
       { who: 'A', th: 'ไปสนามบิน{P}', rom: 'pai sa-nǎam-bin {P}', en: 'To the airport, please.' },
@@ -101,7 +101,7 @@ window.DIALOGUES = {
       { who: 'A', th: 'ไม่ต้องทอน{P}', rom: 'mâi tɔ̂ng thɔɔn {P}', en: 'Keep the change.' },
     ],
   },
-  8: {
+  'hotel': {
     scene: 'Checking in at your hotel.', you: 'the guest',
     lines: [
       { who: 'B', th: 'สวัสดี{Pb}', rom: 'sa-wàt-dii {Pb}', en: 'Hello.' },
@@ -114,7 +114,7 @@ window.DIALOGUES = {
       { who: 'B', th: 'เจ็ดโมง{Pb}', rom: 'jèt moong {Pb}', en: "Seven o'clock." },
     ],
   },
-  9: {
+  'ordering-food': {
     scene: 'Ordering lunch at a restaurant.', you: 'the customer',
     lines: [
       { who: 'A', th: 'ขอเมนูหน่อย{P}', rom: 'khɔ̌ɔ mee-nuu nɔ̀i {P}', en: 'The menu, please.' },
@@ -126,7 +126,7 @@ window.DIALOGUES = {
       { who: 'A', th: 'อิ่มแล้ว เช็คบิลด้วย{P}', rom: 'ìm lɛ́ɛo, chék bin dûai {P}', en: "I'm full. The bill, please." },
     ],
   },
-  10: {
+  'about-you': {
     scene: 'Chatting with someone at a café.', you: 'the visitor',
     lines: [
       { who: 'B', th: 'คุณมาจากไหน{Pbq}', rom: 'khun maa jàak nǎi {Pbq}', en: 'Where are you from?' },
@@ -137,7 +137,7 @@ window.DIALOGUES = {
       { who: 'A', th: '{I}ชอบประเทศไทย{P}', rom: '{I} chɔ̂ɔp pra-thêet thai {P}', en: 'I like Thailand.' },
     ],
   },
-  11: {
+  'time-feelings': {
     scene: 'A hot afternoon with a new friend.', you: 'the visitor',
     lines: [
       { who: 'B', th: 'วันนี้ร้อนมาก{Pb}', rom: 'wan-níi rɔ́ɔn mâak {Pb}', en: "It's very hot today." },
@@ -150,7 +150,7 @@ window.DIALOGUES = {
       { who: 'B', th: 'เจอกันพรุ่งนี้{Pb}', rom: 'joe kan phrûng-níi {Pb}', en: 'See you tomorrow.' },
     ],
   },
-  12: {
+  'health': {
     scene: "You're not feeling well and ask the hotel staff for help.", you: 'the guest',
     lines: [
       { who: 'A', th: 'ไม่สบาย{P}', rom: 'mâi sa-baai {P}', en: "I'm sick." },
@@ -162,7 +162,7 @@ window.DIALOGUES = {
       { who: 'A', th: 'ขอบคุณ{P}', rom: 'khɔ̀ɔp-khun {P}', en: 'Thank you.' },
     ],
   },
-  13: {
+  'small-talk': {
     scene: 'A friendly vendor starts chatting with you.', you: 'the visitor',
     lines: [
       { who: 'B', th: 'มาเที่ยวเหรอ{Pbq}', rom: 'maa thîao rǒe {Pbq}', en: 'Here on holiday?' },
@@ -174,7 +174,7 @@ window.DIALOGUES = {
       { who: 'A', th: 'ชอบมาก สนุกมาก{P}', rom: 'chɔ̂ɔp mâak, sa-nùk mâak {P}', en: "I like it a lot. It's a lot of fun." },
     ],
   },
-  14: {
+  'question-words': {
     scene: 'A friend tells you about their plans.', you: 'the friend',
     lines: [
       { who: 'B', th: 'พรุ่งนี้จะไปตลาด{Pb}', rom: 'phrûng-níi jà pai ta-làat {Pb}', en: "Tomorrow I'm going to the market." },
@@ -186,7 +186,7 @@ window.DIALOGUES = {
       { who: 'B', th: 'ตอนเช้า{Pb}', rom: 'tɔɔn cháao {Pb}', en: 'In the morning.' },
     ],
   },
-  15: {
+  'verbs': {
     scene: 'Shopping with a Thai friend.', you: 'the shopper',
     lines: [
       { who: 'A', th: 'รอ{I}ด้วย{P}', rom: 'rɔɔ {I} dûai {P}', en: 'Wait for me, please.' },
@@ -197,7 +197,7 @@ window.DIALOGUES = {
       { who: 'B', th: 'ได้ ไม่เป็นไร{Pb}', rom: 'dâi, mâi pen rai {Pb}', en: 'Sure, no problem.' },
     ],
   },
-  16: {
+  'days-times': {
     scene: 'Making weekend plans.', you: 'the visitor',
     lines: [
       { who: 'B', th: 'วันนี้วันอะไร{Pbq}', rom: 'wan-níi wan a-rai {Pbq}', en: 'What day is it today?' },
@@ -208,7 +208,7 @@ window.DIALOGUES = {
       { who: 'A', th: 'ได้ เจอกันพรุ่งนี้{P}', rom: 'dâi, joe kan phrûng-níi {P}', en: 'Sure. See you tomorrow.' },
     ],
   },
-  17: {
+  'places': {
     scene: 'Looking for a convenience store.', you: 'the visitor',
     lines: [
       { who: 'A', th: 'แถวนี้มีเซเว่นไหม{Pq}', rom: 'thɛ̌o níi mii see-wên mǎi {Pq}', en: 'Is there a 7-Eleven around here?' },
@@ -220,7 +220,7 @@ window.DIALOGUES = {
       { who: 'A', th: 'ขอบคุณ{P}', rom: 'khɔ̀ɔp-khun {P}', en: 'Thank you.' },
     ],
   },
-  18: {
+  'street-food': {
     scene: 'Ordering at a street food stall.', you: 'the customer',
     lines: [
       { who: 'A', th: 'ที่นี่อะไรอร่อย{Pq}', rom: 'thîi-nîi a-rai a-rɔ̀i {Pq}', en: "What's good here?" },
@@ -232,7 +232,7 @@ window.DIALOGUES = {
       { who: 'B', th: 'ได้{Pb}', rom: 'dâi {Pb}', en: 'Sure.' },
     ],
   },
-  19: {
+  'clothes': {
     scene: 'Trying on a shirt at a shop.', you: 'the shopper',
     lines: [
       { who: 'A', th: 'ลองได้ไหม{Pq}', rom: 'lɔɔng dâi mǎi {Pq}', en: 'Can I try it on?' },
@@ -244,7 +244,7 @@ window.DIALOGUES = {
       { who: 'A', th: 'โอเค เอาสีขาว{P}', rom: 'oo-khee, ao sǐi khǎao {P}', en: "OK, I'll take white." },
     ],
   },
-  20: {
+  'massage': {
     scene: 'Booking a Thai massage.', you: 'the customer',
     lines: [
       { who: 'A', th: 'นวดไทย ชั่วโมงละเท่าไร{Pq}', rom: 'nûat thai, chûa-moong lá thâo-rài {Pq}', en: 'How much is a Thai massage per hour?' },
@@ -257,7 +257,7 @@ window.DIALOGUES = {
       { who: 'A', th: 'สบายมาก{P}', rom: 'sa-baai mâak {P}', en: 'That feels really good.' },
     ],
   },
-  21: {
+  'beaches': {
     scene: 'Buying a boat ticket to an island.', you: 'the traveler',
     lines: [
       { who: 'A', th: 'ตั๋วเรือไปเกาะเท่าไร{Pq}', rom: 'tǔa ruea pai kɔ̀ thâo-rài {Pq}', en: 'How much is a boat ticket to the island?' },
@@ -270,7 +270,7 @@ window.DIALOGUES = {
       { who: 'B', th: 'ไม่ได้ อันตราย{Pb}', rom: 'mâi dâi, an-ta-raai {Pb}', en: "No, it's dangerous." },
     ],
   },
-  22: {
+  'temples': {
     scene: 'Visiting a temple.', you: 'the visitor',
     lines: [
       { who: 'A', th: 'เข้าไปได้ไหม{Pq}', rom: 'khâo pai dâi mǎi {Pq}', en: 'May I go in?' },
@@ -285,7 +285,7 @@ window.DIALOGUES = {
       { who: 'B', th: 'ดีมาก{Pb} ใจสงบ', rom: 'dii mâak {Pb}, jai sa-ngòp', en: 'Very good. A calm mind.' },
     ],
   },
-  23: {
+  'phone': {
     scene: 'At a phone shop at the airport.', you: 'the traveler',
     lines: [
       { who: 'A', th: 'อยากซื้อซิมการ์ด{P}', rom: 'yàak súue sim-káat {P}', en: 'I want to buy a SIM card.' },
@@ -298,7 +298,7 @@ window.DIALOGUES = {
       { who: 'B', th: 'มี{Pb}', rom: 'mii {Pb}', en: 'Yes, there is.' },
     ],
   },
-  24: {
+  'friends': {
     scene: 'Getting to know someone at a party.', you: 'the visitor',
     lines: [
       { who: 'B', th: 'อยู่ที่ไหน{Pbq}', rom: 'yùu thîi-nǎi {Pbq}', en: 'Where do you live?' },
@@ -311,7 +311,7 @@ window.DIALOGUES = {
       { who: 'A', th: 'ได้ ใจดีมาก{P}', rom: 'dâi, jai-dii mâak {P}', en: "Sure. You're very kind." },
     ],
   },
-  25: {
+  'reactions': {
     scene: 'A friend shares some news.', you: 'the friend',
     lines: [
       { who: 'B', th: '{Ib}ได้งานใหม่{Pb}', rom: '{Ib} dâi ngaan mài {Pb}', en: 'I got a new job.' },
@@ -322,7 +322,7 @@ window.DIALOGUES = {
       { who: 'A', th: 'ได้เลย{P}', rom: 'dâi loei {P}', en: 'Sure, of course.' },
     ],
   },
-  26: {
+  'family': {
     scene: "A friend introduces you to their family.", you: 'the visitor',
     lines: [
       { who: 'B', th: 'นี่ครอบครัว{Ib}{Pb}', rom: 'nîi khrɔ̂ɔp-khrua {Ib} {Pb}', en: 'This is my family.' },
@@ -335,7 +335,7 @@ window.DIALOGUES = {
       { who: 'A', th: 'ลูกชายหนึ่ง ลูกสาวหนึ่ง{P}', rom: 'lûuk-chaai nùeng, lûuk-sǎao nùeng {P}', en: 'One son and one daughter.' },
     ],
   },
-  27: {
+  'telling-time': {
     scene: 'Arranging to meet a friend for dinner.', you: 'the friend',
     lines: [
       { who: 'A', th: 'เจอกันกี่โมง{Pq}', rom: 'joe kan kìi moong {Pq}', en: 'What time shall we meet?' },
@@ -347,7 +347,7 @@ window.DIALOGUES = {
       { who: 'A', th: 'โอเค เจอกันหนึ่งทุ่มครึ่ง{P}', rom: 'oo-khee, joe kan nùeng thûm khrûeng {P}', en: 'OK, see you at half past seven.' },
     ],
   },
-  28: {
+  'airport': {
     scene: 'Arriving at the airport: immigration, then a missing bag.', you: 'the traveler',
     lines: [
       { who: 'B', th: 'ขอพาสปอร์ต{Pb}', rom: 'khɔ̌ɔ pháat-sa-pɔ̀ɔt {Pb}', en: 'Passport, please.' },
@@ -360,7 +360,7 @@ window.DIALOGUES = {
       { who: 'A', th: 'เที่ยวบินจากเชียงใหม่{P}', rom: 'thîao-bin jàak chiang-mài {P}', en: 'The flight from Chiang Mai.' },
     ],
   },
-  29: {
+  'comparing': {
     scene: 'Choosing between two bags at a shop.', you: 'the shopper',
     lines: [
       { who: 'A', th: 'อันไหนดีกว่า{Pq}', rom: 'an nǎi dii kwàa {Pq}', en: 'Which one is better?' },

@@ -16,6 +16,8 @@ The app has two modes, side by side:
   4. Graduated interval recall: lines come back at growing intervals, and a few from the previous lesson open the next.
   5. Closing conversation at natural speed.
 
+- **Song** learns lyrics line by line ([app/songs.js](app/songs.js)): key words first (they also join Words as a unit), then each line built from the end, "what comes next?" chaining, run-throughs from the top, and finally the whole song spoken, before singing it with the recording. Lyrics belong to their writers; add only songs you have the right to use.
+
 ### Inside a phrase drill
 
 Optional extras:

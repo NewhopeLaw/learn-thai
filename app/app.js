@@ -50,7 +50,20 @@
   store.items = store.items || {};
   store.log = store.log || {};   // day -> cards reviewed
   store.secs = store.secs || {};  // day -> seconds studied
-  store.lessons = store.lessons || {}; // unit index -> time the lesson was finished
+  store.lessons = store.lessons || {}; // unit key -> time the Talk lesson was finished
+  store.songs = store.songs || {};     // song id -> time the song was learned
+  const UNITS = window.COURSE.units;
+  const unitKey = u => UNITS[u].key;
+  const unitIndex = key => UNITS.findIndex(x => x.key === key);
+  // v3: lessons used to be keyed by unit number; units now carry a stable key so they can be reordered.
+  if (!(store.lessonsV >= 3)) {
+    const OLD = ['greetings','getting-by','food-shopping','numbers','money','want-have-can','getting-around','transport','hotel','ordering-food','about-you','time-feelings','health','small-talk','question-words','verbs','days-times','places','street-food','clothes','massage','beaches','temples','phone','friends','reactions','family','telling-time','airport','comparing'];
+    const moved = {};
+    for (const [k, v] of Object.entries(store.lessons)) moved[/^\d+$/.test(k) ? (OLD[+k] || k) : k] = v;
+    store.lessons = moved;
+    delete store.settings.focusUnit; delete store.settings.talkUnit;
+    store.lessonsV = 3;
+  }
   const S = store.settings;
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch {} };
   const startOfToday = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
@@ -461,8 +474,8 @@
   const NATIVE_RATE = 1.0; // the opening and closing conversations play at natural speed
   const TALK_LADDER = [8, 30, 90, 240]; // seconds: graduated interval recall within a lesson
   function nextTalk() {
-    if (S.talkUnit != null && DIALOGUES[S.talkUnit] && !store.lessons[S.talkUnit]) return S.talkUnit;
-    for (let u = 0; u < window.COURSE.units.length; u++) if (DIALOGUES[u] && !store.lessons[u]) return u;
+    if (S.talkUnit != null && DIALOGUES[unitKey(S.talkUnit)] && !store.lessons[unitKey(S.talkUnit)]) return S.talkUnit;
+    for (let u = 0; u < UNITS.length; u++) if (DIALOGUES[unitKey(u)] && !store.lessons[unitKey(u)]) return u;
     return null;
   }
   const lessonName = u => `Lesson ${u + 1} · ${window.COURSE.units[u].title.replace(/^Unit \d+ · /, '')}`;
@@ -582,7 +595,7 @@
     }
   }
   async function runTalk(u) {
-    const d = DIALOGUES[u];
+    const d = DIALOGUES[unitKey(u)];
     const label = lessonName(u);
     const t0 = Date.now();
     talkMode = true;
@@ -592,7 +605,7 @@
     await narrate(`${label.replace('·', '.')}. ${d.scene} Listen to the conversation at natural speed. Don't worry about understanding everything yet.`);
     await playDialogue(d, false, NATIVE_RATE);
     // A few lines from the most recent lesson, so they carry across lessons.
-    const prev = Object.keys(store.lessons).map(Number).filter(k => k !== u && DIALOGUES[k]).sort((a, b) => store.lessons[b] - store.lessons[a])[0];
+    const prev = Object.keys(store.lessons).filter(k => k !== unitKey(u) && DIALOGUES[k]).sort((a, b) => store.lessons[b] - store.lessons[a])[0];
     if (prev != null) {
       phase('From last time', 8);
       await narrate('First, a few lines from last time.');
@@ -622,7 +635,7 @@
     phase('Closing conversation', 96);
     await narrate(`Here's the conversation again at natural speed. Notice how much more you understand now.`);
     await playDialogue(d, true, NATIVE_RATE);
-    store.lessons[u] = Date.now();
+    store.lessons[unitKey(u)] = Date.now();
     if (S.talkUnit === u) delete S.talkUnit;
     store.log[dayKey()] = (store.log[dayKey()] || 0) + n;
     store.secs[dayKey()] = (store.secs[dayKey()] || 0) + Math.round((Date.now() - t0) / 1000);
@@ -680,7 +693,7 @@
   async function startTalk(u) {
     if (!synth) return alert('This browser has no speech support. Try Chrome or Edge.');
     if (u == null) u = nextTalk();
-    if (u == null || !DIALOGUES[u]) return alert('Every lesson is done. Replay any of them from the list.');
+    if (u == null || !DIALOGUES[unitKey(u)]) return alert('Every lesson is done. Replay any of them from the list.');
     beginSession();
     try {
       await runTalk(u);
@@ -722,7 +735,7 @@
     grades: $('grades'), unit: $('unit'), bar: $('bar'), count: $('count'), pause: $('pause'),
   };
 
-  const TABS = ['words', 'talk', 'more'];
+  const TABS = ['words', 'talk', 'song', 'more'];
   let tab = 'words';
   let offlineReady = null; // set by the offline section
   function show(view) {
@@ -787,12 +800,13 @@
     // Talk
     const t = nextTalk();
     const doneTalk = Object.keys(store.lessons).filter(k => DIALOGUES[k]).length;
-    $('statTalk').textContent = `${doneTalk} of ${Object.keys(DIALOGUES).length}`;
+    $('statTalk').textContent = `${doneTalk} of ${UNITS.filter(x => DIALOGUES[x.key]).length}`;
     $('talkNext').textContent = t != null ? lessonName(t) : 'All lessons done';
-    $('talkScene').textContent = t != null ? DIALOGUES[t].scene : 'Replay any lesson from the list below.';
+    $('talkScene').textContent = t != null ? DIALOGUES[unitKey(t)].scene : 'Replay any lesson from the list below.';
     $('startTalk').hidden = t == null;
-    $('talkEstimate').textContent = t != null ? `About ${8 + DIALOGUES[t].lines.length * 2} min · no buttons needed, just listen and speak` : '';
+    $('talkEstimate').textContent = t != null ? `About ${8 + DIALOGUES[unitKey(t)].lines.length * 2} min · no buttons needed, just listen and speak` : '';
     renderLessons();
+    renderSongs();
     renderProgress();
     renderVocab();
     renderChip();
@@ -801,26 +815,223 @@
   function renderLessons() {
     const list = $('lessonList');
     list.innerHTML = '';
-    for (const [k, d] of Object.entries(DIALOGUES)) {
-      const u = +k;
+    UNITS.forEach((unit, u) => {
+      const d = DIALOGUES[unit.key];
+      if (!d) return;
+      const done = store.lessons[unit.key];
       const row = document.createElement('div');
-      row.className = 'lesson-row' + (store.lessons[u] ? ' done' : '');
+      row.className = 'lesson-row' + (done ? ' done' : '');
       const text = document.createElement('div');
       text.className = 'lesson-text';
       const title = document.createElement('b');
-      title.textContent = (store.lessons[u] ? '✓ ' : '') + lessonName(u);
+      title.textContent = (done ? '✓ ' : '') + lessonName(u);
       const scene = document.createElement('span');
       scene.className = 'muted small';
       scene.textContent = d.scene;
       text.append(title, scene);
       const b = document.createElement('button');
       b.className = 'study-next';
-      b.textContent = store.lessons[u] ? 'Replay' : 'Play';
+      b.textContent = done ? 'Replay' : 'Play';
       b.onclick = () => startTalk(u);
       row.append(text, b);
       list.appendChild(row);
-    }
+    });
   }
+
+  // ---------- Song: learn lyrics line by line ----------
+  const SONGS = window.SONGS || [];
+  async function sayText(text, folder, rate) {
+    currentText = text; currentFolder = folder;
+    checkpoint(); await speakThai(text, folder, rate); checkpoint();
+  }
+  async function runSong(song) {
+    const folder = voiceOf('A');
+    const t0 = Date.now();
+    talkMode = true;
+    ui.unit.textContent = song.title;
+    setBar('line');
+    const lines = song.sections.flatMap(sec => sec.lines.map(l => ({ ...l, section: sec.name })));
+    phase('Key words', 2);
+    await narrate(`${song.titleEn}. First, the key words.`);
+    for (const w of song.words) {
+      await step(async () => {
+        stage('listen', 'Listen', w.en, w.rom);
+        await en(w.en);
+        await sayText(w.th, folder);
+        stage('speak', 'Repeat', w.en, w.rom);
+        await wait(repeatGap(w.th));
+      });
+    }
+    await narrate('Now the lines, one at a time. Spoken, not sung, so you hear every word.');
+    for (let i = 0; i < lines.length; i++) {
+      const L = lines[i];
+      phase(`${L.section} · line ${i + 1} of ${lines.length}`, 10 + Math.round((75 * i) / lines.length));
+      await step(async () => {
+        stage('listen', L.section, L.en, L.rom);
+        await en(L.en);
+        await sayText(L.th, folder);
+        await wait(400);
+        const chunks = L.th.split(' ').filter(Boolean);
+        const steps = [];
+        for (let k = chunks.length - 1; k >= 0; k--) steps.push(chunks.slice(k).join(' '));
+        if (steps.length > 1) await en('From the end.');
+        for (const st of steps) {
+          const rom = st === L.th ? L.rom : '';
+          stage('listen', 'Listen', L.en, rom);
+          await sayText(st, folder);
+          stage('speak', 'Repeat', L.en, rom);
+          await wait(repeatGap(st));
+        }
+      });
+      if (i > 0) {
+        // Chaining: songs are remembered in order, so hear the previous line and say this one.
+        await step(async () => {
+          stage('listen', 'Listen', '');
+          await en('What comes next?');
+          await sayText(lines[i - 1].th, folder);
+          stage('speak', 'Say the next line', lines[i - 1].en);
+          await wait(S.pause * 1000 + L.th.length * 50);
+          stage('listen', 'Listen', L.en, L.rom);
+          await sayText(L.th, folder);
+          stage('speak', 'Repeat', L.en, L.rom);
+          await wait(repeatGap(L.th));
+        });
+      }
+      if ((i + 1) % 3 === 0 || i === lines.length - 1) {
+        await narrate('From the top.');
+        for (let k = 0; k <= i; k++) {
+          await step(async () => {
+            stage('speak', 'Say it', lines[k].en);
+            await wait(S.pause * 750 + lines[k].th.length * 40);
+            stage('listen', 'Listen', lines[k].en, lines[k].rom);
+            await sayText(lines[k].th, folder);
+            await wait(300);
+          });
+        }
+      }
+    }
+    phase('All together', 92);
+    await narrate('The whole song, spoken. Then sing it with the recording.');
+    for (const L of lines) await step(async () => { stage('listen', L.section, L.en, L.rom); await sayText(L.th, folder); await wait(500); });
+    store.songs[song.id] = Date.now();
+    store.log[dayKey()] = (store.log[dayKey()] || 0) + lines.length;
+    store.secs[dayKey()] = (store.secs[dayKey()] || 0) + Math.round((Date.now() - t0) / 1000);
+    save();
+    phase('Done', 100);
+  }
+  async function startSong(id) {
+    if (!synth) return alert('This browser has no speech support. Try Chrome or Edge.');
+    const song = SONGS.find(x => x.id === id);
+    if (!song) return;
+    beginSession();
+    try {
+      await runSong(song);
+      stage('listen', 'Done!', '');
+      setBar('none');
+      await narrate('Now open the recording and sing along.');
+    } catch (e) { if (e !== STOP) console.error(e); }
+    finish();
+  }
+  function renderSongs() {
+    const box = $('songList');
+    box.innerHTML = '';
+    const showRom = $('songRom').checked;
+    for (const song of SONGS) {
+      const card = document.createElement('div');
+      card.className = 'card song';
+      const h = document.createElement('h2');
+      h.className = 'card-title';
+      h.textContent = `${store.songs[song.id] ? '✓ ' : ''}${song.title} · ${song.titleEn}`;
+      const artist = document.createElement('p');
+      artist.className = 'muted small';
+      artist.textContent = song.artist;
+      const about = document.createElement('p');
+      about.className = 'small';
+      about.textContent = song.about || '';
+      const row = document.createElement('div');
+      row.className = 'row';
+      const learn = document.createElement('button');
+      learn.className = 'primary';
+      learn.textContent = store.songs[song.id] ? 'Learn it again' : 'Learn the song';
+      learn.onclick = () => startSong(song.id);
+      row.appendChild(learn);
+      if (song.video) {
+        const sing = document.createElement('button');
+        sing.textContent = 'Sing along';
+        sing.onclick = () => {
+          const old = card.querySelector('.video');
+          if (old) { old.remove(); return; }
+          const wrap = document.createElement('div');
+          wrap.className = 'video';
+          wrap.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(song.video)}" title="${song.titleEn}" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+          card.insertBefore(wrap, lyrics);
+        };
+        row.appendChild(sing);
+      }
+      if (song.source) {
+        const a = document.createElement('a');
+        a.href = song.source; a.target = '_blank'; a.rel = 'noopener';
+        a.className = 'link-btn';
+        a.textContent = song.video ? 'MP3 and chords' : 'Recording, MP3 and chords';
+        row.appendChild(a);
+      }
+      const lyrics = document.createElement('div');
+      lyrics.className = 'lyrics';
+      for (const sec of song.sections) {
+        const sh = document.createElement('p');
+        sh.className = 'muted small section-name';
+        sh.textContent = sec.name;
+        lyrics.appendChild(sh);
+        for (const L of sec.lines) {
+          const line = document.createElement('div');
+          line.className = 'lyric-row';
+          const play = document.createElement('button');
+          play.className = 'play';
+          play.textContent = '▶';
+          play.setAttribute('aria-label', `Play: ${L.en}`);
+          play.onclick = () => { if (run && !run.paused) togglePause(); silence(); speakThai(L.th, voiceOf('A')); };
+          const txt = document.createElement('div');
+          txt.className = 'lyric-text';
+          const th = document.createElement('span');
+          th.className = 'thai';
+          th.textContent = L.th;
+          txt.appendChild(th);
+          if (showRom) {
+            const r = document.createElement('span');
+            r.className = 'muted small vocab-rom';
+            r.textContent = `${L.rom} · ${L.en}`;
+            txt.appendChild(r);
+          }
+          line.append(play, txt);
+          lyrics.appendChild(line);
+        }
+      }
+      const words = document.createElement('details');
+      const ws = document.createElement('summary');
+      ws.textContent = `Key words (${song.words.length}) · also in Words as "Song · ${song.titleEn}"`;
+      words.appendChild(ws);
+      for (const w of song.words) {
+        const wr = document.createElement('div');
+        wr.className = 'vocab-row';
+        const play = document.createElement('button');
+        play.className = 'play'; play.textContent = '▶';
+        play.onclick = () => { silence(); speakThai(w.th, voiceOf('A')); };
+        const t = document.createElement('span');
+        t.className = 'vocab-text';
+        t.textContent = `${w.th} · ${w.en}`;
+        const r = document.createElement('span');
+        r.className = 'muted small vocab-rom';
+        r.textContent = w.rom;
+        t.appendChild(r);
+        wr.append(play, t);
+        words.appendChild(wr);
+      }
+      card.append(h, artist, about, row, lyrics, words);
+      box.appendChild(card);
+    }
+    $('songIntro').hidden = SONGS.length > 0;
+  }
+  $('songRom').onchange = renderSongs;
 
   // ---------- vocabulary list ----------
   const vocabOpen = new Set();
@@ -911,7 +1122,7 @@
       row.innerHTML = `<div class="unit-head"><span></span><span class="muted small">${items.length - c.new} / ${items.length}</span></div>
         <div class="stack" role="img" aria-label="${c.mastered} mastered, ${c.known} known, ${c.learning} learning, ${c.new} new">
           <i class="mastered" style="width:${pct('mastered')}"></i><i class="known" style="width:${pct('known')}"></i><i class="learning" style="width:${pct('learning')}"></i></div>`;
-      row.querySelector('.unit-head span').textContent = u.title + (store.lessons[ui_] ? '  ✓' : '');
+      row.querySelector('.unit-head span').textContent = u.title + (store.lessons[u.key] ? '  ✓' : '');
       const weak = items.filter(i => ['new', 'learning'].includes(strength(i.id)));
       if (weak.length) {
         const b = document.createElement('button');
@@ -1063,6 +1274,9 @@
     for (const k of ['log', 'secs']) {
       for (const [d, v] of Object.entries(remote[k] || {})) store[k][d] = Math.max(store[k][d] || 0, v);
     }
+    for (const k of ['lessons', 'songs']) {
+      for (const [id, v] of Object.entries(remote[k] || {})) if (!/^\d+$/.test(id)) store[k][id] = Math.max(store[k][id] || 0, v);
+    }
   }
   function renderSync(msg) {
     $('syncOff').hidden = !!sync.token;
@@ -1076,7 +1290,7 @@
     await ensureBranch();
     const cur = await gh(`/repos/${REPO}/contents/${PROFILE_FILE}?ref=${BRANCH}`, {}, true);
     if (cur) merge(JSON.parse(unb64(cur.content)));
-    const content = JSON.stringify({ name: S.name, items: store.items, log: store.log, secs: store.secs, settings: S, saved: new Date().toISOString() }, null, 1);
+    const content = JSON.stringify({ name: S.name, items: store.items, log: store.log, secs: store.secs, lessons: store.lessons, songs: store.songs, settings: S, saved: new Date().toISOString() }, null, 1);
     await gh(`/repos/${REPO}/contents/${PROFILE_FILE}`, {
       method: 'PUT',
       body: JSON.stringify({ message: `Progress: ${S.name || profile}`, content: b64(content), branch: BRANCH, ...(cur ? { sha: cur.sha } : {}) }),

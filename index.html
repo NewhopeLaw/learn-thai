@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Learn Thai by Ear</title>
   <meta name="description" content="Free audio-first Thai course: listen, recall out loud, and review with spaced repetition. No reading required.">
-  <link rel="stylesheet" href="app/style.css?v=19">
+  <link rel="stylesheet" href="app/style.css?v=20">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#b5452b">
   <link rel="icon" type="image/png" href="app/icons/icon-192.png">
@@ -79,6 +79,15 @@
 
       <h2 class="card-title section-title">All lessons</h2>
       <div id="lessonList"></div>
+    </section>
+
+    <!-- Song: learn lyrics -->
+    <section id="song" class="view" hidden>
+      <h1>Song</h1>
+      <p class="muted small">Learn a song line by line: key words, each line built from the end, then "what comes next?" chaining, then the whole song. Finally sing it with the recording.</p>
+      <label class="check"><input id="songRom" type="checkbox" checked> Show romanization and meaning</label>
+      <p id="songIntro" class="muted small" hidden>No songs yet.</p>
+      <div id="songList"></div>
     </section>
 
     <!-- More -->
@@ -240,12 +249,14 @@
   <nav id="tabbar" class="tabbar" hidden>
     <button data-tab="words"><span aria-hidden="true">≡</span>Words</button>
     <button data-tab="talk"><span aria-hidden="true">❝</span>Talk</button>
+    <button data-tab="song"><span aria-hidden="true">♪</span>Song</button>
     <button data-tab="more"><span aria-hidden="true">⋯</span>More</button>
   </nav>
 
-  <script src="app/course.js?v=19"></script>
-  <script src="app/dialogues.js?v=19"></script>
-  <script src="app/audio-manifest.js?v=19"></script>
-  <script src="app/app.js?v=19"></script>
+  <script src="app/course.js?v=20"></script>
+  <script src="app/dialogues.js?v=20"></script>
+  <script src="app/songs.js?v=20"></script>
+  <script src="app/audio-manifest.js?v=20"></script>
+  <script src="app/app.js?v=20"></script>
 </body>
 </html>

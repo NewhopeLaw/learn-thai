@@ -15,6 +15,7 @@
 window.COURSE = {
   units: [
     {
+      key: 'greetings',
       title: 'Unit 1 · Greetings',
       items: [
         { id: 'hello', en: 'hello', th: 'สวัสดี', rom: 'sa-wàt-dii',
@@ -38,6 +39,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'getting-by',
       title: 'Unit 2 · Getting by',
       items: [
         { id: 'yes', en: "yes, that's right", th: 'ใช่', rom: 'châi' },
@@ -60,6 +62,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'food-shopping',
       title: 'Unit 3 · Food and shopping',
       items: [
         { id: 'water', en: 'water', th: 'น้ำ', rom: 'náam' },
@@ -80,6 +83,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'numbers',
       title: 'Unit 4 · Numbers',
       items: [
         { id: 'n1', en: 'one', th: 'หนึ่ง', rom: 'nùeng' },
@@ -99,6 +103,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'money',
       title: 'Unit 5 · Money and bargaining',
       items: [
         { id: 'n50', en: 'fifty', th: 'ห้าสิบ', rom: 'hâa-sìp' },
@@ -128,6 +133,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'want-have-can',
       title: 'Unit 6 · Want, have, can',
       items: [
         { id: 'want-to', en: 'I want to', th: 'อยาก', rom: 'yàak' },
@@ -154,6 +160,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'getting-around',
       title: 'Unit 7 · Getting around',
       items: [
         { id: 'going-where', en: 'where are you going?', th: 'ไปไหน{Pq}', rom: 'pai nǎi {Pq}',
@@ -175,6 +182,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'transport',
       title: 'Unit 8 · Taxis and transport',
       items: [
         { id: 'taxi', en: 'taxi', th: 'แท็กซี่', rom: 'thɛ́k-sîi' },
@@ -200,6 +208,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'hotel',
       title: 'Unit 9 · At the hotel',
       items: [
         { id: 'room', en: 'room', th: 'ห้อง', rom: 'hɔ̂ng' },
@@ -224,6 +233,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'ordering-food',
       title: 'Unit 10 · Ordering food',
       items: [
         { id: 'menu', en: 'the menu, please', th: 'ขอเมนูหน่อย{P}', rom: 'khɔ̌ɔ mee-nuu nɔ̀i {P}' },
@@ -254,6 +264,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'about-you',
       title: 'Unit 11 · About you',
       items: [
         { id: 'from-where', en: 'where are you from?', th: 'คุณมาจากไหน{Pq}', rom: 'khun maa jàak nǎi {Pq}',
@@ -271,6 +282,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'time-feelings',
       title: 'Unit 12 · Time and feelings',
       items: [
         { id: 'today', en: 'today', th: 'วันนี้', rom: 'wan-níi' },
@@ -292,6 +304,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'health',
       title: 'Unit 13 · Health and help',
       items: [
         { id: 'help', en: 'help!', th: 'ช่วยด้วย', rom: 'chûai dûai' },
@@ -317,6 +330,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'small-talk',
       title: 'Unit 14 · Small talk',
       items: [
         { id: 'holiday', en: "I'm here on holiday", th: 'มาเที่ยว{P}', rom: 'maa thîao {P}' },
@@ -344,6 +358,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'question-words',
       title: 'Unit 15 · Question words',
       items: [
         { id: 'q-who', en: 'who?', th: 'ใคร', rom: 'khrai' },
@@ -364,6 +379,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'verbs',
       title: 'Unit 16 · Everyday verbs',
       items: [
         { id: 'v-come', en: 'to come', th: 'มา', rom: 'maa' },
@@ -383,6 +399,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'days-times',
       title: 'Unit 17 · Days and times',
       items: [
         { id: 'd-mon', en: 'Monday', th: 'วันจันทร์', rom: 'wan jan' },
@@ -403,6 +420,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'places',
       title: 'Unit 18 · Places and directions',
       items: [
         { id: 'p-market', en: 'market', th: 'ตลาด', rom: 'ta-làat' },
@@ -423,6 +441,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'street-food',
       title: 'Unit 19 · Street food',
       items: [
         { id: 'f-som-tam', en: 'papaya salad', th: 'ส้มตำ', rom: 'sôm-tam' },
@@ -442,6 +461,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'clothes',
       title: 'Unit 20 · Clothes, colors and sizes',
       items: [
         { id: 'c-shirt', en: 'shirt', th: 'เสื้อ', rom: 'sûea' },
@@ -462,6 +482,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'massage',
       title: 'Unit 21 · Massage and spa',
       items: [
         { id: 'm-massage', en: 'massage', th: 'นวด', rom: 'nûat' },
@@ -481,6 +502,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'beaches',
       title: 'Unit 22 · Beaches and islands',
       items: [
         { id: 'b-island', en: 'island', th: 'เกาะ', rom: 'kɔ̀' },
@@ -500,6 +522,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'temples',
       title: 'Unit 23 · Temples and culture',
       items: [
         { id: 't-monk', en: 'monk', th: 'พระ', rom: 'phrá' },
@@ -544,6 +567,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'phone',
       title: 'Unit 24 · Phone and internet',
       items: [
         { id: 'i-sim', en: 'SIM card', th: 'ซิมการ์ด', rom: 'sim-káat' },
@@ -562,6 +586,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'friends',
       title: 'Unit 25 · Making friends',
       items: [
         { id: 'r-where-live-q', en: 'where do you live?', th: 'อยู่ที่ไหน{Pq}', rom: 'yùu thîi-nǎi {Pq}' },
@@ -582,6 +607,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'reactions',
       title: 'Unit 26 · Reactions',
       items: [
         { id: 'x-really-q', en: 'really?', th: 'จริงเหรอ', rom: 'jing rǒe' },
@@ -601,6 +627,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'family',
       title: 'Unit 27 · Family',
       items: [
         { id: 'fam-family', en: 'family', th: 'ครอบครัว', rom: 'khrɔ̂ɔp-khrua' },
@@ -626,6 +653,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'telling-time',
       title: 'Unit 28 · Telling the time',
       items: [
         { id: 'time-7am', en: 'seven in the morning', th: 'เจ็ดโมงเช้า', rom: 'jèt moong cháao',
@@ -649,6 +677,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'airport',
       title: 'Unit 29 · Airport and immigration',
       items: [
         { id: 'air-passport', en: 'passport', th: 'พาสปอร์ต', rom: 'pháat-sa-pɔ̀ɔt' },
@@ -674,6 +703,7 @@ window.COURSE = {
       ],
     },
     {
+      key: 'comparing',
       title: 'Unit 30 · Describing and comparing',
       items: [
         { id: 'cmp-cold', en: 'cold', th: 'หนาว', rom: 'nǎao' },
