@@ -1,0 +1,21 @@
+title: Learn Thai
+description: Free, beginner-friendly Thai lessons for English speakers — alphabet, tones, and everyday phrases.
+remote_theme: just-the-docs/just-the-docs
+plugins:
+  - jekyll-remote-theme
+  - jekyll-seo-tag
+
+color_scheme: light
+search_enabled: true
+heading_anchors: true
+
+aux_links:
+  "View on GitHub":
+    - "https://github.com/wonilsart/learn-thai"
+
+footer_content: "Lesson content licensed under <a href=\"https://creativecommons.org/licenses/by-sa/4.0/\">CC BY-SA 4.0</a>."
+
+exclude:
+  - README.md
+  - CONTRIBUTING.md
+  - LICENSE
