@@ -55,3 +55,14 @@ Speech currently uses the browser's built-in text-to-speech. Voice quality depen
 ## License
 
 Content is licensed under [CC BY-SA 4.0](LICENSE).
+
+### Thai voices
+
+Thai audio is pre-recorded with two neural voices, **Niwat (male)** and **Premwadee (female)**, stored in `audio/male/` and `audio/female/`. Learners can pick one or alternate both (button in the session, or `V`). After adding or changing phrases, regenerate the missing files:
+
+```
+pip install edge-tts
+python tools/generate_audio.py
+```
+
+The English narrator uses the browser's built-in voice.

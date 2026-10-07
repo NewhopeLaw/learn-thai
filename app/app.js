@@ -21,7 +21,7 @@
   const PROFILE_FILE = `progress/${profile}.json`;
   const DAY = 86400000;
   const LADDER = [8, 30, 90, 240]; // seconds between in-session recalls
-  const DEFAULTS = { name: '', gender: null, thaiRate: 0.8, pause: 4, maxNew: 6, mic: false, handsFree: false, peek: false };
+  const DEFAULTS = { name: '', gender: null, voice: 'both', thaiRate: 0.8, pause: 4, maxNew: 6, mic: false, handsFree: false, peek: false };
 
   // ---------- storage ----------
   let store;
@@ -75,6 +75,40 @@
     });
   }
 
+  // ---------- recorded Thai voices ----------
+  // Neural-voice recordings (tools/generate_audio.py); browser TTS is the fallback for anything missing.
+  const AUDIO = window.AUDIO || {};
+  const THAI_BASE_RATE = 0.85; // recordings are generated at -15% speed
+  const VOICE_ORDER = ['male', 'female', 'both'];
+  const VOICE_NAMES = { male: 'Niwat (male)', female: 'Premwadee (female)', both: 'Both, alternating' };
+  const player = new Audio();
+  player.preload = 'auto';
+  let alt = 0, hush = 0;
+  const voiceFolder = () => (S.voice === 'both' ? (alt++ % 2 ? 'female' : 'male') : S.voice === 'female' ? 'female' : 'male');
+  function playRecorded(text) {
+    const id = AUDIO[text];
+    if (!id) return Promise.resolve(false);
+    const h = hush;
+    return new Promise(res => {
+      let done = false;
+      const fin = ok => {
+        if (done) return; done = true; clearTimeout(t);
+        player.onended = player.onpause = player.onerror = null;
+        res(ok || hush !== h); // interrupted on purpose: don't fall back to TTS
+      };
+      const t = setTimeout(() => fin(true), 15000);
+      player.onended = () => fin(true);
+      player.onpause = () => fin(true);
+      player.onerror = () => fin(false);
+      player.src = `audio/${voiceFolder()}/${id}.mp3`;
+      player.preservesPitch = true;
+      player.defaultPlaybackRate = player.playbackRate = Math.min(2, Math.max(0.5, S.thaiRate / THAI_BASE_RATE));
+      player.play().catch(() => fin(false));
+    });
+  }
+  async function speakThai(text) { if (!(await playRecorded(text))) await rawSpeak(text, 'th', S.thaiRate); }
+  function silence() { hush++; synth?.cancel(); player.pause(); }
+
   // ---------- run control (pause / stop) ----------
   const STOP = Symbol('stop'), PAUSE = Symbol('pause'), SKIP = Symbol('skip'), GRADE = Symbol('grade');
   let run = null;
@@ -92,7 +126,7 @@
     checkpoint();
   }
   async function en(text) { checkpoint(); await rawSpeak(text, 'en', 1); checkpoint(); }
-  async function th(text) { checkpoint(); await rawSpeak(text, 'th', S.thaiRate); checkpoint(); }
+  async function th(text) { checkpoint(); await speakThai(text); checkpoint(); }
   // Time for the learner to repeat a Thai phrase out loud.
   const repeatGap = text => (1600 + text.length * 140) / Math.min(1, S.thaiRate);
   async function note(segments) {
@@ -304,6 +338,13 @@
       first: {}, last: null, sinceIntro: 0, unit: -1, current: null, tick: Date.now(),
     };
     run = { stopped: false, paused: false };
+    // Unlock audio playback on phones while we're still inside the tap.
+    const firstId = Object.values(AUDIO)[0];
+    if (firstId) {
+      player.muted = true;
+      player.src = `audio/male/${firstId}.mp3`;
+      player.play().then(() => { player.pause(); player.muted = false; }, () => { player.muted = false; });
+    }
     show('session');
     ui.unit.textContent = due.length ? 'Review' : '';
     progress(sess);
@@ -346,11 +387,11 @@
     syncNow();
   }
 
-  function stopSession() { if (run) { run.stopped = true; synth.cancel(); try { recognizer?.abort(); } catch {} } }
+  function stopSession() { if (run) { run.stopped = true; silence(); try { recognizer?.abort(); } catch {} } }
   function togglePause() {
     if (!run) return;
     run.paused = !run.paused;
-    if (run.paused) { synth.cancel(); try { recognizer?.abort(); } catch {} }
+    if (run.paused) { silence(); try { recognizer?.abort(); } catch {} }
     ui.pause.textContent = run.paused ? 'Resume' : 'Pause';
   }
 
@@ -453,6 +494,7 @@
   function renderVoiceInfo() {
     const el = document.getElementById('voiceInfo');
     if (!el) return;
+    if (Object.keys(window.AUDIO || {}).length) { el.textContent = ''; el.className = ''; return; } // recordings cover Thai
     if (!synth) { el.textContent = 'Your browser can’t speak. Use Chrome, Edge or Safari.'; el.className = 'warn'; return; }
     if (!voices.th) {
       el.innerHTML = 'No Thai voice found on this device. For the best voices open this page in <b>Microsoft Edge</b>, or install Thai speech: Windows Settings → Time & language → Speech; Android/iOS: add Thai text-to-speech.';
@@ -480,7 +522,7 @@
   $('setMic').onchange = e => { S.mic = e.target.checked; save(); };
   $('setHands').onchange = e => { S.handsFree = e.target.checked; save(); };
   $('setPeek').onchange = e => { S.peek = e.target.checked; save(); };
-  $('testVoice').onclick = () => { synth?.cancel(); rawSpeak(fill('สวัสดี{P}'), 'th', S.thaiRate); };
+  $('testVoice').onclick = () => { silence(); speakThai(fill('สวัสดี{P}')); };
   $('reset').onclick = () => {
     if (!confirm('Erase all progress on this device?')) return;
     store.items = {}; store.log = {}; store.secs = {}; save(); renderHome();
@@ -636,12 +678,21 @@
   $('start').onclick = startSession;
   $('stop').onclick = stopSession;
   ui.pause.onclick = togglePause;
-  function interrupt() { synth.cancel(); try { recognizer?.abort(); } catch {} }
+  function interrupt() { silence(); try { recognizer?.abort(); } catch {} }
   function pressGrade(g) { if (run?.canGrade && !run.paused) { run.grade = g; interrupt(); } }
   function pressKnow() { if (run && !run.paused) { run.skip = true; interrupt(); } }
   document.querySelectorAll('[data-grade]').forEach(b => b.onclick = () => pressGrade(b.dataset.grade));
   $('know').onclick = pressKnow;
-  $('replay').onclick = () => { if (sess?.current) { synth.cancel(); rawSpeak(sess.current, 'th', S.thaiRate); } };
+  $('replay').onclick = () => { if (sess?.current) { silence(); speakThai(sess.current); } };
+  function setVoice(v) {
+    S.voice = v; save();
+    const label = VOICE_NAMES[v];
+    $('voiceBtn').textContent = `Voice: ${label}`;
+    $('setVoice').value = v;
+  }
+  $('voiceBtn').onclick = () => setVoice(VOICE_ORDER[(VOICE_ORDER.indexOf(S.voice) + 1) % VOICE_ORDER.length]);
+  $('setVoice').onchange = e => setVoice(e.target.value);
+  setVoice(VOICE_ORDER.includes(S.voice) ? S.voice : 'both');
 
   document.addEventListener('keydown', e => {
     if (ui.session.hidden || e.target.closest('input,select,button')) return;
@@ -649,6 +700,7 @@
     else if (e.key === 'Escape') stopSession();
     else if (['1', '2', '3'].includes(e.key)) pressGrade(['again', 'good', 'easy'][+e.key - 1]);
     else if (e.key.toLowerCase() === 'k') pressKnow();
+    else if (e.key.toLowerCase() === 'v') $('voiceBtn').click();
     else if (!ui.grades.hidden && e.key.toLowerCase() === 'r') $('replay').click();
   });
 

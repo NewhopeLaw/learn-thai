@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Learn Thai by Ear</title>
   <meta name="description" content="Free audio-first Thai course: listen, recall out loud, and review with spaced repetition. No reading required.">
-  <link rel="stylesheet" href="app/style.css?v=5">
+  <link rel="stylesheet" href="app/style.css?v=6">
 </head>
 <body>
   <main>
@@ -91,13 +91,20 @@
         </ol>
         <p><b>Good</b> or <b>Easy</b> finishes a phrase for today. <b>Again</b> brings it back later in the session until you get it. Across days, a spaced-repetition schedule brings each one back just before you'd forget it. Try one session a day.</p>
         <p>Already know a phrase? Press <b>I know this</b> to skip it for a week, or use <b>I know this unit</b> under Your progress. During a quiz you can press <b>Good</b> as soon as you know the answer, without waiting for the audio.</p>
-        <p class="muted small">Keyboard: <kbd>1</kbd> Again · <kbd>2</kbd> Good · <kbd>3</kbd> Easy · <kbd>K</kbd> I know this · <kbd>R</kbd> replay · <kbd>Space</kbd> pause · <kbd>Esc</kbd> stop</p>
+        <p class="muted small">Keyboard: <kbd>1</kbd> Again · <kbd>2</kbd> Good · <kbd>3</kbd> Easy · <kbd>K</kbd> I know this · <kbd>V</kbd> switch voice · <kbd>R</kbd> replay · <kbd>Space</kbd> pause · <kbd>Esc</kbd> stop</p>
       </details>
 
       <details class="card">
         <summary>Settings</summary>
         <label class="field">Polite speech
           <select id="setGender"><option value="male">Speak as a man</option><option value="female">Speak as a woman</option></select>
+        </label>
+        <label class="field">Thai voice
+          <select id="setVoice">
+            <option value="male">Niwat (male)</option>
+            <option value="female">Premwadee (female)</option>
+            <option value="both">Both, alternating (trains your ear on each)</option>
+          </select>
         </label>
         <label class="field">Thai speaking speed <output id="rateVal"></output>
           <input id="setRate" type="range" min="0.5" max="1.2" step="0.05">
@@ -142,6 +149,7 @@
       </div>
 
       <div class="row center">
+        <button id="voiceBtn" title="Switch the Thai voice (V)">Voice</button>
         <button id="know">I know this <kbd>K</kbd></button>
         <button id="pause">Pause</button>
         <button id="stop" class="ghost">End session</button>
@@ -149,7 +157,8 @@
     </section>
   </main>
 
-  <script src="app/course.js?v=5"></script>
-  <script src="app/app.js?v=5"></script>
+  <script src="app/course.js?v=6"></script>
+  <script src="app/audio-manifest.js?v=6"></script>
+  <script src="app/app.js?v=6"></script>
 </body>
 </html>
