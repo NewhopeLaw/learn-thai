@@ -1,7 +1,7 @@
 // Service worker: makes the app work offline.
 //   App files: network first (so updates arrive), falling back to the cached copy.
 //   Audio: cache first. The page's "Download for offline" button fills AUDIO_CACHE in bulk.
-const SHELL_CACHE = 'learn-thai-shell-v7';
+const SHELL_CACHE = 'learn-thai-shell-v8';
 const AUDIO_CACHE = 'learn-thai-audio-v1';
 const SHELL = [
   './',
