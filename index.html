@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Learn Thai by Ear</title>
   <meta name="description" content="Free audio-first Thai course: listen, recall out loud, and review with spaced repetition. No reading required.">
-  <link rel="stylesheet" href="app/style.css?v=27">
+  <link rel="stylesheet" href="app/style.css?v=28">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#b5452b">
   <link rel="icon" type="image/png" href="app/icons/icon-192.png">
@@ -35,6 +35,8 @@
           <button class="big" data-gender="female">Speak as a woman</button>
         </div>
         <p class="muted small">No password needed. This browser remembers you.</p>
+        <button id="gRestore" class="ghost restore" hidden>Already learning? Restore my progress from Google</button>
+        <div id="gRestoreList" class="stack-buttons"></div>
       </div>
     </section>
 
@@ -113,7 +115,20 @@
       </div>
 
       <div class="card">
-        <h2 class="card-title">Sync with GitHub</h2>
+        <h2 class="card-title">Backup</h2>
+        <div id="gOff">
+          <p class="small">Sign in with Google once on each device. Your progress then saves to your Google Drive automatically, and your phone and PC stay in step.</p>
+          <button id="gConnect" class="primary">Sign in with Google</button>
+        </div>
+        <div id="gOn" class="row" hidden>
+          <button id="gSyncBtn">Back up now</button>
+          <button id="gOffBtn" class="ghost">Turn off</button>
+        </div>
+        <p id="gStatus" class="muted small"></p>
+      </div>
+
+      <details class="card">
+        <summary class="card-title">Advanced: sync with GitHub</summary>
         <div id="syncOff">
           <p class="small">Saves your progress to the <code>learn-thai</code> repo and keeps your devices in sync.</p>
           <details class="small">
@@ -143,7 +158,7 @@
           </div>
         </div>
         <p id="syncStatus" class="muted small"></p>
-      </div>
+      </details>
 
       <div class="card">
         <h2 class="card-title">Settings</h2>
@@ -172,7 +187,7 @@
       </div>
 
       <div class="card">
-        <h2 class="card-title">Backup</h2>
+        <h2 class="card-title">Backup file and learner</h2>
         <div class="row">
           <button id="exportBtn">Download backup</button>
           <button id="importBtn">Restore backup</button>
@@ -253,10 +268,11 @@
     <button data-tab="more"><span aria-hidden="true">⋯</span>More</button>
   </nav>
 
-  <script src="app/course.js?v=27"></script>
-  <script src="app/dialogues.js?v=27"></script>
-  <script src="app/songs.js?v=27"></script>
-  <script src="app/audio-manifest.js?v=27"></script>
-  <script src="app/app.js?v=27"></script>
+  <script src="app/config.js?v=28"></script>
+  <script src="app/course.js?v=28"></script>
+  <script src="app/dialogues.js?v=28"></script>
+  <script src="app/songs.js?v=28"></script>
+  <script src="app/audio-manifest.js?v=28"></script>
+  <script src="app/app.js?v=28"></script>
 </body>
 </html>
