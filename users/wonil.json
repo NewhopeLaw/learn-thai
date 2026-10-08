@@ -1,0 +1,176 @@
+{
+ "name": "wonil",
+ "items": {
+  "hello": {
+   "ease": 2.5,
+   "interval": 7,
+   "reps": 1,
+   "lapses": 0,
+   "due": 1791961200000,
+   "updated": 1791394278952
+  },
+  "particle": {
+   "ease": 2.5,
+   "interval": 7,
+   "reps": 1,
+   "lapses": 0,
+   "due": 1791961200000,
+   "updated": 1791394558802
+  },
+  "hello-polite": {
+   "ease": 2.5,
+   "interval": 1,
+   "lapses": 0,
+   "reps": 1,
+   "due": 1791442800000,
+   "updated": 1791394574517
+  },
+  "thanks": {
+   "ease": 2.5,
+   "interval": 1,
+   "lapses": 0,
+   "reps": 1,
+   "due": 1791442800000,
+   "updated": 1791394594811
+  },
+  "thanks-polite": {
+   "ease": 2.5,
+   "interval": 1,
+   "lapses": 0,
+   "reps": 1,
+   "due": 1791442800000,
+   "updated": 1791394647712
+  },
+  "fine": {
+   "ease": 2.5,
+   "interval": 1,
+   "lapses": 0,
+   "reps": 1,
+   "due": 1791442800000,
+   "updated": 1791394878282
+  },
+  "how-are-you": {
+   "ease": 2.5,
+   "interval": 1,
+   "lapses": 0,
+   "reps": 2,
+   "due": 1791442800000,
+   "updated": 1791395588352
+  },
+  "sorry": {
+   "ease": 2.5,
+   "interval": 1,
+   "lapses": 0,
+   "reps": 2,
+   "due": 1791442800000,
+   "updated": 1791395580633
+  },
+  "no-problem": {
+   "ease": 2.5,
+   "interval": 1,
+   "lapses": 0,
+   "reps": 2,
+   "due": 1791442800000,
+   "updated": 1791395660609
+  },
+  "yes": {
+   "ease": 2.5,
+   "interval": 1,
+   "lapses": 0,
+   "reps": 2,
+   "due": 1791442800000,
+   "updated": 1791397149361
+  },
+  "not-right": {
+   "ease": 2.5,
+   "interval": 1,
+   "lapses": 0,
+   "reps": 2,
+   "due": 1791442800000,
+   "updated": 1791397171830
+  },
+  "understand": {
+   "ease": 2.5,
+   "interval": 1,
+   "lapses": 0,
+   "reps": 2,
+   "due": 1791442800000,
+   "updated": 1791397230527
+  },
+  "not-understand": {
+   "ease": 2.5,
+   "interval": 1,
+   "lapses": 0,
+   "reps": 1,
+   "due": 1791442800000,
+   "updated": 1791397260822
+  },
+  "slowly": {
+   "ease": 2.5,
+   "interval": 1,
+   "lapses": 0,
+   "reps": 2,
+   "due": 1791442800000,
+   "updated": 1791397400243
+  },
+  "pronoun-i": {
+   "ease": 2.5,
+   "interval": 1,
+   "lapses": 0,
+   "reps": 1,
+   "due": 1791442800000,
+   "updated": 1791397422028
+  },
+  "name-q": {
+   "ease": 2.5,
+   "interval": 1,
+   "lapses": 0,
+   "reps": 2,
+   "due": 1791442800000,
+   "updated": 1791397729048
+  },
+  "nice-to-meet": {
+   "ease": 2.5,
+   "interval": 1,
+   "lapses": 0,
+   "reps": 2,
+   "due": 1791442800000,
+   "updated": 1791397618968
+  },
+  "water": {
+   "ease": 2.5,
+   "interval": 1,
+   "lapses": 0,
+   "reps": 1,
+   "due": 1791442800000,
+   "updated": 1791397745122
+  },
+  "plain-water": {
+   "ease": 2.5,
+   "interval": 1,
+   "lapses": 0,
+   "reps": 1,
+   "due": 1791442800000,
+   "updated": 1791397761523
+  }
+ },
+ "log": {
+  "2026-10-7": 23
+ },
+ "secs": {
+  "2026-10-7": 1281
+ },
+ "settings": {
+  "name": "wonil",
+  "gender": "male",
+  "voice": "male",
+  "thaiRate": 0.8,
+  "pause": 4,
+  "maxNew": 10,
+  "mic": false,
+  "handsFree": false,
+  "peek": false,
+  "planStart": 1791356400000
+ },
+ "saved": "2026-10-07T19:02:27.239Z"
+}

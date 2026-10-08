@@ -37,9 +37,19 @@
       }
     }
   } catch {}
+  const urlUser = (new URLSearchParams(location.search).get('u') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30);
+  const titleCase = w => w ? w[0].toUpperCase() + w.slice(1) : w;
+  if (urlUser) {
+    try {
+      const list = JSON.parse(localStorage.getItem(PROFILES_KEY) || '[]');
+      if (!list.some(p => p.slug === urlUser)) list.push({ slug: urlUser, name: titleCase(urlUser) });
+      localStorage.setItem(PROFILES_KEY, JSON.stringify(list));
+      localStorage.setItem(PROFILE_KEY, urlUser);
+    } catch {}
+  }
   try { profile = localStorage.getItem(PROFILE_KEY); profiles = JSON.parse(localStorage.getItem(PROFILES_KEY)) || []; } catch {}
   const KEY = profile ? `${BASE_KEY}:${profile}` : BASE_KEY;
-  const PROFILE_FILE = `progress/${profile}.json`;
+  const PROFILE_FILE = `users/${profile}.json`; // the learner's folder file, public at …/learn-thai/users/<name>.json
   const DAY = 86400000;
   const LADDER = [8, 30, 90, 240]; // seconds between in-session recalls
   const DEFAULTS = { name: '', gender: null, voice: 'both', thaiRate: 0.8, pause: 4, mic: false, handsFree: false, peek: false };
@@ -80,6 +90,23 @@
       if (!id.includes('~') && BY_ID[id] && !store.items[id + '~r']) store.items[id + '~r'] = { ...st, updated: Date.now() };
     }
     store.v = 2; save();
+  }
+
+  if (urlUser) {
+    try {
+      const list = JSON.parse(localStorage.getItem(PROFILES_KEY) || '[]');
+      const dupes = list.filter(p => p.slug !== urlUser && (p.slug.replace(/-[a-z0-9]{4}$/, '') === urlUser || (p.name || '').toLowerCase() === urlUser));
+      for (const d of dupes) {
+        const other = JSON.parse(localStorage.getItem(`${BASE_KEY}:${d.slug}`) || 'null');
+        if (!other) continue;
+        merge(other);
+        if (!S.gender && other.settings?.gender) Object.assign(S, other.settings);
+        localStorage.removeItem(`${BASE_KEY}:${d.slug}`);
+      }
+      if (dupes.length) localStorage.setItem(PROFILES_KEY, JSON.stringify(list.filter(p => !dupes.includes(p))));
+      if (!S.name) S.name = titleCase(urlUser);
+      save();
+    } catch {}
   }
 
   // ---------- gendered text ----------
@@ -1251,13 +1278,11 @@
     if (!confirm('Erase all progress on this device?')) return;
     store.items = {}; store.log = {}; store.secs = {}; save(); renderHome();
   };
+  // Back up: with a key it saves straight to the folder; without, it downloads <name>.json to upload there.
   $('exportBtn').onclick = () => {
-    const blob = new Blob([JSON.stringify(store, null, 1)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `learn-thai-progress-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    if (sync.token) { syncNow(); $('backupHelp').hidden = true; return; }
+    downloadBackup();
+    $('backupHelp').hidden = false;
   };
   $('importBtn').onclick = () => $('importFile').click();
   $('importFile').onchange = async e => {
@@ -1269,16 +1294,41 @@
       if (!data.items || typeof data.items !== 'object') throw new Error('not a progress file');
       if (!confirm('Replace the progress on this device with the backup?')) return;
       store.items = data.items; store.log = data.log || {}; store.secs = data.secs || {};
+      store.lessons = data.lessons || store.lessons; store.songs = data.songs || store.songs;
       Object.assign(S, data.settings || {});
       save(); renderHome(); syncNow();
     } catch (err) { alert('Could not read that file: ' + err.message); }
   };
 
+  // ---------- the learner's folder: users/<name>.json ----------
+  const myLink = () => new URL(`${profile}`, new URL('./', location.href)).href;
+  async function pullFolder() {
+    if (!profile) return;
+    try {
+      const r = await fetch(`users/${profile}.json`, { cache: 'no-store' });
+      if (!r.ok) return;
+      const data = await r.json();
+      merge(data);
+      if (!S.gender && data.settings?.gender) Object.assign(S, data.settings);
+      save();
+      if (!inSession && !ui.setup.hidden && S.gender) show('home');
+      else if (!inSession && ui.session.hidden && ui.setup.hidden) renderHome();
+    } catch {}
+  }
+  function downloadBackup() {
+    const blob = new Blob([JSON.stringify({ ...store, profile, name: S.name }, null, 1)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${profile || 'learner'}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
   // ---------- GitHub repo sync ----------
   // Each learner's progress (the same JSON as the backup file) is saved as
   // progress/<name>.json on the repo's "progress" branch, so it never triggers a site rebuild.
   const REPO = 'NewhopeLaw/learn-thai';
-  const BRANCH = 'progress';
+  const BRANCH = 'main';
   const SYNC_KEY = 'learn-thai-sync';
   let sync;
   try { sync = JSON.parse(localStorage.getItem(SYNC_KEY)) || {}; } catch { sync = {}; }
@@ -1378,6 +1428,26 @@
       document.head.appendChild(s);
     });
   }
+  function renderMyLink() {
+    if (!profile) return;
+    $('myLink').textContent = myLink().replace(/^https?:\/\//, '');
+    $('myLink').href = myLink();
+    $('backupFile').textContent = `${profile}.json`;
+  }
+  $('copyLink').onclick = async () => {
+    try { await navigator.clipboard.writeText(myLink()); $('copyLink').textContent = 'Copied'; setTimeout(() => ($('copyLink').textContent = 'Copy'), 1500); }
+    catch { prompt('Copy your link:', myLink()); }
+  };
+  $('qrLink').onclick = async () => {
+    const box = $('myQR');
+    if (!box.hidden) { box.hidden = true; box.innerHTML = ''; return; }
+    await loadQrLib();
+    const qr = window.qrcode(0, 'M');
+    qr.addData(myLink());
+    qr.make();
+    box.innerHTML = qr.createSvgTag({ cellSize: 5, margin: 3, scalable: true });
+    box.hidden = false;
+  };
   async function showLink(invite) {
     const box = $('linkBox');
     if (!box.hidden && box.dataset.invite === String(invite)) { box.hidden = true; $('linkQR').innerHTML = ''; return; }
@@ -1401,11 +1471,14 @@
   $('linkPhone').onclick = () => showLink(false);
   $('inviteLearner').onclick = () => showLink(true);
 
+  renderMyLink();
+  pullFolder();
   renderSync(linkedDevice ? 'Connected. Your progress backs up automatically.' : undefined);
   syncNow();
   // Coming back to the app (e.g. after practising on the other device): pull the latest.
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && !run && Date.now() - (sync.last || 0) > 60000) syncNow();
+    if (document.visibilityState === 'visible' && !run) pullFolder();
   });
   // A unique id behind the visible name (e.g. wonil-k3f9), saved automatically; nobody needs to know it.
   function newSlug(name) {
@@ -1419,7 +1492,7 @@
   document.querySelectorAll('[data-gender]').forEach(b => b.onclick = () => {
     const name = $('nameInput').value.trim();
     if (!name) { $('nameInput').focus(); $('nameInput').placeholder = 'Type your name first'; return; }
-    const slug = newSlug(name);
+    const slug = urlUser || newSlug(name);
     try {
       const key = `${BASE_KEY}:${slug}`;
       let data = JSON.parse(localStorage.getItem(key) || 'null');
@@ -1439,7 +1512,8 @@
     b.onclick = () => useProfile(p.slug);
     $('profileList').appendChild(b);
   }
-  $('existing').hidden = !profiles.length;
+  $('existing').hidden = !profiles.length || !!urlUser;
+  if (urlUser) $('nameInput').value = S.name || titleCase(urlUser);
   $('whoName').textContent = S.name || profile || '';
   $('whoName').onclick = () => $('switchUser').click(); // tap your name to switch learner
   $('switchUser').onclick = () => {

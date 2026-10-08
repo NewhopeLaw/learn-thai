@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Learn Thai by Ear</title>
   <meta name="description" content="Free audio-first Thai course: listen, recall out loud, and review with spaced repetition. No reading required.">
-  <link rel="stylesheet" href="app/style.css?v=31">
+  <link rel="stylesheet" href="app/style.css?v=32">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#b5452b">
   <link rel="icon" type="image/png" href="app/icons/icon-192.png">
@@ -113,9 +113,29 @@
       </div>
 
       <div class="card">
-        <h2 class="card-title">Automatic backup</h2>
+        <h2 class="card-title">Your link and backup</h2>
+        <p class="small">Open your personal link on any device to be you there. Your progress loads from your folder automatically.</p>
+        <p class="my-link"><a id="myLink" target="_blank" rel="noopener"></a></p>
+        <div class="row">
+          <button id="copyLink">Copy</button>
+          <button id="qrLink">Show QR code</button>
+          <button id="exportBtn" class="primary">Back up now</button>
+        </div>
+        <div id="myQR" class="qr" hidden></div>
+        <div id="backupHelp" class="small" hidden>
+          <p><b>Saved <span id="backupFile"></span></b> to your Downloads. To put it in your folder:</p>
+          <ol>
+            <li>Open <a href="https://github.com/NewhopeLaw/learn-thai/upload/main/users" target="_blank" rel="noopener">your users folder on GitHub</a> (signed in as NewhopeLaw).</li>
+            <li>Drag the file in and click <b>Commit changes</b>.</li>
+          </ol>
+          <p class="muted">About a minute later, every device that opens your link gets this progress.</p>
+        </div>
+      </div>
+
+      <details class="card">
+        <summary class="card-title">Automatic upload (optional)</summary>
         <div id="syncOff">
-          <p class="small">Set this up once on your PC. After that every learner and device backs up automatically, and new ones join by scanning a QR code.</p>
+          <p class="small">Connect a GitHub key once and <b>Back up now</b> uploads by itself, after every session too. No downloading or dragging.</p>
           <details class="small">
             <summary>How to get a key</summary>
             <ol>
@@ -144,7 +164,7 @@
           </div>
         </div>
         <p id="syncStatus" class="muted small"></p>
-      </div>
+      </details>
 
       <div class="card">
         <h2 class="card-title">Settings</h2>
@@ -173,10 +193,9 @@
       </div>
 
       <div class="card">
-        <h2 class="card-title">Backup file and learner</h2>
+        <h2 class="card-title">Learner</h2>
         <div class="row">
-          <button id="exportBtn">Download backup</button>
-          <button id="importBtn">Restore backup</button>
+          <button id="importBtn">Restore from a file</button>
           <input id="importFile" type="file" accept="application/json,.json" hidden>
         </div>
         <div class="row">
@@ -254,10 +273,10 @@
     <button data-tab="more"><span aria-hidden="true">⋯</span>More</button>
   </nav>
 
-  <script src="app/course.js?v=31"></script>
-  <script src="app/dialogues.js?v=31"></script>
-  <script src="app/songs.js?v=31"></script>
-  <script src="app/audio-manifest.js?v=31"></script>
-  <script src="app/app.js?v=31"></script>
+  <script src="app/course.js?v=32"></script>
+  <script src="app/dialogues.js?v=32"></script>
+  <script src="app/songs.js?v=32"></script>
+  <script src="app/audio-manifest.js?v=32"></script>
+  <script src="app/app.js?v=32"></script>
 </body>
 </html>

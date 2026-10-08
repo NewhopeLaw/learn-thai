@@ -263,3 +263,7 @@ body[data-level="A2"] .bottombar { background: var(--bg-a2); }
 
 button.link.who { color: inherit; font-size: inherit; text-decoration: none; border-bottom: 1px dashed var(--muted); padding: 0; }
 button.link.who::after { content: ' ▾'; color: var(--muted); }
+
+.my-link { font-size: 1.05rem; word-break: break-all; margin: 8px 0 0; }
+#backupHelp { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; }
+#backupHelp ol { padding-left: 20px; }

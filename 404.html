@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Learn Thai by Ear</title>
+  <script>
+    // Personal links: /learn-thai/clem opens the app as the learner "clem".
+    (function () {
+      var base = '/learn-thai/';
+      var p = location.pathname;
+      if (p.indexOf(base) === 0) {
+        var name = p.slice(base.length).split('/')[0];
+        if (/^[A-Za-z0-9-]{1,30}$/.test(name)) { location.replace(base + '?u=' + encodeURIComponent(name.toLowerCase())); }
+      }
+    })();
+  </script>
+</head>
+<body style="font-family: system-ui, sans-serif; padding: 24px">
+  <p>Page not found. <a href="/learn-thai/">Open Learn Thai</a></p>
+</body>
+</html>
