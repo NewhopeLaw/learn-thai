@@ -284,7 +284,7 @@
         stage('listen', 'Listen', it.en, fill(p.rom, true));
         await th(fill(p.th));
         stage('speak', 'Repeat', it.en, fill(p.rom, true));
-        await wait(repeatGap(fill(p.th)));
+        await wait(repeatGap(fill(p.th)) * 0.6); // pieces get a shorter pause than the whole phrase
       }
       await en('Now the whole thing.');
     }
@@ -550,7 +550,7 @@
         currentText = st.th; currentFolder = folder;
         checkpoint(); await speakThai(st.th, folder); checkpoint();
         stage('speak', 'Repeat', line.en, st.rom);
-        await wait(repeatGap(st.th));
+        await wait(repeatGap(st.th) * (st.th === text ? 1 : 0.6));
       }
       stage('listen', 'Listen', line.en, fill(line.rom, true));
       await sayLine(line);
@@ -880,7 +880,7 @@
           stage('listen', 'Listen', L.en, rom);
           await sayText(st, folder);
           stage('speak', 'Repeat', L.en, rom);
-          await wait(repeatGap(st));
+          await wait(repeatGap(st) * (st === L.th ? 1 : 0.6));
         }
       });
       if (i > 0) {
