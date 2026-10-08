@@ -33,31 +33,31 @@ About 1 hour a day, with roughly 10 new phrases per session. Set **New phrases p
 | 9 | Unit 6 · Want, have, can | Make your own sentences: "I want to go…", "do you have…?" |
 | 10 | Unit 7 · Question words | Ask yourself who, what, where, when about everything you see. |
 | 11 | Unit 8 · Everyday verbs and joining words | Join two things you learned with "but" and "because". |
-| 12 | Unit 9 · Airport and immigration | Imagine the arrival hall, start to finish. |
-| 13 | Unit 10 · Taxis, tuk-tuks and buses | "Please use the meter" and "I'll get off here" are worth knowing by heart. |
+| 12 | Unit 10 · Airport and immigration | Imagine the arrival hall, start to finish. |
+| 13 | Unit 11 · Taxis, tuk-tuks and buses | "Please use the meter" and "I'll get off here" are worth knowing by heart. |
 | 14 | Review day | No new phrases. Clear all reviews and replay the first ten units in the word list. |
 
 ### Week 3: directions, hotel, food
 
 | Day | Focus | Tip |
 |---|---|---|
-| 15 | Unit 11 · Getting around | Give yourself directions out loud on your next walk. Listen for tone: near and far sound almost the same. |
-| 16 | Unit 12 · Places and directions | Say where things are on your street: on the left, on the right, straight ahead. |
-| 17 | Unit 13 · At the hotel | Imagine your check-in, start to finish. |
-| 18 | Finish Unit 13, start Unit 14 · Ordering food | Role-play check-in, Wi-Fi and breakfast time, then order dinner. |
-| 19 | Unit 14 · Ordering food | Order your own dinner out loud in Thai, even at home. |
-| 20 | Unit 15 · Street food | Switch to one voice only for a session and see if it's harder. |
+| 15 | Unit 12 · Getting around | Give yourself directions out loud on your next walk. Listen for tone: near and far sound almost the same. |
+| 16 | Unit 13 · Places and directions | Say where things are on your street: on the left, on the right, straight ahead. |
+| 17 | Unit 14 · At the hotel | Imagine your check-in, start to finish. |
+| 18 | Finish Unit 14, start Unit 15 · Ordering food | Role-play check-in, Wi-Fi and breakfast time, then order dinner. |
+| 19 | Unit 15 · Ordering food | Order your own dinner out loud in Thai, even at home. |
+| 20 | Unit 16 · Street food | Switch to one voice only for a session and see if it's harder. |
 | 21 | Review day | No new phrases. Hands-free review on a walk. |
 
 ### Week 4: people, feelings, health, polish
 
 | Day | Focus | Tip |
 |---|---|---|
-| 22 | Unit 16 · Clothes, colors and sizes | Describe what you're wearing. |
-| 23 | Unit 17 · About you and Unit 18 · Family | Prepare a 3-sentence introduction of yourself and your family. |
-| 24 | Unit 19 · Making friends and Unit 20 · Small talk | Thais love it when visitors try. Practise a modest reply to compliments. |
-| 25 | Unit 21 · Reactions and heart words | "Jai yen yen" and "greng jai" open doors. Use them. |
-| 26 | Unit 26 · Health and help | Learn these well, and hope you never need them. Add your own allergies or medicines. |
+| 22 | Unit 17 · Clothes, colors and sizes | Describe what you're wearing. |
+| 23 | Unit 18 · About you and Unit 19 · Family | Prepare a 3-sentence introduction of yourself and your family. |
+| 24 | Unit 20 · Making friends and Unit 21 · Small talk | Thais love it when visitors try. Practise a modest reply to compliments. |
+| 25 | Unit 22 · Reactions and heart words | "Jai yen yen" and "greng jai" open doors. Use them. |
+| 26 | Unit 27 · Health and help | Learn these well, and hope you never need them. Add your own allergies or medicines. |
 | 27 | Role-play: taxi, hotel, restaurant | Airport to hotel to dinner, all out loud, using the Talk lessons. |
 | 28 | Numbers and prices drill | Replay the Numbers and Money units in the word list. Say random prices out loud. |
 | 29 | Reviews and small talk | Introduce yourself out loud three times, in different ways. |
@@ -65,4 +65,6 @@ About 1 hour a day, with roughly 10 new phrases per session. Set **New phrases p
 
 ## After the core units
 
-The remaining units (question words, verbs, days, places, street food, clothes, massage, beaches, temples, phone, making friends, reactions, family, telling the time, weather, airport, comparing) are extra. If you're ahead of schedule, pick the ones that match your trip in the **Words** tab with **Learn next**. Otherwise, keep them for the trip itself.
+The remaining A1 units (question words, verbs, days, places, street food, clothes, temples, faith, phone, making friends, reactions, family, telling the time, weather, airport, comparing) are extra. If you're ahead of schedule, pick the ones that match your trip in the **Words** tab with **Learn next**. Otherwise, keep them for the trip itself.
+
+Units 31 to 55 are the A2 stage: past, future and "-ing" markers, can, should and must, counting words, connectors, opinions, describing people and places, daily routine, work and study, plans, health, renting, phone calls, invitations and telling a story, plus massage and beaches. Start them once the A1 units feel comfortable, about one unit every two days.
