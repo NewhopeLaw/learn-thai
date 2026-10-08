@@ -166,6 +166,9 @@
     checkpoint(); await speakThai(text, folder, rate); checkpoint();
   }
   const romFor = (it, folder) => fillAs(it.rom, true, folder === 'female');
+  // Syllables in a romanization (split at spaces and hyphens). Reverse building is only worth it from 3 syllables up.
+  const syllables = rom => fillAs(rom, true, false).replace(/[,.?!]/g, '').split(/[\s-]+/).filter(Boolean).length;
+  const needsBuilding = rom => syllables(rom) >= 3;
   function silence() { hush++; synth?.cancel(); player.pause(); }
 
   // ---------- run control (pause / stop) ----------
@@ -291,7 +294,7 @@
     stage('listen', 'Listen', it.en, romFor(it, v1));
     await en(`Here's how to say: ${it.en}.`);
     await sayRaw(it.th, v1); await wait(700);
-    if (it.parts?.length) {
+    if (it.parts?.length && needsBuilding(it.rom)) {
       await en('Repeat each part after me.');
       for (const p of it.parts) {
         const prom = fillAs(p.rom, true, v1 === 'female');
@@ -558,7 +561,7 @@
       await en(line.who === 'A' ? `You say: ${line.en}` : `${speakerName('B')} says: ${line.en}`);
       await sayLine(line);
       await wait(500);
-      const steps = buildSteps(line);
+      const steps = needsBuilding(line.rom) ? buildSteps(line) : [{ th: text, rom: fill(line.rom, true) }];
       if (steps.length > 1) await en('Repeat after me, starting from the end.');
       else await en('Repeat after me.');
       for (const st of steps) {
@@ -898,7 +901,7 @@
         await en(L.en);
         await sayText(L.th, folder);
         await wait(400);
-        const chunks = L.th.split(' ').filter(Boolean);
+        const chunks = needsBuilding(L.rom) ? L.th.split(' ').filter(Boolean) : [L.th];
         const steps = [];
         for (let k = chunks.length - 1; k >= 0; k--) steps.push(chunks.slice(k).join(' '));
         if (steps.length > 1) await en('From the end.');
