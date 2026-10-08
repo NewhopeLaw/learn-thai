@@ -1441,6 +1441,7 @@
   }
   $('existing').hidden = !profiles.length;
   $('whoName').textContent = S.name || profile || '';
+  $('whoName').onclick = () => $('switchUser').click(); // tap your name to switch learner
   $('switchUser').onclick = () => {
     try { localStorage.removeItem(PROFILE_KEY); } catch {}
     location.reload();

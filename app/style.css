@@ -260,3 +260,6 @@ button.icon.on { background: var(--accent-soft); border-color: var(--accent); co
 body[data-level="A2"] { background: var(--bg-a2); }
 body[data-level="A2"] .bottombar { background: var(--bg-a2); }
 
+
+button.link.who { color: inherit; font-size: inherit; text-decoration: none; border-bottom: 1px dashed var(--muted); padding: 0; }
+button.link.who::after { content: ' ▾'; color: var(--muted); }
