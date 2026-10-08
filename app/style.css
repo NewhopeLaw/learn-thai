@@ -260,5 +260,3 @@ button.icon.on { background: var(--accent-soft); border-color: var(--accent); co
 body[data-level="A2"] { background: var(--bg-a2); }
 body[data-level="A2"] .bottombar { background: var(--bg-a2); }
 
-.restore { display: block; width: 100%; margin-top: 12px; }
-#gRestoreList:not(:empty) { margin-top: 8px; }

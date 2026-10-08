@@ -24,7 +24,8 @@
     if (m) {
       const d = JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')))));
       history.replaceState(null, '', location.pathname + location.search);
-      if (d.t && /^[a-z0-9-]+$/.test(d.p)) {
+      if (d.t && !d.p) { localStorage.setItem('learn-thai-sync', JSON.stringify({ token: d.t })); linkedDevice = true; } // invite: new learner, shared backup
+      else if (d.t && /^[a-z0-9-]+$/.test(d.p)) {
         localStorage.setItem('learn-thai-sync', JSON.stringify({ token: d.t }));
         const list = JSON.parse(localStorage.getItem(PROFILES_KEY) || '[]');
         if (!list.some(p => p.slug === d.p)) list.push({ slug: d.p, name: d.n || d.p });
@@ -664,7 +665,6 @@
   }
 
   function beginSession() {
-    if (gstate.on) gSync(true); // tapped Start: pull the latest and refresh sign-in if needed
     inSession = true;
     run = { stopped: false, paused: false };
     // Unlock audio playback on phones while we're still inside the tap.
@@ -739,7 +739,6 @@
     $('sessionWordsBox').open = false;
     show('home');
     syncNow();
-    gSync(false);
   }
 
   function stopSession() { if (run) { run.stopped = true; silence(); try { recognizer?.abort(); } catch {} } }
@@ -780,10 +779,7 @@
     if (!el) return;
     try { void sync; } catch { return; } // sync section not initialised yet
     const parts = [];
-    let g = null;
-    try { g = gstate; } catch {} // Google section not initialised yet
-    if (g?.on) parts.push(g.last ? '✓ Backed up' : 'Backup on');
-    else if (sync.token) parts.push(sync.last ? '✓ Synced' : 'Sync on');
+    if (sync.token) parts.push(sync.last ? '✓ Backed up' : 'Backup on');
     else parts.push('Not backed up · tap to set up');
     if (offlineReady === true) parts.push('offline ready');
     el.textContent = parts.join(' · ');
@@ -1382,12 +1378,17 @@
       document.head.appendChild(s);
     });
   }
-  $('linkPhone').onclick = async () => {
+  async function showLink(invite) {
     const box = $('linkBox');
-    if (!box.hidden) { box.hidden = true; $('linkQR').innerHTML = ''; return; }
+    if (!box.hidden && box.dataset.invite === String(invite)) { box.hidden = true; $('linkQR').innerHTML = ''; return; }
+    box.dataset.invite = String(invite);
+    $('linkWhat').textContent = invite
+      ? "Have the other learner scan this. They pick their own name and get their own progress, backed up automatically."
+      : "Scan with your phone's camera. It opens the app as you, with your progress and backup on.";
     try {
       await loadQrLib();
-      const payload = btoa(unescape(encodeURIComponent(JSON.stringify({ t: sync.token, p: profile, n: S.name, g: S.gender }))))
+      const info = invite ? { t: sync.token } : { t: sync.token, p: profile, n: S.name, g: S.gender };
+      const payload = btoa(unescape(encodeURIComponent(JSON.stringify(info))))
         .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
       const url = new URL(location.pathname, location.origin).href + '#link=' + payload;
       const qr = window.qrcode(0, 'M');
@@ -1396,162 +1397,21 @@
       $('linkQR').innerHTML = qr.createSvgTag({ cellSize: 5, margin: 3, scalable: true });
       box.hidden = false;
     } catch (e) { renderSync('Could not make the code: ' + e.message); }
-  };
+  }
+  $('linkPhone').onclick = () => showLink(false);
+  $('inviteLearner').onclick = () => showLink(true);
 
-  renderSync(linkedDevice ? 'Phone connected! Loading your progress from GitHub…' : undefined);
+  renderSync(linkedDevice ? 'Connected. Your progress backs up automatically.' : undefined);
   syncNow();
   // Coming back to the app (e.g. after practising on the other device): pull the latest.
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && !run && Date.now() - (sync.last || 0) > 60000) syncNow();
-    if (document.visibilityState === 'visible' && !run) gSync(false);
   });
-  // ---------- Google Drive backup ----------
-  // Progress is saved as a file in the app's private Drive folder (appDataFolder): only this app can see or change it.
-  const GOOGLE_CLIENT_ID = window.GOOGLE_CLIENT_ID || ''; // OAuth web client id from app/config.js (public, not a secret)
-  const GKEY = 'learn-thai-google';
-  let gstate;
-  try { gstate = JSON.parse(localStorage.getItem(GKEY)) || {}; } catch { gstate = {}; }
-  const saveG = () => { try { localStorage.setItem(GKEY, JSON.stringify(gstate)); } catch {} };
-  let gToken = null, gExpires = 0, gBusy = false;
-  const gHasToken = () => gToken && Date.now() < gExpires - 60000;
-  const gFile = slug => `progress-${slug}.json`;
-  const DRIVE = 'https://www.googleapis.com/drive/v3/files';
-  const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
-  function loadGis() {
-    if (window.google?.accounts?.oauth2) return Promise.resolve();
-    return new Promise((res, rej) => {
-      const sc = document.createElement('script');
-      sc.src = 'https://accounts.google.com/gsi/client';
-      sc.async = true;
-      sc.onload = res;
-      sc.onerror = () => rej(new Error("couldn't reach Google"));
-      document.head.appendChild(sc);
-    });
+  // A unique id behind the visible name (e.g. wonil-k3f9), saved automatically; nobody needs to know it.
+  function newSlug(name) {
+    const base = String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 20) || 'learner';
+    return `${base}-${Math.random().toString(36).slice(2, 6)}`;
   }
-  // A 1-hour access token. Has to start from a tap; after the first consent it is just a quick blink.
-  async function gAuth(firstTime) {
-    if (gHasToken()) return gToken;
-    if (!GOOGLE_CLIENT_ID) throw new Error('Google backup is not set up yet');
-    await loadGis();
-    return new Promise((res, rej) => {
-      const client = window.google.accounts.oauth2.initTokenClient({
-        client_id: GOOGLE_CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/drive.appdata',
-        ...(gstate.email ? { login_hint: gstate.email } : {}),
-        callback: r => {
-          if (r.error) return rej(new Error(r.error));
-          gToken = r.access_token;
-          gExpires = Date.now() + (+r.expires_in || 3600) * 1000;
-          res(gToken);
-        },
-        error_callback: e => rej(new Error(e?.type === 'popup_closed' ? 'the sign-in window was closed' : e?.message || e?.type || 'sign-in failed')),
-      });
-      client.requestAccessToken({ prompt: firstTime ? 'consent' : '' });
-    });
-  }
-  async function gapi(url, opts = {}) {
-    const r = await fetch(url, { ...opts, cache: 'no-store', headers: { Authorization: `Bearer ${gToken}`, ...(opts.headers || {}) } });
-    if (r.status === 401) { gToken = null; throw new Error('sign-in expired, tap Back up now'); }
-    if (!r.ok) throw new Error(`Google Drive error ${r.status}`);
-    return r;
-  }
-  async function gList() {
-    const q = encodeURIComponent("name contains 'progress-'");
-    const r = await gapi(`${DRIVE}?spaces=appDataFolder&q=${q}&fields=files(id,name,modifiedTime)`);
-    return (await r.json()).files || [];
-  }
-  const gRead = async id => (await gapi(`${DRIVE}/${id}?alt=media`)).json();
-  async function gWrite(id, name, data) {
-    const body = JSON.stringify(data);
-    if (id) {
-      await gapi(`${UPLOAD}/${id}?uploadType=media`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body });
-      return id;
-    }
-    const b = 'lt' + Math.random().toString(36).slice(2);
-    const multipart = `--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ name, parents: ['appDataFolder'] })}\r\n--${b}\r\nContent-Type: application/json\r\n\r\n${body}\r\n--${b}--`;
-    const r = await gapi(`${UPLOAD}?uploadType=multipart&fields=id`, { method: 'POST', headers: { 'Content-Type': `multipart/related; boundary=${b}` }, body: multipart });
-    return (await r.json()).id;
-  }
-  const snapshot = () => ({
-    name: S.name, items: store.items, log: store.log, secs: store.secs, lessons: store.lessons, songs: store.songs,
-    v: store.v, lessonsV: store.lessonsV, settings: S, saved: new Date().toISOString(),
-  });
-  function renderGoogle(msg) {
-    $('gOff').hidden = !!gstate.on;
-    $('gOn').hidden = !gstate.on;
-    $('gStatus').textContent = msg !== undefined ? msg
-      : gstate.on ? `Backing up to Google Drive${gstate.email ? ` (${gstate.email})` : ''}` + (gstate.last ? ` · last saved ${new Date(gstate.last).toLocaleString()}` : '')
-      : GOOGLE_CLIENT_ID ? '' : 'Google backup is being set up. Use the backup file below for now.';
-    $('gConnect').disabled = !GOOGLE_CLIENT_ID;
-    renderChip();
-  }
-  // Pull, merge, push. tapped = started by a tap, so Google may show its sign-in window if needed.
-  async function gSync(tapped) {
-    if (!gstate.on || !profile || gBusy) return;
-    if (!tapped && !gHasToken()) return; // never pop up a window out of the blue; the next tap syncs
-    gBusy = true;
-    renderGoogle('Saving to Google Drive…');
-    try {
-      await gAuth(false);
-      const f = (await gList()).find(x => x.name === gFile(profile));
-      if (f) merge(await gRead(f.id));
-      await gWrite(f?.id, gFile(profile), snapshot());
-      gstate.last = Date.now();
-      saveG(); save();
-      if (!inSession && ui.session.hidden && ui.setup.hidden) renderHome();
-      renderGoogle();
-    } catch (e) {
-      renderGoogle('Google backup: ' + e.message);
-    } finally { gBusy = false; }
-  }
-  $('gConnect').onclick = async () => {
-    renderGoogle('Signing in…');
-    try {
-      await gAuth(true);
-      gstate.on = true;
-      try { gstate.email = (await (await gapi('https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)')).json()).user?.emailAddress; } catch {}
-      saveG();
-      await gSync(true);
-    } catch (e) { renderGoogle('Could not sign in: ' + e.message); }
-  };
-  $('gSyncBtn').onclick = () => gSync(true);
-  $('gOffBtn').onclick = () => {
-    if (!confirm('Stop backing up to Google on this device? Your backup stays in your Google Drive.')) return;
-    gstate = {}; gToken = null; saveG(); renderGoogle();
-  };
-  // New device: sign in, pick your name, and your progress comes back.
-  $('gRestore').hidden = !GOOGLE_CLIENT_ID;
-  $('gRestore').onclick = async () => {
-    const box = $('gRestoreList');
-    box.textContent = 'Signing in…';
-    try {
-      await gAuth(true);
-      const files = await gList();
-      if (!files.length) { box.textContent = 'No backup in this Google account yet. Start as a new learner above.'; return; }
-      box.textContent = '';
-      for (const f of files) {
-        const data = await gRead(f.id);
-        const slug = f.name.replace(/^progress-|\.json$/g, '');
-        const b = document.createElement('button');
-        b.className = 'big';
-        b.textContent = `I'm ${data.name || slug}`;
-        b.onclick = () => {
-          try {
-            localStorage.setItem(`${BASE_KEY}:${slug}`, JSON.stringify(data));
-            const list = JSON.parse(localStorage.getItem(PROFILES_KEY) || '[]');
-            if (!list.some(p => p.slug === slug)) list.push({ slug, name: data.name || slug });
-            localStorage.setItem(PROFILES_KEY, JSON.stringify(list));
-            gstate.on = true; gstate.last = Date.now(); saveG();
-          } catch {}
-          useProfile(slug);
-        };
-        box.appendChild(b);
-      }
-    } catch (e) { box.textContent = 'Could not restore: ' + e.message; }
-  };
-  renderGoogle();
-  gSync(false);
-
   function useProfile(slug) {
     try { localStorage.setItem(PROFILE_KEY, slug); } catch {}
     location.reload();
@@ -1559,7 +1419,7 @@
   document.querySelectorAll('[data-gender]').forEach(b => b.onclick = () => {
     const name = $('nameInput').value.trim();
     if (!name) { $('nameInput').focus(); $('nameInput').placeholder = 'Type your name first'; return; }
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'learner';
+    const slug = newSlug(name);
     try {
       const key = `${BASE_KEY}:${slug}`;
       let data = JSON.parse(localStorage.getItem(key) || 'null');
