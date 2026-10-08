@@ -55,6 +55,9 @@
   const UNITS = window.COURSE.units;
   const unitKey = u => UNITS[u].key;
   const unitIndex = key => UNITS.findIndex(x => x.key === key);
+  const A1_KEYS = new Set(['greetings','getting-by','numbers','money','food-shopping','want-have-can','question-words','verbs','airport','transport','getting-around','places','hotel','ordering-food','street-food','clothes','about-you','family','friends','small-talk','reactions','time-feelings','days-times','telling-time','weather','health','massage','beaches','temples','phone','comparing']);
+  const levelOf = unit => unit.level || (unit.song ? 'Songs' : A1_KEYS.has(unit.key) ? 'A1' : 'A2');
+  const LEVEL_NAMES = { A1: 'A1 · Beginner', A2: 'A2 · Elementary', Songs: 'Songs' };
   // v3: lessons used to be keyed by unit number; units now carry a stable key so they can be reordered.
   if (!(store.lessonsV >= 3)) {
     const OLD = ['greetings','getting-by','food-shopping','numbers','money','want-have-can','getting-around','transport','hotel','ordering-food','about-you','time-feelings','health','small-talk','question-words','verbs','days-times','places','street-food','clothes','massage','beaches','temples','phone','friends','reactions','family','telling-time','airport','comparing'];
@@ -79,8 +82,9 @@
   }
 
   // ---------- gendered text ----------
-  function fill(s, roman) {
-    const f = S.gender === 'female';
+  function fill(s, roman) { return fillAs(s, roman, S.gender === 'female'); }
+  // Fill placeholders for a given speaker: the female voice always uses the female forms, the male voice the male forms.
+  function fillAs(s, roman, f) {
     const forms = female => roman
       ? { Pq: female ? 'khá' : 'khráp', P: female ? 'khâ' : 'khráp', I: female ? 'chǎn' : 'phǒm' }
       : { Pq: female ? 'คะ' : 'ครับ', P: female ? 'ค่ะ' : 'ครับ', I: female ? 'ฉัน' : 'ผม' };
@@ -127,7 +131,7 @@
   const AUDIO = window.AUDIO || {};
   const THAI_BASE_RATE = 0.85; // recordings are generated at -15% speed
   const VOICE_ORDER = ['male', 'female', 'both'];
-  const VOICE_NAMES = { male: 'Niwat (male)', female: 'Premwadee (female)', both: 'Both, alternating' };
+  const VOICE_NAMES = { male: 'Niwat (male forms)', female: 'Premwadee (female forms)', both: 'Both: hear each form' };
   const player = new Audio();
   player.preload = 'auto';
   let alt = 0, hush = 0;
@@ -154,6 +158,14 @@
     });
   }
   async function speakThai(text, folder, rate) { if (!(await playRecorded(text, folder, rate))) await rawSpeak(text, 'th', rate || S.thaiRate); }
+  // Speak a phrase template ({P} {I} …) in a voice, filled with that voice's own gender forms.
+  const otherVoice = f => (f === 'male' ? 'female' : 'male');
+  async function sayRaw(raw, folder, rate) {
+    const text = fillAs(raw, false, folder === 'female');
+    currentText = text; currentFolder = folder;
+    checkpoint(); await speakThai(text, folder, rate); checkpoint();
+  }
+  const romFor = (it, folder) => fillAs(it.rom, true, folder === 'female');
   function silence() { hush++; synth?.cancel(); player.pause(); }
 
   // ---------- run control (pause / stop) ----------
@@ -177,8 +189,8 @@
   async function th(text) { checkpoint(); await speakThai(text); checkpoint(); }
   // Time for the learner to repeat a Thai phrase out loud.
   const repeatGap = text => (1600 + text.length * 140) / Math.min(1, S.thaiRate);
-  async function note(segments) {
-    for (const seg of segments) seg.en ? await en(seg.en) : (await th(fill(seg.th)), await wait(500));
+  async function note(segments, folder) {
+    for (const seg of segments) seg.en ? await en(seg.en) : (await sayRaw(seg.th, folder || voiceFolder()), await wait(500));
   }
 
   // ---------- speech recognition (optional) ----------
@@ -274,27 +286,29 @@
       ui.unit.textContent = window.COURSE.units[it.unit].title;
       await en(window.COURSE.units[it.unit].title.replace('·', '.'));
     }
-    const text = thOf(it);
-    stage('listen', 'Listen', it.en);
+    const v1 = voiceFolder();
+    const v2 = S.voice === 'both' ? otherVoice(v1) : v1; // Both: hear the phrase in each speaker's own form
+    stage('listen', 'Listen', it.en, romFor(it, v1));
     await en(`Here's how to say: ${it.en}.`);
-    await th(text); await wait(700);
+    await sayRaw(it.th, v1); await wait(700);
     if (it.parts?.length) {
       await en('Repeat each part after me.');
       for (const p of it.parts) {
-        stage('listen', 'Listen', it.en, fill(p.rom, true));
-        await th(fill(p.th));
-        stage('speak', 'Repeat', it.en, fill(p.rom, true));
-        await wait(repeatGap(fill(p.th)) * 0.6); // pieces get a shorter pause than the whole phrase
+        const prom = fillAs(p.rom, true, v1 === 'female');
+        stage('listen', 'Listen', it.en, prom);
+        await sayRaw(p.th, v1);
+        stage('speak', 'Repeat', it.en, prom);
+        await wait(repeatGap(fillAs(p.th, false, v1 === 'female')) * 0.6); // pieces get a shorter pause than the whole phrase
       }
       await en('Now the whole thing.');
     }
-    for (let i = 0; i < 2; i++) {
-      stage('listen', 'Listen', it.en, romOf(it));
-      await th(text);
+    for (const v of [v1, v2]) {
+      stage('listen', 'Listen', it.en, romFor(it, v));
+      await sayRaw(it.th, v);
       stage('speak', 'Repeat', it.en, romOf(it));
-      await wait(repeatGap(text));
+      await wait(repeatGap(thOf(it)));
     }
-    if (it.note) { stage('listen', 'Listen', it.en, romOf(it)); await note(it.note); }
+    if (it.note) { stage('listen', 'Listen', it.en, romFor(it, v1)); await note(it.note, v1); }
     introduced(s, id);
   }
   // A new phrase has been taught (or skipped with Next): it joins the quiz rotation.
@@ -315,7 +329,9 @@
     const { it, dir } = cardOf(a.id);
     const text = thOf(it);
     if (a.nextAt > Date.now() && s.active.length === 1) await wait(Math.min(a.nextAt - Date.now(), 4000));
-    currentText = text; currentFolder = null;
+    const v1 = voiceFolder();
+    const v2 = S.voice === 'both' ? otherVoice(v1) : v1;
+    currentText = fillAs(it.th, false, v1 === 'female'); currentFolder = v1;
     run.canGrade = true;
     setBar('grade');
     ui.feedback.textContent = '';
@@ -323,12 +339,12 @@
       // Meaning card: hear Thai, say the meaning, then hear the answer and repeat the Thai.
       stage('listen', 'Listen', '');
       await en('What does this mean?');
-      await th(text);
-      stage('speak', 'Say the meaning', '', romOf(it));
+      await sayRaw(it.th, v1);
+      stage('speak', 'Say the meaning', '', romFor(it, v1));
       await wait(S.pause * 1000);
-      stage('listen', 'Listen', it.en, romOf(it));
+      stage('listen', 'Listen', it.en, romFor(it, v2));
       await en(it.en);
-      await th(text);
+      await sayRaw(it.th, v2);
       stage('speak', 'Repeat', it.en, romOf(it));
       await wait(repeatGap(text));
       grade(s, a, S.handsFree ? 'ok' : await awaitGrade());
@@ -344,10 +360,10 @@
     if (ok === true) ui.feedback.textContent = '✓ Sounded right';
     else if (ok === false) ui.feedback.textContent = '✗ Sounded different — listen';
     else if (S.mic && SR) ui.feedback.textContent = '… Didn’t catch that';
-    stage('listen', 'Listen', it.en, romOf(it));
-    await th(text); await wait(400);
-    stage('speak', 'Repeat', it.en, romOf(it));
-    await th(text); await wait(repeatGap(text));
+    stage('listen', 'Listen', it.en, romFor(it, v1));
+    await sayRaw(it.th, v1); await wait(400);
+    stage('speak', 'Repeat', it.en, romFor(it, v2));
+    await sayRaw(it.th, v2); await wait(repeatGap(text));
     const g = S.handsFree ? (ok === false ? 'again' : 'ok') : await awaitGrade();
     grade(s, a, g);
   }
@@ -789,7 +805,7 @@
     const unit = nextWordsUnit();
     const fresh = unit != null ? ALL.filter(i => i.unit === unit && !store.items[i.id]).length : 0;
     $('statNew').textContent = fresh;
-    $('nextUp').textContent = unit != null ? window.COURSE.units[unit].title : 'All words learned';
+    $('nextUp').textContent = unit != null ? `${levelOf(UNITS[unit])} · ${UNITS[unit].title}` : 'All words learned';
     const reviewMin = Math.round(due * 0.4), newMin = Math.round(fresh * 1.1);
     $('start').textContent = due && fresh ? '▶  Start: review + new words' : due ? '▶  Start review' : fresh ? '▶  Learn new words' : '▶  Start';
     $('startReview').textContent = due ? `Review only · ${due} cards` : 'No reviews due';
@@ -815,9 +831,17 @@
   function renderLessons() {
     const list = $('lessonList');
     list.innerHTML = '';
+    let lastLevel = null;
     UNITS.forEach((unit, u) => {
       const d = DIALOGUES[unit.key];
       if (!d) return;
+      if (levelOf(unit) !== lastLevel) {
+        lastLevel = levelOf(unit);
+        const h = document.createElement('p');
+        h.className = 'level-head';
+        h.textContent = LEVEL_NAMES[lastLevel] || lastLevel;
+        list.appendChild(h);
+      }
       const done = store.lessons[unit.key];
       const row = document.createElement('div');
       row.className = 'lesson-row' + (done ? ' done' : '');
@@ -1042,11 +1066,19 @@
     const list = $('vocabList');
     list.innerHTML = '';
     const current = nextWordsUnit() ?? 0;
+    let lastLevel = null;
     window.COURSE.units.forEach((u, ui_) => {
       const items = ALL.filter(i => i.unit === ui_)
         .filter(i => !learnedOnly || store.items[i.id])
         .filter(i => !q || i.en.toLowerCase().includes(q) || romOf(i).toLowerCase().includes(q));
       if (!items.length) return;
+      if (levelOf(u) !== lastLevel) {
+        lastLevel = levelOf(u);
+        const h = document.createElement('p');
+        h.className = 'level-head';
+        h.textContent = LEVEL_NAMES[lastLevel] || lastLevel;
+        list.appendChild(h);
+      }
       const det = document.createElement('details');
       det.open = q ? true : vocabOpen.size ? vocabOpen.has(ui_) : ui_ === current;
       det.ontoggle = () => (det.open ? vocabOpen.add(ui_) : vocabOpen.delete(ui_));
@@ -1076,7 +1108,7 @@
         play.className = 'play';
         play.textContent = '▶';
         play.setAttribute('aria-label', `Play: ${it.en}`);
-        play.onclick = () => playVocab(thOf(it));
+        play.onclick = () => playVocab(it);
         const text = document.createElement('span');
         text.className = 'vocab-text';
         text.textContent = it.en;
@@ -1096,10 +1128,10 @@
     });
     if (!list.children.length) list.innerHTML = '<p class="muted small">Nothing here yet. Phrases appear as you learn them.</p>';
   }
-  function playVocab(text) {
+  function playVocab(it) {
     if (run && !run.paused) togglePause(); // listening to the list pauses the lesson
     silence();
-    speakThai(text);
+    sayRaw(it.th, voiceFolder()).catch(() => {});
   }
 
   // Strength of a phrase, from its review interval.
@@ -1203,7 +1235,7 @@
     if (S.handsFree && run?.canGrade && !run.paused && ui.orb.dataset.stage === 'grade') { run.grade = 'ok'; } // waiting on a rating right now: move on
   };
   $('setPeek').onchange = e => { S.peek = e.target.checked; save(); };
-  $('testVoice').onclick = () => { silence(); speakThai(fill('สวัสดี{P}')); };
+  $('testVoice').onclick = () => { silence(); sayRaw('สวัสดี{P}', voiceFolder()).catch(() => {}); };
   $('vocabSearch').oninput = renderVocab;
   $('vocabLearned').onchange = renderVocab;
   $('vocabRom').onchange = renderVocab;
