@@ -251,3 +251,11 @@ button.icon.on { background: var(--accent-soft); border-color: var(--accent); co
 .song details { margin-top: 12px; }
 
 .level-head { margin: 18px 0 4px; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+
+/* A2 material sits on a slightly lighter background (90% of the page colour). */
+:root { --bg-a2: color-mix(in srgb, var(--bg) 90%, #fff); }
+#vocabList details.level-A2, .lesson-row.level-A2 { background: var(--bg-a2); border-radius: 12px; padding-left: 10px; padding-right: 10px; }
+#vocabList details.level-A2 { margin: 6px 0; border-top: none; }
+.lesson-row.level-A2 { margin: 6px 0; border-top: none; }
+body[data-level="A2"] { background: var(--bg-a2); }
+body[data-level="A2"] .bottombar { background: var(--bg-a2); }

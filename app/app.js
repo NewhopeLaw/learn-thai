@@ -611,6 +611,7 @@
     }
   }
   async function runTalk(u) {
+    document.body.dataset.level = levelOf(UNITS[u]);
     const d = DIALOGUES[unitKey(u)];
     const label = lessonName(u);
     const t0 = Date.now();
@@ -694,6 +695,7 @@
       }
       if (doNew) {
         const fresh = ALL.filter(i => i.unit === unit && !store.items[i.id]).map(i => i.id);
+        document.body.dataset.level = levelOf(UNITS[unit]);
         setBar('line');
         await narrate('Now some new words.');
         await runCards(newRound([], fresh));
@@ -724,6 +726,7 @@
     if (!inSession) return;
     inSession = false;
     talkMode = false;
+    delete document.body.dataset.level;
     save();
     sess = null; run = null; currentText = null;
     synth.cancel();
@@ -844,7 +847,7 @@
       }
       const done = store.lessons[unit.key];
       const row = document.createElement('div');
-      row.className = 'lesson-row' + (done ? ' done' : '');
+      row.className = 'lesson-row level-' + levelOf(unit) + (done ? ' done' : '');
       const text = document.createElement('div');
       text.className = 'lesson-text';
       const title = document.createElement('b');
@@ -1080,6 +1083,7 @@
         list.appendChild(h);
       }
       const det = document.createElement('details');
+      det.className = 'level-' + levelOf(u);
       det.open = q ? true : vocabOpen.size ? vocabOpen.has(ui_) : ui_ === current;
       det.ontoggle = () => (det.open ? vocabOpen.add(ui_) : vocabOpen.delete(ui_));
       const sum = document.createElement('summary');
