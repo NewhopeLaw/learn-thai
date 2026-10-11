@@ -183,7 +183,10 @@
   async function sayRaw(raw, folder, rate) {
     const text = fillAs(raw, false, folder === 'female');
     currentText = text; currentFolder = folder;
-    checkpoint(); await speakThai(text, folder, rate); checkpoint();
+    // Outside a lesson (the word list, "Test voice") there is no run to check against.
+    if (run) checkpoint();
+    await speakThai(text, folder, rate);
+    if (run) checkpoint();
   }
   const romFor = (it, folder) => fillAs(it.rom, true, folder === 'female');
   // Syllables in a romanization (split at spaces and hyphens). Reverse building is only worth it from 3 syllables up.
