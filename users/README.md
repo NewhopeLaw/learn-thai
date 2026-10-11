@@ -5,3 +5,6 @@ Each learner's progress lives here as `<name>.json`, the same name as their pers
 
 To update it by hand: in the app, More → **Back up now** downloads `<name>.json`; upload it here with
 **Add file → Upload files** and commit. With a GitHub key connected under More, the app uploads it itself.
+
+Since the live sync (worker/), this folder is only a seed: the app reads `<name>.json` once as a
+starting point and then keeps everything in sync through the worker.

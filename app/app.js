@@ -16,27 +16,6 @@
   const PROFILE_KEY = 'learn-thai-profile';
   const PROFILES_KEY = 'learn-thai-profiles';
   let profile = null, profiles = [];
-  // Opened from the "Connect my phone" QR code: #link=<base64url {t: token, p: slug, n: name, g: gender}>.
-  // Sets up the learner and GitHub sync on this device, then removes the key from the address bar.
-  let linkedDevice = false;
-  try {
-    const m = location.hash.match(/^#link=([\w-]+)$/);
-    if (m) {
-      const d = JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')))));
-      history.replaceState(null, '', location.pathname + location.search);
-      if (d.t && !d.p) { localStorage.setItem('learn-thai-sync', JSON.stringify({ token: d.t })); linkedDevice = true; } // invite: new learner, shared backup
-      else if (d.t && /^[a-z0-9-]+$/.test(d.p)) {
-        localStorage.setItem('learn-thai-sync', JSON.stringify({ token: d.t }));
-        const list = JSON.parse(localStorage.getItem(PROFILES_KEY) || '[]');
-        if (!list.some(p => p.slug === d.p)) list.push({ slug: d.p, name: d.n || d.p });
-        localStorage.setItem(PROFILES_KEY, JSON.stringify(list));
-        const key = `${BASE_KEY}:${d.p}`;
-        if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify({ settings: { name: d.n || d.p, gender: d.g || 'male' } }));
-        localStorage.setItem(PROFILE_KEY, d.p);
-        linkedDevice = true;
-      }
-    }
-  } catch {}
   const urlUser = (new URLSearchParams(location.search).get('u') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30);
   const titleCase = w => w ? w[0].toUpperCase() + w.slice(1) : w;
   if (urlUser) {
@@ -49,7 +28,6 @@
   }
   try { profile = localStorage.getItem(PROFILE_KEY); profiles = JSON.parse(localStorage.getItem(PROFILES_KEY)) || []; } catch {}
   const KEY = profile ? `${BASE_KEY}:${profile}` : BASE_KEY;
-  const PROFILE_FILE = `users/${profile}.json`; // the learner's folder file, public at …/learn-thai/users/<name>.json
   const DAY = 86400000;
   const LADDER = [8, 30, 90, 240]; // seconds between in-session recalls
   const DEFAULTS = { name: '', gender: null, voice: 'both', thaiRate: 0.8, pause: 4, mic: false, handsFree: false, peek: false };
@@ -79,7 +57,8 @@
     store.lessonsV = 3;
   }
   const S = store.settings;
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch {} };
+  // Writes this device's copy; by default also queues a push to the sync server (see live sync below).
+  const save = (push = true) => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch {} if (push) queuePush(); };
   const startOfToday = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
   const dayKey = (t = Date.now()) => { const d = new Date(t); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
   // A card id is a phrase id (speaking card, EN→TH) or phrase id + "~r" (meaning card, TH→EN).
@@ -778,7 +757,7 @@
     $('wordsHome').appendChild($('vocabPanel'));
     $('sessionWordsBox').open = false;
     show('home');
-    syncNow();
+    pushNow();
   }
 
   function stopSession() { if (run) { run.stopped = true; silence(); try { recognizer?.abort(); } catch {} } }
@@ -819,8 +798,9 @@
     if (!el) return;
     try { void sync; } catch { return; } // sync section not initialised yet
     const parts = [];
-    if (sync.token) parts.push(sync.last ? '✓ Backed up' : 'Backup on');
-    else parts.push('Not backed up · tap to set up');
+    if (!profile) parts.push('Not synced');
+    else if (sync.error) parts.push('Saved here · sync will retry');
+    else parts.push(sync.last ? '✓ Synced' : 'Syncing…');
     if (offlineReady === true) parts.push('offline ready');
     el.textContent = parts.join(' · ');
   }
@@ -1211,7 +1191,7 @@
         b.onclick = () => {
           if (!confirm(`Mark the ${weak.length} new or learning phrases in "${u.title}" as known? They'll come back for review in a week.`)) return;
           weak.forEach(i => markKnown(i.id));
-          save(); renderHome(); syncNow();
+          save(); renderHome();
         };
         row.querySelector('.unit-head').appendChild(b);
       }
@@ -1293,7 +1273,6 @@
   };
   // Back up: with a key it saves straight to the folder; without, it downloads <name>.json to upload there.
   $('exportBtn').onclick = () => {
-    if (sync.token) { syncNow(); $('backupHelp').hidden = true; return; }
     downloadBackup();
     $('backupHelp').hidden = false;
   };
@@ -1309,7 +1288,7 @@
       store.items = data.items; store.log = data.log || {}; store.secs = data.secs || {};
       store.lessons = data.lessons || store.lessons; store.songs = data.songs || store.songs;
       Object.assign(S, data.settings || {});
-      save(); renderHome(); syncNow();
+      save(); renderHome();
     } catch (err) { alert('Could not read that file: ' + err.message); }
   };
 
@@ -1337,37 +1316,19 @@
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
 
-  // ---------- GitHub repo sync ----------
-  // Each learner's progress (the same JSON as the backup file) is saved as
-  // progress/<name>.json on the repo's "progress" branch, so it never triggers a site rebuild.
-  const REPO = 'NewhopeLaw/learn-thai';
-  const BRANCH = 'main';
+  // ---------- live sync (Cloudflare Worker, see worker/) ----------
+  // Every learner is synced by the name in their link: nothing to connect. Each save is pushed a
+  // moment later; a WebSocket to the learner's object says when another device saved, and we pull.
+  const SYNC_URL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? 'http://localhost:8787' : 'https://learn-thai-sync.newhopelaw.workers.dev'; // local: `npx wrangler dev` in worker/
   const SYNC_KEY = 'learn-thai-sync';
+  const DEVICE = Math.random().toString(36).slice(2, 8);
   let sync;
   try { sync = JSON.parse(localStorage.getItem(SYNC_KEY)) || {}; } catch { sync = {}; }
+  if (sync.token) sync = {}; // the old GitHub-key backup is gone
   const saveSync = () => { try { localStorage.setItem(SYNC_KEY, JSON.stringify(sync)); } catch {} };
-  let syncing = false;
-  const b64 = str => btoa(unescape(encodeURIComponent(str)));
-  const unb64 = str => decodeURIComponent(escape(atob(str.replace(/\s/g, ''))));
+  let syncing = false, pushTimer = null, pushAgain = false, pullAgain = false, ws = null, wsTimer = null, pollTimer = null;
+  const syncOn = () => !!profile && navigator.onLine !== false;
 
-  // Returns parsed JSON, or null for 404 when allow404 is set.
-  async function gh(path, opts = {}, allow404 = false) {
-    const r = await fetch('https://api.github.com' + path, {
-      ...opts,
-      cache: 'no-store',
-      headers: { Authorization: `Bearer ${sync.token}`, Accept: 'application/vnd.github+json', ...(opts.body ? { 'Content-Type': 'application/json' } : {}) },
-    });
-    if (allow404 && r.status === 404) return null;
-    if (r.status === 401) throw new Error('GitHub rejected the key. It may have expired. Disconnect and connect again with a new one.');
-    if (r.status === 403 || r.status === 404) throw new Error(`the key can't write to ${REPO}. Check it has Contents: Read and write for that repo.`);
-    if (!r.ok) { const e = new Error(`GitHub error ${r.status}`); e.status = r.status; throw e; }
-    return r.json();
-  }
-  async function ensureBranch() {
-    if (await gh(`/repos/${REPO}/git/ref/heads/${BRANCH}`, {}, true)) return;
-    const main = await gh(`/repos/${REPO}/git/ref/heads/main`);
-    await gh(`/repos/${REPO}/git/refs`, { method: 'POST', body: JSON.stringify({ ref: `refs/heads/${BRANCH}`, sha: main.object.sha }) });
-  }
   // Newest change wins per phrase; daily activity keeps the larger count.
   function merge(remote) {
     for (const [id, r] of Object.entries(remote.items || {})) {
@@ -1382,56 +1343,76 @@
     }
   }
   function renderSync(msg) {
-    $('syncOff').hidden = !!sync.token;
-    $('syncOn').hidden = !sync.token;
     if (msg !== undefined) $('syncStatus').textContent = msg;
-    else if (sync.token) $('syncStatus').textContent = `Saving to GitHub as ${PROFILE_FILE}` + (sync.last ? ` · last saved ${new Date(sync.last).toLocaleString()}` : '');
-    else $('syncStatus').textContent = '';
+    else if (!profile) $('syncStatus').textContent = '';
+    else if (sync.error) $('syncStatus').textContent = `Could not sync: ${sync.error}. Saved on this device; it will retry.`;
+    else if (sync.last) $('syncStatus').textContent = `Synced as ${profile} · last ${new Date(sync.last).toLocaleTimeString()}`;
+    else $('syncStatus').textContent = `Syncing as ${profile}…`;
     renderChip();
   }
-  async function syncOnce() {
-    await ensureBranch();
-    const cur = await gh(`/repos/${REPO}/contents/${PROFILE_FILE}?ref=${BRANCH}`, {}, true);
-    if (cur) merge(JSON.parse(unb64(cur.content)));
-    const content = JSON.stringify({ name: S.name, items: store.items, log: store.log, secs: store.secs, lessons: store.lessons, songs: store.songs, settings: S, saved: new Date().toISOString() }, null, 1);
-    await gh(`/repos/${REPO}/contents/${PROFILE_FILE}`, {
-      method: 'PUT',
-      body: JSON.stringify({ message: `Progress: ${S.name || profile}`, content: b64(content), branch: BRANCH, ...(cur ? { sha: cur.sha } : {}) }),
+  const snapshot = () => JSON.stringify({ name: S.name, items: store.items, log: store.log, secs: store.secs, lessons: store.lessons, songs: store.songs, settings: S });
+  async function api(method, body) {
+    const r = await fetch(`${SYNC_URL}/u/${encodeURIComponent(profile)}`, {
+      method, cache: 'no-store',
+      headers: { 'X-Device': DEVICE, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+      body,
     });
+    if (r.status === 404) return null;
+    if (!r.ok) throw new Error(`sync server said ${r.status}`);
+    return r.json();
   }
-  async function syncNow() {
-    if (!sync.token || !profile || syncing) return;
+  function applyRemote(data) {
+    if (!data) return;
+    merge(data);
+    if (!S.gender && data.settings?.gender) Object.assign(S, data.settings);
+    sync.last = Date.now(); delete sync.error;
+    saveSync(); save(false);
+    if (!inSession && !ui.setup.hidden && S.gender) show('home');
+    else if (!inSession && ui.session.hidden && ui.setup.hidden) renderHome();
+  }
+  // Push: this device's progress, merged on the server; what comes back is the union of all devices.
+  async function pushNow() {
+    if (!syncOn()) return;
+    if (syncing) { pushAgain = true; return; }
     syncing = true;
-    renderSync('Saving to GitHub…');
-    try {
-      try { await syncOnce(); }
-      catch (e) { if (e.status === 409 || e.status === 422) await syncOnce(); else throw e; } // file changed on another device: merge again
-      sync.last = Date.now();
-      saveSync(); save();
-      if (!inSession && ui.session.hidden && ui.setup.hidden) renderHome();
-      renderSync();
-    } catch (e) {
-      renderSync('Save to GitHub failed: ' + e.message);
-    } finally { syncing = false; }
+    try { applyRemote(await api('PUT', snapshot())); renderSync(); }
+    catch (e) { sync.error = e.message; saveSync(); renderSync(); }
+    finally {
+      syncing = false;
+      if (pushAgain) { pushAgain = false; pushNow(); }
+      else if (pullAgain) { pullAgain = false; pullNow(); }
+    }
   }
-  $('ghConnect').onclick = async () => {
-    const token = $('ghToken').value.trim();
-    if (!token) return;
-    sync = { token };
-    renderSync('Connecting…');
+  async function pullNow() {
+    if (!syncOn()) return;
+    if (syncing) { pullAgain = true; return; }
+    syncing = true;
+    try { applyRemote(await api('GET')); renderSync(); }
+    catch (e) { sync.error = e.message; saveSync(); renderSync(); }
+    finally { syncing = false; if (pushAgain) { pushAgain = false; pushNow(); } }
+  }
+  // Called from save(): a burst of grades becomes one push.
+  function queuePush() {
+    try { if (!syncOn()) return; } catch { return; } // save() runs during start-up, before this section
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(pushNow, 1500);
+  }
+  // Live: the learner's object tells us when any other device saved.
+  function connectLive() {
+    if (!profile || ws) return;
     try {
-      await gh(`/repos/${REPO}`);
-      $('ghToken').value = '';
-      saveSync();
-      await syncNow();
-    } catch (e) { sync = {}; saveSync(); renderSync('Could not connect: ' + e.message); }
-  };
-  $('syncBtn').onclick = syncNow;
-  $('ghDisconnect').onclick = () => {
-    if (!confirm('Disconnect GitHub on this device? Progress already saved on GitHub stays there.')) return;
-    sync = {}; saveSync(); renderSync();
-  };
-  // "Connect my phone": a QR code that sets up this learner + sync on another device.
+      ws = new WebSocket(`${SYNC_URL.replace(/^http/, 'ws')}/u/${encodeURIComponent(profile)}/ws`);
+      ws.onmessage = e => {
+        if (e.data === 'pong') return;
+        try { const d = JSON.parse(e.data); if (d.from !== DEVICE && !run) pullNow(); } catch {}
+      };
+      ws.onclose = ws.onerror = () => { ws = null; clearTimeout(wsTimer); wsTimer = setTimeout(connectLive, 5000); };
+    } catch { ws = null; }
+  }
+  // Fallback while the socket is down: a slow poll.
+  pollTimer = setInterval(() => { if (!ws && !run && document.visibilityState === 'visible') pullNow(); }, 30000);
+  setInterval(() => { try { ws?.send('ping'); } catch {} }, 50000);
+  // The personal link: copy it, or show it as a QR code for another device to scan.
   function loadQrLib() {
     if (window.qrcode) return Promise.resolve();
     return new Promise((res, rej) => {
@@ -1461,37 +1442,18 @@
     box.innerHTML = qr.createSvgTag({ cellSize: 5, margin: 3, scalable: true });
     box.hidden = false;
   };
-  async function showLink(invite) {
-    const box = $('linkBox');
-    if (!box.hidden && box.dataset.invite === String(invite)) { box.hidden = true; $('linkQR').innerHTML = ''; return; }
-    box.dataset.invite = String(invite);
-    $('linkWhat').textContent = invite
-      ? "Have the other learner scan this. They pick their own name and get their own progress, backed up automatically."
-      : "Scan with your phone's camera. It opens the app as you, with your progress and backup on.";
-    try {
-      await loadQrLib();
-      const info = invite ? { t: sync.token } : { t: sync.token, p: profile, n: S.name, g: S.gender };
-      const payload = btoa(unescape(encodeURIComponent(JSON.stringify(info))))
-        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-      const url = new URL(location.pathname, location.origin).href + '#link=' + payload;
-      const qr = window.qrcode(0, 'M');
-      qr.addData(url);
-      qr.make();
-      $('linkQR').innerHTML = qr.createSvgTag({ cellSize: 5, margin: 3, scalable: true });
-      box.hidden = false;
-    } catch (e) { renderSync('Could not make the code: ' + e.message); }
-  }
-  $('linkPhone').onclick = () => showLink(false);
-  $('inviteLearner').onclick = () => showLink(true);
+  $('syncBtn').onclick = () => { renderSync('Syncing…'); pushNow(); };
+  window.addEventListener('online', () => { delete sync.error; pushNow(); connectLive(); });
 
   renderMyLink();
   pullFolder();
-  renderSync(linkedDevice ? 'Connected. Your progress backs up automatically.' : undefined);
-  syncNow();
+  renderSync();
+  pushNow();
+  connectLive();
   // Coming back to the app (e.g. after practising on the other device): pull the latest.
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && !run && Date.now() - (sync.last || 0) > 60000) syncNow();
-    if (document.visibilityState === 'visible' && !run) pullFolder();
+    if (document.visibilityState !== 'visible' || run) return;
+    pullNow(); connectLive(); pullFolder();
   });
   // A unique id behind the visible name (e.g. wonil-k3f9), saved automatically; nobody needs to know it.
   function newSlug(name) {

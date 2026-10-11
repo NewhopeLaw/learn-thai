@@ -1,0 +1,17 @@
+name = "learn-thai-sync"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+# One Durable Object per learner holds that learner's progress and the
+# WebSockets of every device that has the app open as them.
+[[durable_objects.bindings]]
+name = "LEARNERS"
+class_name = "Learner"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Learner"]
+
+[vars]
+# Origins allowed to call the API (comma-separated).
+ALLOWED_ORIGINS = "https://newhopelaw.github.io,http://localhost:8765,http://127.0.0.1:8765"
