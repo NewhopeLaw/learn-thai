@@ -1,6 +1,7 @@
 name = "learn-thai-sync"
 main = "src/index.js"
 compatibility_date = "2026-09-01"
+preview_urls = false
 
 # One Durable Object per learner holds that learner's progress and the
 # WebSockets of every device that has the app open as them.

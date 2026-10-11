@@ -1319,7 +1319,7 @@
   // ---------- live sync (Cloudflare Worker, see worker/) ----------
   // Every learner is synced by the name in their link: nothing to connect. Each save is pushed a
   // moment later; a WebSocket to the learner's object says when another device saved, and we pull.
-  const SYNC_URL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? 'http://localhost:8787' : 'https://learn-thai-sync.newhopelaw.workers.dev'; // local: `npx wrangler dev` in worker/
+  const SYNC_URL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? 'http://localhost:8787' : 'https://learn-thai-sync.wonilsart.workers.dev'; // local: `npx wrangler dev` in worker/
   const SYNC_KEY = 'learn-thai-sync';
   const DEVICE = Math.random().toString(36).slice(2, 8);
   let sync;
