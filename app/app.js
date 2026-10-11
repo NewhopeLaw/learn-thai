@@ -95,18 +95,31 @@
   if (urlUser) {
     try {
       const list = JSON.parse(localStorage.getItem(PROFILES_KEY) || '[]');
-      const dupes = list.filter(p => p.slug !== urlUser && (p.slug.replace(/-[a-z0-9]{4}$/, '') === urlUser || (p.name || '').toLowerCase() === urlUser));
-      for (const d of dupes) {
-        const other = JSON.parse(localStorage.getItem(`${BASE_KEY}:${d.slug}`) || 'null');
-        if (!other) continue;
-        merge(other);
-        if (!S.gender && other.settings?.gender) Object.assign(S, other.settings);
-        localStorage.removeItem(`${BASE_KEY}:${d.slug}`);
-      }
+      // Same person under another name: "clem-k3f9", "Clem", "Clem C", "clem_c" all count.
+      const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const same = p => p.slug !== urlUser && (norm(p.slug.replace(/-[a-z0-9]{4}$/, '')) === norm(urlUser) || norm(p.name).startsWith(norm(urlUser)));
+      const dupes = list.filter(same);
+      for (const d of dupes) absorb(d.slug);
       if (dupes.length) localStorage.setItem(PROFILES_KEY, JSON.stringify(list.filter(p => !dupes.includes(p))));
+      // Progress made before learners had names lives under the bare key; the first personal link takes it.
+      const legacy = JSON.parse(localStorage.getItem(BASE_KEY) || 'null');
+      if (legacy && Object.keys(legacy.items || {}).length && !store.legacyV) {
+        merge(legacy);
+        if (!S.gender && legacy.settings?.gender) Object.assign(S, legacy.settings);
+        store.legacyV = 1;
+      }
       if (!S.name) S.name = titleCase(urlUser);
       save();
     } catch {}
+  }
+  // Moves another learner on this device into the current one (newest change wins) and removes the old copy.
+  function absorb(slug) {
+    const other = JSON.parse(localStorage.getItem(`${BASE_KEY}:${slug}`) || 'null');
+    if (!other) return false;
+    merge(other);
+    if (!S.gender && other.settings?.gender) Object.assign(S, other.settings);
+    localStorage.removeItem(`${BASE_KEY}:${slug}`);
+    return true;
   }
 
   // ---------- gendered text ----------
@@ -1505,14 +1518,21 @@
     } catch {}
     useProfile(slug);
   });
-  for (const p of profiles) {
+  // Opened by personal link: other learners on this device can be folded into this one by hand.
+  const others = urlUser ? profiles.filter(p => p.slug !== urlUser) : profiles;
+  for (const p of others) {
     const b = document.createElement('button');
     b.className = 'big';
-    b.textContent = `I'm ${p.name}`;
-    b.onclick = () => useProfile(p.slug);
+    b.textContent = urlUser ? `Use ${p.name}'s progress` : `I'm ${p.name}`;
+    b.onclick = () => {
+      if (!urlUser) return useProfile(p.slug);
+      if (absorb(p.slug)) { profiles = profiles.filter(x => x.slug !== p.slug); localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles)); }
+      save(); location.reload();
+    };
     $('profileList').appendChild(b);
   }
-  $('existing').hidden = !profiles.length || !!urlUser;
+  $('existing').hidden = !others.length;
+  if (urlUser && others.length) $('existing').querySelector('h2').textContent = 'Already studied on this device?';
   if (urlUser) $('nameInput').value = S.name || titleCase(urlUser);
   $('whoName').textContent = S.name || profile || '';
   $('whoName').onclick = () => $('switchUser').click(); // tap your name to switch learner
