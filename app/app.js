@@ -215,6 +215,8 @@
   async function th(text) { checkpoint(); await speakThai(text); checkpoint(); }
   // Time for the learner to repeat a Thai phrase out loud.
   const repeatGap = text => (1600 + text.length * 140) / Math.min(1, S.thaiRate);
+  // Words mode plays each phrase twice: first at the set speed, then slowed down so the sounds can be picked apart.
+  const slowRate = () => Math.max(0.5, S.thaiRate * 0.75);
   async function note(segments, folder) {
     for (const seg of segments) seg.en ? await en(seg.en) : (await sayRaw(seg.th, folder || voiceFolder()), await wait(500));
   }
@@ -328,9 +330,9 @@
       }
       await en('Now the whole thing.');
     }
-    for (const v of [v1, v2]) {
-      stage('listen', 'Listen', it.en, romFor(it, v));
-      await sayRaw(it.th, v);
+    for (const [k, v] of [v1, v2].entries()) {
+      stage('listen', k ? 'Listen (slow)' : 'Listen', it.en, romFor(it, v));
+      await sayRaw(it.th, v, k ? slowRate() : undefined);
       stage('speak', 'Repeat', it.en, romOf(it));
       await wait(repeatGap(thOf(it)));
     }
@@ -368,9 +370,9 @@
       await sayRaw(it.th, v1);
       stage('speak', 'Say the meaning', '', romFor(it, v1));
       await wait(S.pause * 1000);
-      stage('listen', 'Listen', it.en, romFor(it, v2));
+      stage('listen', 'Listen (slow)', it.en, romFor(it, v2));
       await en(it.en);
-      await sayRaw(it.th, v2);
+      await sayRaw(it.th, v2, slowRate());
       stage('speak', 'Repeat', it.en, romOf(it));
       await wait(repeatGap(text));
       grade(s, a, S.handsFree ? 'ok' : await awaitGrade());
@@ -388,8 +390,10 @@
     else if (S.mic && SR) ui.feedback.textContent = '… Didn’t catch that';
     stage('listen', 'Listen', it.en, romFor(it, v1));
     await sayRaw(it.th, v1); await wait(400);
+    stage('listen', 'Listen (slow)', it.en, romFor(it, v2));
+    await sayRaw(it.th, v2, slowRate());
     stage('speak', 'Repeat', it.en, romFor(it, v2));
-    await sayRaw(it.th, v2); await wait(repeatGap(text));
+    await wait(repeatGap(text));
     const g = S.handsFree ? (ok === false ? 'again' : 'ok') : await awaitGrade();
     grade(s, a, g);
   }
