@@ -5,13 +5,23 @@
 //   en: meaning, shown on screen and used as the role-play prompt for A's lines.
 window.DIALOGUES = {
   'greetings': {
-    scene: 'You meet someone in your hotel lobby.', you: 'the guest',
+    scene: 'You meet someone new at a church gathering.', you: 'the visitor',
     lines: [
       { who: 'B', th: 'สวัสดี{Pb}', rom: 'sa-wàt-dii {Pb}', en: 'Hello.' },
       { who: 'A', th: 'สวัสดี{P}', rom: 'sa-wàt-dii {P}', en: 'Hello.' },
       { who: 'B', th: 'สบายดีไหม{Pbq}', rom: 'sa-baai dii mǎi {Pbq}', en: 'How are you?' },
       { who: 'A', th: 'สบายดี ขอบคุณ{P}', rom: 'sa-baai dii, khɔ̀ɔp-khun {P}', en: "I'm fine, thank you." },
-      { who: 'B', th: 'ไม่เป็นไร{Pb}', rom: 'mâi pen rai {Pb}', en: "You're welcome." },
+      { who: 'B', th: 'คุณชื่ออะไร{Pbq}', rom: 'khun chûue a-rai {Pbq}', en: "What's your name?" },
+      { who: 'A', th: '{I}ชื่อ', rom: '{I} chûue', en: 'My name is… (then say your name)' },
+      { who: 'B', th: 'สนุกไหม{Pbq}', rom: 'sa-nùk mǎi {Pbq}', en: 'Having fun?' },
+      { who: 'A', th: 'สนุกมาก{P}', rom: 'sa-nùk mâak {P}', en: "It's a lot of fun." },
+      { who: 'B', th: 'เก่งมาก{Pb}', rom: 'kèng mâak {Pb}', en: 'Great! (your Thai is good)' },
+      { who: 'A', th: 'ขอบคุณ{P}', rom: 'khɔ̀ɔp-khun {P}', en: 'Thank you.' },
+      { who: 'A', th: 'ให้{I}อธิษฐานเผื่อคุณไหม{Pq}', rom: 'hâi {I} a-thít-thǎan phùea khun mǎi {Pq}', en: 'May I pray for you?' },
+      { who: 'B', th: 'ได้{Pb} ขอบคุณ{Pb}', rom: 'dâi {Pb}, khɔ̀ɔp-khun {Pb}', en: 'Sure. Thank you.' },
+      { who: 'A', th: 'พระเจ้ารักคุณ{P}', rom: 'phrá-jâo rák khun {P}', en: 'God loves you.' },
+      { who: 'A', th: 'พระเจ้าอวยพร{P}', rom: 'phrá-jâo uai-phɔɔn {P}', en: 'God bless you.' },
+      { who: 'B', th: 'ขอบคุณ{Pb} สวัสดี{Pb}', rom: 'khɔ̀ɔp-khun {Pb}, sa-wàt-dii {Pb}', en: 'Thank you. Goodbye.' },
       { who: 'A', th: 'สวัสดี{P}', rom: 'sa-wàt-dii {P}', en: 'Goodbye.' },
     ],
   },
