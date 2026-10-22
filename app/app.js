@@ -215,7 +215,7 @@
   async function th(text) { checkpoint(); await speakThai(text); checkpoint(); }
   // Time for the learner to repeat a Thai phrase out loud.
   const repeatGap = text => (1600 + text.length * 140) / Math.min(1, S.thaiRate);
-  // Words mode plays each phrase twice: first at the set speed, then slowed down so the sounds can be picked apart.
+  // The word list alternates speeds: tap once for the set speed, again for slow, so the sounds can be picked apart.
   const slowRate = () => Math.max(0.5, S.thaiRate * 0.75);
   async function note(segments, folder) {
     for (const seg of segments) seg.en ? await en(seg.en) : (await sayRaw(seg.th, folder || voiceFolder()), await wait(500));
@@ -330,9 +330,9 @@
       }
       await en('Now the whole thing.');
     }
-    for (const [k, v] of [v1, v2].entries()) {
-      stage('listen', k ? 'Listen (slow)' : 'Listen', it.en, romFor(it, v));
-      await sayRaw(it.th, v, k ? slowRate() : undefined);
+    for (const v of [v1, v2]) {
+      stage('listen', 'Listen', it.en, romFor(it, v));
+      await sayRaw(it.th, v);
       stage('speak', 'Repeat', it.en, romOf(it));
       await wait(repeatGap(thOf(it)));
     }
@@ -370,9 +370,9 @@
       await sayRaw(it.th, v1);
       stage('speak', 'Say the meaning', '', romFor(it, v1));
       await wait(S.pause * 1000);
-      stage('listen', 'Listen (slow)', it.en, romFor(it, v2));
+      stage('listen', 'Listen', it.en, romFor(it, v2));
       await en(it.en);
-      await sayRaw(it.th, v2, slowRate());
+      await sayRaw(it.th, v2);
       stage('speak', 'Repeat', it.en, romOf(it));
       await wait(repeatGap(text));
       grade(s, a, S.handsFree ? 'ok' : await awaitGrade());
@@ -390,10 +390,8 @@
     else if (S.mic && SR) ui.feedback.textContent = '… Didn’t catch that';
     stage('listen', 'Listen', it.en, romFor(it, v1));
     await sayRaw(it.th, v1); await wait(400);
-    stage('listen', 'Listen (slow)', it.en, romFor(it, v2));
-    await sayRaw(it.th, v2, slowRate());
     stage('speak', 'Repeat', it.en, romFor(it, v2));
-    await wait(repeatGap(text));
+    await sayRaw(it.th, v2); await wait(repeatGap(text));
     const g = S.handsFree ? (ok === false ? 'again' : 'ok') : await awaitGrade();
     grade(s, a, g);
   }
@@ -1143,7 +1141,7 @@
         play.className = 'play';
         play.textContent = '▶';
         play.setAttribute('aria-label', `Play: ${it.en}`);
-        play.onclick = () => playVocab(it);
+        play.onclick = () => playVocab(it, play);
         const text = document.createElement('span');
         text.className = 'vocab-text';
         text.textContent = it.en;
@@ -1163,10 +1161,14 @@
     });
     if (!list.children.length) list.innerHTML = '<p class="muted small">Nothing here yet. Phrases appear as you learn them.</p>';
   }
-  function playVocab(it) {
+  let lastVocab = null; // id of the phrase last played from the list, so a second tap plays it slow
+  function playVocab(it, btn) {
     if (run && !run.paused) togglePause(); // listening to the list pauses the lesson
     silence();
-    sayRaw(it.th, voiceFolder()).catch(() => {});
+    const slow = lastVocab === it.id;
+    lastVocab = slow ? null : it.id;
+    if (btn) { btn.textContent = slow ? '🐢' : '▶'; btn.title = slow ? 'Slow. Tap again for normal speed' : 'Tap again for slow'; }
+    sayRaw(it.th, voiceFolder(), slow ? slowRate() : undefined).catch(() => {});
   }
 
   // Strength of a phrase, from its review interval.
