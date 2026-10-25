@@ -114,12 +114,12 @@ const labelled = text => {
   }
   return out;
 };
-const SOUND_TIP = "Blue = the sound each letter makes. A dash means silent, or part of a vowel already shown.";
+const SOUND_TIP = "Blue = the sound each letter makes. A dash = silent, or part of a vowel already shown.";
 let pageNo = 0;
 const page = (title, sub, body, tip) => {
   pageNo++;
   return `<section class="page"><header><h1>${title}</h1><span>${sub}</span></header>${body}
-    <footer><span>${tip}</span><span>${S.title} · page ${pageNo}</span></footer></section>`;
+    <footer><span>${tip}</span><span>${S.title.replace(/ · .*/, "")} · page ${pageNo}</span></footer></section>`;
 };
 
 // Page 1: sentence breakdowns and grammar notes
@@ -165,6 +165,23 @@ document.fonts.ready.then(() => {
     let ws = b.querySelectorAll(".w");
     while (ws.length > 1 && b.scrollWidth > b.clientWidth + 1) { ws[ws.length - 1].remove(); ws = b.querySelectorAll(".w"); }
   });
+  // Layout check for tools/build_worksheets.py: anything running into the footer or off the edge.
+  const problems = [];
+  document.querySelectorAll(".page").forEach((pg, i) => {
+    const limit = pg.querySelector("footer").getBoundingClientRect().top;
+    for (const el of pg.children)
+      if (el.tagName !== "FOOTER" && el.getBoundingClientRect().bottom > limit + 1) problems.push(`page ${i + 1} runs into the footer`);
+    pg.querySelectorAll(".info, .info > *, header, footer, footer > *").forEach(el => {
+      if (el.scrollWidth > el.clientWidth + 1) problems.push(`page ${i + 1}: line too long: ${el.textContent.trim().slice(0, 40)}`);
+    });
+    const f = pg.querySelector("footer");
+    if (f.getBoundingClientRect().height > 30) problems.push(`page ${i + 1}: footer wraps onto two lines`);
+    pg.querySelectorAll(".grp .band").forEach(b => {
+      if (parseFloat(b.style.getPropertyValue("--fs")) < 40) problems.push(`page ${i + 1}: phrase shrunk below 40pt`);
+    });
+  });
+  document.querySelectorAll(".sg b").forEach(b => { if (b.textContent === "?") problems.push(`no sound label for ${b.parentNode.firstChild.textContent}`); });
+  document.body.dataset.problems = [...new Set(problems)].join("; ");
   document.body.dataset.ready = "1";
 });
 </script>
