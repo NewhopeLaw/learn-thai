@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Thai Worksheet</title>
+<!-- Handwriting worksheet template. Content lives in worksheets.js; pick a sheet with ?s=<file>,
+     e.g. worksheet.html?s=unit-01-greetings. tools/build_worksheets.py prints every sheet to PDF. -->
+<style>
+  @font-face { font-family: "Sarabun"; src: url("fonts/Sarabun-Regular.ttf"); font-weight: 400; }
+  @font-face { font-family: "Sarabun"; src: url("fonts/Sarabun-Bold.ttf"); font-weight: 700; }
+  @page { size: Letter; margin: 0.5in; }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; font-family: "Segoe UI", "Sarabun", Tahoma, sans-serif; color: #1a1a1a; }
+  .page { height: 10in; position: relative; break-after: page; overflow: hidden; }
+  .page:last-child { break-after: auto; }
+
+  header { display: flex; justify-content: space-between; align-items: baseline;
+           border-bottom: 2px solid #1a1a1a; padding-bottom: 4pt; margin-bottom: 12pt; }
+  header h1 { font-size: 17pt; margin: 0; }
+  header span { font-size: 10pt; color: #666; }
+  footer { position: absolute; bottom: 0; left: 0; right: 0; font-size: 9pt; color: #777;
+           border-top: 1px solid #ccc; padding-top: 4pt; display: flex; justify-content: space-between; }
+
+  /* Writing band: line-height = band height, so the baseline sits at a known spot.
+     Sarabun: ascent 1.068em, descent 0.232em -> baseline at 1.218em from top in a 1.6em box.
+     Guides (from baseline): tone-mark top +1.0em, consonant top +0.586em, baseline, lower vowel -0.33em. */
+  .band { font-family: "Sarabun", Tahoma, sans-serif; font-size: var(--fs, 52pt); height: 1.6em; line-height: 1.6em; position: relative;
+          white-space: nowrap; overflow: hidden; margin-bottom: 10pt; }
+  .band i { position: absolute; left: 0; right: 0; height: 0; border-top: 1px solid #b8c4d6; }
+  .band i.t { top: 0.218em; border-top: 1px dashed #c9d2e0; }
+  .band i.x { top: 0.632em; border-top: 1px solid #b8c4d6; }
+  .band i.b { top: 1.218em; border-top: 1.5px solid #6f86a8; }
+  .band i.d { top: 1.548em; border-top: 1px dashed #c9d2e0; }
+  .band .w { position: relative; margin-right: 0.45em; padding-left: 0.15em; }
+  .band .model { color: #111; }
+  .band .t1 { color: #b5b5b5; }
+  .band .t2 { color: #d6d6d6; }
+  /* Model rows carry a small sound label under each written piece. */
+  .band.lab { height: calc(1.6em + 9pt); }
+  .sg { display: inline-block; position: relative; }
+  .sg b { position: absolute; left: 50%; top: calc(100% - 4pt); transform: translateX(-50%); white-space: nowrap;
+          font: 600 9pt "Segoe UI", sans-serif; color: #1d4ed8; line-height: 1; }
+  .sg b.s { color: #aaa; font-weight: 400; }
+
+  .word { margin-bottom: 8pt; }
+  .info { display: flex; align-items: baseline; gap: 8pt; font-size: 12pt; margin-bottom: 2pt; white-space: nowrap; }
+  .info .n { font-weight: 700; color: #fff; background: #1a1a1a; border-radius: 50%; flex: none;
+             width: 18pt; height: 18pt; display: inline-flex; align-items: center; justify-content: center; font-size: 10pt; }
+  .info .rom { font-weight: 700; font-size: 14pt; }
+  .info .tones { display: inline-flex; gap: 2pt; }
+  .tone { font-size: 9pt; color: #fff; padding: 1pt 5pt; border-radius: 8pt; }
+  .info .mean { color: #333; }
+  .info .tip { color: #777; font-size: 10pt; margin-left: auto; }
+  .info .tip .th { font-size: 15pt; color: #333; }
+  .tone.mid { background: #6b7280; } .tone.low { background: #2563eb; } .tone.falling { background: #dc2626; }
+  .tone.high { background: #9333ea; } .tone.rising { background: #059669; }
+
+  /* Overview page */
+  .sent { border: 1.5px solid #ddd; border-radius: 10pt; padding: 10pt 12pt; margin-bottom: 12pt; }
+  .sent h2 { font-size: 13pt; margin: 0 0 2pt; }
+  .sent .eng { font-size: 12pt; color: #555; margin-bottom: 8pt; }
+  .chunks { display: flex; flex-wrap: wrap; gap: 6pt 4pt; }
+  .chunk { text-align: center; border-radius: 6pt; padding: 2pt 6pt 5pt; }
+  .th { font-family: "Sarabun", Tahoma, sans-serif; }
+  .chunk .th { font-size: 32pt; line-height: 1.45; }
+  .chunk .r { font-size: 10.5pt; font-weight: 700; }
+  .chunk .e { font-size: 9.5pt; color: #444; }
+  .c-pro { background: #e0ecff; } .c-verb { background: #dcfce7; } .c-key { background: #ffedd5; outline: 2px solid #f97316; }
+  .c-mod { background: #fef9c3; } .c-q { background: #f3e8ff; } .c-pol { background: #f1f5f9; } .c-req { background: #fce7f3; }
+  .c-noun { background: #ccfbf1; } .c-num { background: #e0e7ff; }
+  .lit { font-size: 11pt; margin-top: 8pt; } .lit b { font-weight: 700; }
+  .box { background: #fff7ed; border-left: 4pt solid #f97316; padding: 8pt 12pt; font-size: 11.5pt; margin-bottom: 10pt; }
+  .box + .box { background: #fefce8; border-color: #eab308; }
+  .box .th { font-size: 15pt; }
+  .legend { font-size: 10pt; color: #555; display: flex; flex-wrap: wrap; align-items: center; gap: 6pt; }
+
+  .chunkhead { font-size: 12pt; margin: 4pt 0 2pt; } .chunkhead b { font-size: 14pt; }
+  .howto { font-size: 10.5pt; color: #444; margin: -6pt 0 10pt; }
+</style>
+<script src="worksheets.js"></script>
+</head>
+<body>
+<div id="out"></div>
+<script>
+const key = new URLSearchParams(location.search).get("s") || SHEETS[0].file;
+const S = SHEETS.find(x => x.file === key);
+document.title = S.title;
+
+// Tone from the romanization's diacritic: à low, â falling, á high, ǎ rising, none mid.
+const TONES = { "̀": "low", "̂": "falling", "́": "high", "̌": "rising" };
+const toneOf = syl => { for (const ch of syl.normalize("NFD")) if (TONES[ch]) return TONES[ch]; return "mid"; };
+const tonePills = rom => rom.split(/[\s\-·]+/).filter(Boolean)
+  .map(s => `<span class="tone ${toneOf(s)}">${toneOf(s)}</span>`).join("");
+
+const lines = '<i class="t"></i><i class="x"></i><i class="b"></i><i class="d"></i>';
+const band = (inner, cls = "") => `<div class="band ${cls}">${lines}${inner}</div>`;
+const w = (txt, cls) => `<span class="w ${cls}">${txt}</span>`;
+
+// Split text into written pieces (a base character plus the marks stacked on it) and label each
+// with its sound from SOUNDS, matching the longest known word first.
+const SOUND_KEYS = Object.keys(SOUNDS).sort((a, b) => b.length - a.length);
+const PIECES = /[^ัิ-ฺ็-๎][ัิ-ฺ็-๎]*/g;
+const piece = (txt, label) => `<span class="sg">${txt}<b${label === "–" ? ' class="s"' : ""}>${label}</b></span>`;
+const labelled = text => {
+  text = text.replace(/&nbsp;/g, " ");
+  let out = "";
+  for (let i = 0; i < text.length;) {
+    if (/\s/.test(text[i])) { out += text[i++]; continue; }
+    const k = SOUND_KEYS.find(k => text.startsWith(k, i));
+    if (!k) { out += piece(text[i++], "?"); continue; }
+    const labels = SOUNDS[k].split(" ");
+    out += k.match(PIECES).map((p, j) => piece(p, labels[j])).join("");
+    i += k.length;
+  }
+  return out;
+};
+const SOUND_TIP = "Blue = the sound each letter makes. A dash means silent, or part of a vowel already shown.";
+let pageNo = 0;
+const page = (title, sub, body, tip) => {
+  pageNo++;
+  return `<section class="page"><header><h1>${title}</h1><span>${sub}</span></header>${body}
+    <footer><span>${tip}</span><span>${S.title} · page ${pageNo}</span></footer></section>`;
+};
+
+// Page 1: sentence breakdowns and grammar notes
+const overview = S.sentences.map((s, i) => `
+  <div class="sent"><h2>${i + 1}. ${s.h}</h2><div class="eng">"${s.en}"</div>
+    <div class="chunks">${s.chunks.map(([th, rom, en, role]) =>
+      `<div class="chunk c-${role}"><div class="th">${th}</div><div class="r">${rom}</div><div class="e">${en}</div></div>`).join("")}</div>
+    <div class="lit">${s.lit}</div></div>`).join("") +
+  S.notes.map(n => `<div class="box">${n}</div>`).join("") +
+  `<div class="legend">Tone colors: ${["mid", "low", "falling", "high", "rising"].map(t => `<span class="tone ${t}">${t}</span>`).join("")}
+    &nbsp;·&nbsp; Women: ฉัน for ผม, and ค่ะ (statements) / คะ (questions) for ครับ.</div>`;
+let html = page(S.heading || S.title, "Handwriting & vocab practice", overview,
+  "Tip: most Thai letters start at the little loop (หัว), then follow the line.");
+
+const PER_PAGE = 3;
+for (let p = 0; p < S.words.length; p += PER_PAGE) {
+  const body = S.words.slice(p, p + PER_PAGE).map(([th, rom, mean, tip], k) => `
+    <div class="word">
+      <div class="info"><span class="n">${p + k + 1}</span><span class="rom">${rom}</span>
+        <span class="tones">${tonePills(rom)}</span><span class="mean">${mean}</span><span class="tip">${(tip || "").replace(/[฀-๿]+/g, m => `<span class="th">${m}</span>`)}</span></div>
+      ${band(w(labelled(th), "model") + w(th, "t1") + Array(8).fill(w(th, "t2")).join(""), "lab")}${band(w(th, "t2"))}</div>`).join("");
+  html += page("Vocabulary: write each word", "Trace the gray, then write your own", body, SOUND_TIP);
+}
+
+for (let p = 0; p < S.practice.length; p += 2) {
+  const body = (p === 0 ? `<div class="howto">Row 1: read it aloud. Row 2: trace. Row 3: write it yourself.</div>` : "") +
+    S.practice.slice(p, p + 2).map(([th, rom, mean, label]) => `
+      <div class="grp"><div class="chunkhead">${label}: <b>${rom}</b> · "${mean}"</div>
+      ${band(w(labelled(th), "model"), "lab")}${band(w(th, "t1"))}${band("")}</div>`).join('<div style="height:10pt"></div>');
+  html += page("Phrases: trace and write", "Trace the gray, then write your own", body, SOUND_TIP);
+}
+document.getElementById("out").outerHTML = html;
+
+document.fonts.ready.then(() => {
+  // Phrase rows: shrink the whole group if the phrase is wider than the page.
+  document.querySelectorAll(".grp").forEach(g => {
+    const b = g.querySelector(".band"), span = b.querySelector(".w");
+    const fit = b.clientWidth / (span.offsetWidth + 4);
+    if (fit < 1) g.querySelectorAll(".band").forEach(x => x.style.setProperty("--fs", (52 * fit).toFixed(1) + "pt"));
+  });
+  // Word rows: drop trace copies that would be cut off at the right edge.
+  document.querySelectorAll(".word .band").forEach(b => {
+    let ws = b.querySelectorAll(".w");
+    while (ws.length > 1 && b.scrollWidth > b.clientWidth + 1) { ws[ws.length - 1].remove(); ws = b.querySelectorAll(".w"); }
+  });
+  document.body.dataset.ready = "1";
+});
+</script>
+</body>
+</html>
