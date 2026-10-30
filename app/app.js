@@ -11,6 +11,10 @@
 
   const ALL = window.COURSE.units.flatMap((u, unit) => u.items.map(it => ({ ...it, unit })));
   const BY_ID = Object.fromEntries(ALL.map(i => [i.id, i]));
+  // The script (app/letters.js): the Letters tab's own cards, scheduled like phrases but studied separately.
+  const LETTER_GROUPS = (window.LETTERS || { groups: [] }).groups;
+  const LETTERS_ALL = LETTER_GROUPS.flatMap((g, group) => g.items.map(it => ({ ...it, group, letter: true })));
+  for (const it of LETTERS_ALL) BY_ID[it.id] = it;
   // Learner profiles (no passwords): the chosen name is remembered in this browser.
   const BASE_KEY = 'learn-thai-audio.v1';
   const PROFILE_KEY = 'learn-thai-profile';
@@ -264,10 +268,10 @@
   }
 
   // ---------- scheduling ----------
-  function dueIds() {
+  function dueIds(letters = false) {
     const now = Date.now();
     return Object.entries(store.items)
-      .filter(([id, s]) => cardOf(id).it && s.due <= now)
+      .filter(([id, s]) => { const it = cardOf(id).it; return it && !!it.letter === letters && s.due <= now; })
       .sort((a, b) => a[1].due - b[1].due)
       .map(([id]) => id);
   }
@@ -309,6 +313,7 @@
   // ---------- cards ----------
   async function intro(s, id) {
     const it = BY_ID[id];
+    if (it.letter) return introLetter(s, it);
     if (it.unit !== s.unit) {
       s.unit = it.unit;
       ui.unit.textContent = window.COURSE.units[it.unit].title;
@@ -355,6 +360,7 @@
 
   async function recall(s, a) {
     const { it, dir } = cardOf(a.id);
+    if (it.letter) return recallLetter(s, a);
     const text = thOf(it);
     if (a.nextAt > Date.now() && s.active.length === 1) await wait(Math.min(a.nextAt - Date.now(), 4000));
     const v1 = voiceFolder();
@@ -473,7 +479,7 @@
       if (!run || run.stopped) throw STOP;
     }
   }
-  const narrate = text => step(() => { stage('listen', 'Listen', ''); return en(text); });
+  const narrate = text => step(() => { stage('listen', 'Listen', ''); showGlyph(null); return en(text); });
 
   function newRound(active, newQ, unit = -1) {
     return {
@@ -511,6 +517,202 @@
     if (S.focusUnit != null && hasNewWords(S.focusUnit)) return S.focusUnit;
     for (let u = 0; u < window.COURSE.units.length; u++) if (hasNewWords(u)) return u;
     return null;
+  }
+
+  // ----- Letters: the script as flashcards (app/letters.js) -----
+  // Each letter has two cards, like a phrase: see it and say its name (reading), hear its name and
+  // picture it (writing). The letter itself is shown big in place of the orb.
+  const CLASS_NAMES = { mid: 'middle', high: 'high', low: 'low' };
+  // How the English narrator describes each initial sound.
+  const SOUND_SAY = {
+    k: 'k, like in sky', kh: 'k with a puff of air, like in king', ng: 'ng, like the end of sing', j: 'j, like in jar',
+    ch: 'ch, like in chair', s: 's', d: 'd', t: 't, like in stop', th: 't with a puff of air, like in top', n: 'n',
+    b: 'b', p: 'p, like in spin', ph: 'p with a puff of air, like in pin', f: 'f', m: 'm', y: 'y, like in yes',
+    r: 'r', l: 'l', w: 'w', h: 'h', silent: 'silent: it carries a vowel',
+  };
+  const letterKind = it => (it.cls ? 'letter' : LETTER_GROUPS[it.group].key === 'tones' ? 'tone mark' : 'vowel');
+  // Shown under the letter: "k · chicken · middle class · rare"
+  const letterDesc = it => [it.cls && it.sound, it.word, it.cls ? `${CLASS_NAMES[it.cls]} class` : it.en, it.note].filter(Boolean).join(' · ');
+  // What the narrator says about it.
+  const letterSay = it => (it.cls ? `${SOUND_SAY[it.sound] || it.sound}. ${it.word}. ${CLASS_NAMES[it.cls]} class.` : `${it.say}.`) + (it.note ? ` ${it.note}.` : '');
+  let glyphOn = false;
+  // The letter itself, big, in place of the orb ('?' while it is hidden; null puts the orb back).
+  function showGlyph(text) {
+    glyphOn = text != null;
+    ui.stageBox.classList.toggle('has-glyph', glyphOn);
+    ui.glyph.hidden = !glyphOn;
+    ui.glyphText.textContent = text ?? '';
+    ui.glyphText.classList.toggle('hidden-letter', text === '?');
+  }
+  function stageLetter(kind, label, glyph, name, desc) {
+    stage(kind, label);
+    showGlyph(glyph);
+    ui.prompt.textContent = name || '';
+    ui.peek.textContent = desc || '';
+  }
+  async function sayLetter(it, folder) {
+    currentText = it.name; currentFolder = folder;
+    checkpoint(); await speakThai(it.name, folder); checkpoint();
+  }
+  async function sayExample(it, folder) {
+    if (!it.example) return;
+    await en('For example:');
+    await sayText(it.example.th, folder);
+    await wait(300);
+    await en(it.example.en);
+  }
+  async function introLetter(s, it) {
+    if (it.group !== s.unit) {
+      s.unit = it.group;
+      ui.unit.textContent = LETTER_GROUPS[it.group].title;
+      await en(LETTER_GROUPS[it.group].title.replace('·', '.'));
+    }
+    const v = voiceFolder();
+    stageLetter('listen', 'Listen', it.th, it.rom, letterDesc(it));
+    await en(`This ${letterKind(it)} is called:`);
+    await sayLetter(it, v); await wait(500);
+    await en(letterSay(it));
+    await sayExample(it, v);
+    stageLetter('listen', 'Listen', it.th, it.rom, letterDesc(it));
+    await sayLetter(it, v);
+    stageLetter('speak', 'Repeat', it.th, it.rom, letterDesc(it));
+    await wait(repeatGap(it.name));
+    introduced(s, it.id);
+  }
+  async function recallLetter(s, a) {
+    const { it, dir } = cardOf(a.id);
+    if (a.nextAt > Date.now() && s.active.length === 1) await wait(Math.min(a.nextAt - Date.now(), 4000));
+    const v = voiceFolder();
+    currentText = it.name; currentFolder = v;
+    run.canGrade = true;
+    setBar('grade');
+    ui.feedback.textContent = '';
+    const kind = letterKind(it);
+    if (dir === 'r') {
+      // Reading card: see it, say its name.
+      stageLetter('listen', 'Listen', it.th, '', '');
+      await en(`What is this ${kind} called?`);
+      stageLetter('speak', 'Say its name', it.th, '', '');
+      await wait(S.pause * 1000);
+      stageLetter('listen', 'Listen', it.th, it.rom, letterDesc(it));
+      await sayLetter(it, v);
+      await en(letterSay(it));
+      stageLetter('speak', 'Repeat', it.th, it.rom, letterDesc(it));
+      await sayLetter(it, v);
+      await wait(repeatGap(it.name));
+    } else {
+      // Writing card: hear the name, picture the shape, then see it.
+      stageLetter('listen', 'Listen', '?', '', '');
+      await en(`Which ${kind} is this? Picture it, or trace it in the air.`);
+      await sayLetter(it, v);
+      stageLetter('speak', 'Picture it', '?', it.rom, '');
+      await wait(S.pause * 1000);
+      stageLetter('listen', 'Listen', it.th, it.rom, letterDesc(it));
+      await sayLetter(it, v);
+      await en(letterSay(it));
+      await wait(500);
+    }
+    grade(s, a, S.handsFree ? 'ok' : await awaitGrade());
+  }
+  const hasNewLetters = g => LETTERS_ALL.some(i => i.group === g && !store.items[i.id]);
+  function nextLetterGroup() {
+    if (S.letterFocus != null && hasNewLetters(S.letterFocus)) return S.letterFocus;
+    for (let g = 0; g < LETTER_GROUPS.length; g++) if (hasNewLetters(g)) return g;
+    return null;
+  }
+  // Letters: due cards (both directions), then the next group's new letters.
+  async function startLetters(mode = 'both') {
+    if (!synth) return alert('This browser has no speech support. Try Chrome or Edge.');
+    const due = dueIds(true).slice(0, 30);
+    const group = nextLetterGroup();
+    const doReview = mode !== 'new' && due.length > 0;
+    const doNew = mode !== 'review' && group != null;
+    if (!doReview && !doNew) return alert(mode === 'review' ? 'No letters are due for review right now.' : mode === 'new' ? 'Every letter has been learned. Keep reviewing!' : 'Nothing to study right now. Come back tomorrow!');
+    beginSession(true);
+    talkMode = false;
+    try {
+      if (doReview) {
+        ui.unit.textContent = 'Review';
+        setBar('line');
+        await narrate(`Let's start with a review.`);
+        await runCards(newRound(due.map(id => ({ id, nextAt: 0, review: true })), []));
+      }
+      if (doNew) {
+        const fresh = LETTERS_ALL.filter(i => i.group === group && !store.items[i.id]).map(i => i.id);
+        setBar('line');
+        await narrate('Now some new letters.');
+        await runCards(newRound([], fresh));
+        if (S.letterFocus === group && !hasNewLetters(group)) delete S.letterFocus;
+      }
+      stage('listen', 'Done!', '');
+      showGlyph(null);
+      setBar('none');
+      await narrate(`Great work. That's the end of this session.`);
+    } catch (e) { if (e !== STOP) console.error(e); }
+    finish();
+  }
+  const letterOpen = new Set();
+  function renderLetters() {
+    const list = $('letterList');
+    list.innerHTML = '';
+    const current = nextLetterGroup() ?? 0;
+    LETTER_GROUPS.forEach((g, gi) => {
+      const items = LETTERS_ALL.filter(i => i.group === gi);
+      const det = document.createElement('details');
+      det.open = letterOpen.size ? letterOpen.has(gi) : gi === current;
+      det.ontoggle = () => (det.open ? letterOpen.add(gi) : letterOpen.delete(gi));
+      const sum = document.createElement('summary');
+      const name = document.createElement('span');
+      name.className = 'unit-name';
+      const learned = items.filter(i => store.items[i.id]).length;
+      name.textContent = `${g.title} (${learned ? `${learned} of ` : ''}${items.length})`;
+      sum.appendChild(name);
+      if (!inSession && hasNewLetters(gi)) {
+        const on = S.letterFocus === gi;
+        const b = document.createElement('button');
+        b.className = 'study-next' + (on ? ' on' : '');
+        b.textContent = on ? '✓ Learning next' : 'Learn next';
+        b.onclick = e => {
+          e.preventDefault();
+          if (on) delete S.letterFocus; else S.letterFocus = gi;
+          save();
+          on ? renderLetters() : show('letters');
+        };
+        sum.appendChild(b);
+      }
+      det.appendChild(sum);
+      for (const it of items) {
+        const row = document.createElement('div');
+        row.className = 'vocab-row';
+        const play = document.createElement('button');
+        play.className = 'play';
+        play.textContent = '▶';
+        play.setAttribute('aria-label', `Play: ${it.rom}`);
+        play.onclick = () => playLetter(it);
+        const glyph = document.createElement('span');
+        glyph.className = 'letter-glyph' + (it.cls ? ` cls-${it.cls}` : '');
+        glyph.lang = 'th';
+        glyph.textContent = it.th;
+        const text = document.createElement('span');
+        text.className = 'vocab-text';
+        text.textContent = it.rom;
+        const r = document.createElement('span');
+        r.className = 'muted small vocab-rom';
+        r.textContent = letterDesc(it) + (it.example ? ` · ${it.example.th} ${it.example.rom}, ${it.example.en}` : '');
+        text.appendChild(r);
+        const dot = document.createElement('span');
+        dot.className = `dot ${strength(it.id)}`;
+        dot.title = strength(it.id);
+        row.append(play, glyph, text, dot);
+        det.appendChild(row);
+      }
+      list.appendChild(det);
+    });
+  }
+  function playLetter(it) {
+    if (run && !run.paused) togglePause(); // listening to the list pauses the session
+    silence();
+    speakThai(it.name, voiceFolder()).catch(() => {});
   }
 
   // ----- Talk: Pimsleur-style lessons -----
@@ -688,7 +890,7 @@
     phase('Lesson complete', 100);
   }
 
-  function beginSession() {
+  function beginSession(letters = false) {
     inSession = true;
     run = { stopped: false, paused: false };
     // Unlock audio playback on phones while we're still inside the tap.
@@ -699,7 +901,9 @@
       player.play().then(() => { player.pause(); player.muted = false; }, () => { player.muted = false; });
     }
     show('session');
-    $('sessionWords').appendChild($('vocabPanel'));
+    $('sessionWords').appendChild($(letters ? 'letterPanel' : 'vocabPanel'));
+    $('sessionWordsTitle').textContent = letters ? 'Letter list' : 'Word list';
+    showGlyph(null);
     ui.feedback.textContent = '';
     synth.cancel();
   }
@@ -760,7 +964,9 @@
     synth.cancel();
     setBar('none');
     $('wordsHome').appendChild($('vocabPanel'));
+    $('lettersHome').appendChild($('letterPanel'));
     $('sessionWordsBox').open = false;
+    showGlyph(null);
     show('home');
     pushNow();
   }
@@ -780,9 +986,10 @@
     session: $('session'), setup: $('setup'),
     orb: $('orb'), orbLabel: $('orbLabel'), prompt: $('prompt'), peek: $('peek'), feedback: $('feedback'),
     grades: $('grades'), unit: $('unit'), bar: $('bar'), count: $('count'), pause: $('pause'),
+    glyph: $('glyph'), glyphText: $('glyphText'), glyphLabel: $('glyphLabel'), stageBox: document.querySelector('#session .stage'),
   };
 
-  const TABS = ['words', 'talk', 'song', 'more'];
+  const TABS = ['words', 'talk', 'song', 'letters', 'more'];
   let tab = 'words';
   let offlineReady = null; // set by the offline section
   function show(view) {
@@ -811,10 +1018,10 @@
   }
   $('statusChip').onclick = () => show('more');
   function stage(kind, label, prompt, rom) {
-    ui.orb.dataset.stage = kind;
-    ui.orbLabel.textContent = label;
+    ui.orb.dataset.stage = kind; ui.glyph.dataset.stage = kind;
+    ui.orbLabel.textContent = label; ui.glyphLabel.textContent = label;
     if (prompt !== undefined) ui.prompt.textContent = prompt ? `“${prompt}”` : '';
-    ui.peek.textContent = S.peek && rom ? rom : '';
+    if (rom !== undefined || !glyphOn) ui.peek.textContent = S.peek && rom ? rom : ''; // a letter's description stays while it is up
   }
   function progress(s) {
     const pct = s.total ? Math.round((s.done / s.total) * 100) : 0;
@@ -830,7 +1037,7 @@
   function renderHome() {
     const nUnits = window.COURSE.units.length;
     // Words
-    $('statLearned').textContent = Object.keys(store.items).filter(k => !k.includes('~') && BY_ID[k]).length;
+    $('statLearned').textContent = Object.keys(store.items).filter(k => !k.includes('~') && BY_ID[k] && !BY_ID[k].letter).length;
     const due = Math.min(dueIds().length, 30);
     $('statDue').textContent = due;
     $('statStreak').textContent = streak();
@@ -853,10 +1060,23 @@
     $('talkScene').textContent = t != null ? DIALOGUES[unitKey(t)].scene : 'Replay any lesson from the list below.';
     $('startTalk').hidden = t == null;
     $('talkEstimate').textContent = t != null ? `About ${8 + DIALOGUES[unitKey(t)].lines.length * 2} min · no buttons needed, just listen and speak` : '';
+    // Letters
+    const lDue = Math.min(dueIds(true).length, 30);
+    const lGroup = nextLetterGroup();
+    const lFresh = lGroup != null ? LETTERS_ALL.filter(i => i.group === lGroup && !store.items[i.id]).length : 0;
+    $('statLettersDue').textContent = lDue;
+    $('statLettersNew').textContent = lFresh;
+    $('statLettersLearned').textContent = LETTERS_ALL.filter(i => store.items[i.id]).length;
+    $('lettersNext').textContent = lGroup != null ? LETTER_GROUPS[lGroup].title : 'Every letter learned';
+    $('startLetters').textContent = lDue && lFresh ? '▶  Start: review + new letters' : lDue ? '▶  Start review' : lFresh ? '▶  Learn new letters' : '▶  Start';
+    $('startLettersReview').textContent = lDue ? `Review only · ${lDue} cards` : 'No reviews due';
+    $('startLettersNew').textContent = lFresh ? `New letters only · ${lFresh}` : 'No new letters';
+    $('lettersEstimate').textContent = lDue || lFresh ? `About ${Math.max(1, Math.round(lDue * 0.3 + lFresh * 0.7))} min` : 'All done for today. Come back tomorrow.';
     renderLessons();
     renderSongs();
     renderProgress();
     renderVocab();
+    renderLetters();
     renderChip();
     syncSettings();
   }
@@ -1181,8 +1401,7 @@
   function renderProgress() {
     const units = $('units');
     units.innerHTML = '';
-    window.COURSE.units.forEach((u, ui_) => {
-      const items = ALL.filter(i => i.unit === ui_);
+    const addRow = (title, shown, items, what) => {
       const c = { learning: 0, known: 0, mastered: 0, new: 0 };
       items.forEach(i => c[strength(i.id)]++);
       const pct = k => (c[k] / items.length) * 100 + '%';
@@ -1191,21 +1410,29 @@
       row.innerHTML = `<div class="unit-head"><span></span><span class="muted small">${items.length - c.new} / ${items.length}</span></div>
         <div class="stack" role="img" aria-label="${c.mastered} mastered, ${c.known} known, ${c.learning} learning, ${c.new} new">
           <i class="mastered" style="width:${pct('mastered')}"></i><i class="known" style="width:${pct('known')}"></i><i class="learning" style="width:${pct('learning')}"></i></div>`;
-      row.querySelector('.unit-head span').textContent = u.title + (store.lessons[u.key] ? '  ✓' : '');
+      row.querySelector('.unit-head span').textContent = shown;
       const weak = items.filter(i => ['new', 'learning'].includes(strength(i.id)));
       if (weak.length) {
         const b = document.createElement('button');
         b.className = 'link small';
-        b.textContent = 'I know this unit';
+        b.textContent = what === 'phrases' ? 'I know this unit' : 'I know these';
         b.onclick = () => {
-          if (!confirm(`Mark the ${weak.length} new or learning phrases in "${u.title}" as known? They'll come back for review in a week.`)) return;
+          if (!confirm(`Mark the ${weak.length} new or learning ${what} in "${title}" as known? They'll come back for review in a week.`)) return;
           weak.forEach(i => markKnown(i.id));
           save(); renderHome();
         };
         row.querySelector('.unit-head').appendChild(b);
       }
       units.appendChild(row);
-    });
+    };
+    window.COURSE.units.forEach((u, ui_) => addRow(u.title, u.title + (store.lessons[u.key] ? '  ✓' : ''), ALL.filter(i => i.unit === ui_), 'phrases'));
+    if (LETTER_GROUPS.length) {
+      const h = document.createElement('p');
+      h.className = 'level-head';
+      h.textContent = 'Letters';
+      units.appendChild(h);
+      LETTER_GROUPS.forEach((g, gi) => addRow(g.title, g.title, LETTERS_ALL.filter(i => i.group === gi), 'letters'));
+    }
 
     const days = [];
     for (let k = 13; k >= 0; k--) { const t = Date.now() - k * DAY; days.push({ t, n: store.log[dayKey(t)] || 0 }); }
@@ -1223,7 +1450,8 @@
     const totalCards = Object.values(store.log).reduce((a, b) => a + b, 0);
     const totalMin = Math.round(Object.values(store.secs).reduce((a, b) => a + b, 0) / 60);
     const mastered = ALL.filter(i => strength(i.id) === 'mastered').length;
-    $('totals').textContent = `${totalCards} cards reviewed · ${totalMin} min studied · ${mastered} phrases mastered · ${Object.keys(store.log).length} days practised`;
+    const lettersKnown = LETTERS_ALL.filter(i => ['known', 'mastered'].includes(strength(i.id))).length;
+    $('totals').textContent = `${totalCards} cards reviewed · ${totalMin} min studied · ${mastered} phrases mastered` + (lettersKnown ? ` · ${lettersKnown} letters known` : '') + ` · ${Object.keys(store.log).length} days practised`;
   }
   function renderVoiceInfo() {
     const el = document.getElementById('voiceInfo');
@@ -1514,6 +1742,9 @@
   $('start').onclick = () => startWords('both');
   $('startReview').onclick = () => startWords('review');
   $('startNew').onclick = () => startWords('new');
+  $('startLetters').onclick = () => startLetters('both');
+  $('startLettersReview').onclick = () => startLetters('review');
+  $('startLettersNew').onclick = () => startLetters('new');
   $('startTalk').onclick = () => startTalk();
   $('stop').onclick = stopSession;
   ui.pause.onclick = togglePause;

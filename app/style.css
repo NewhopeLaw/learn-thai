@@ -267,3 +267,44 @@ button.link.who::after { content: ' ▾'; color: var(--muted); }
 .my-link { font-size: 1.05rem; word-break: break-all; margin: 8px 0 0; }
 #backupHelp { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; }
 #backupHelp ol { padding-left: 20px; }
+
+/* ---------- letters ---------- */
+/* In a Letters session the orb gives way to the letter itself, big, in the same stage colours. */
+.glyph { --c: var(--listen); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.glyph[hidden] { display: none; }
+.stage.has-glyph #orb { display: none; }
+.glyph .char {
+  display: flex; align-items: center; justify-content: center;
+  min-width: 180px; min-height: 180px; padding: 0 28px;
+  font-size: 6.5rem; line-height: 1.25; color: var(--text);
+  font-family: "Leelawadee UI", "Noto Sans Thai", "Sukhumvit Set", "Thonburi", system-ui, sans-serif;
+  border: 3px solid var(--c); border-radius: 28px; background: var(--surface);
+  transition: border-color 0.3s;
+}
+.glyph .char.hidden-letter { color: var(--muted); font-size: 4rem; }
+.glyph .label { color: var(--c); font-weight: 600; }
+.glyph .label::before { content: "👂 "; }
+.glyph[data-stage="speak"] { --c: var(--speak); }
+.glyph[data-stage="speak"] .char { animation: pulse 1.4s ease-in-out infinite; }
+.glyph[data-stage="speak"] .label::before { content: "🗣️ "; }
+.glyph[data-stage="grade"] { --c: var(--grade); }
+.glyph[data-stage="grade"] .label::before { content: "⭐ "; }
+.glyph[data-stage="paused"] { --c: var(--muted); }
+.glyph[data-stage="paused"] .label::before { content: "⏸️ "; }
+@media (prefers-reduced-motion: reduce) { .glyph .char { animation: none !important; } }
+.stage.has-glyph .prompt { font-size: 1.25rem; margin-top: 12px; }
+.stage.has-glyph .peek { font-style: normal; }
+
+#letterList details { border-top: 1px solid var(--border); padding: 10px 0; }
+#letterList summary { display: flex; align-items: center; gap: 8px; list-style: none; }
+#letterList summary::-webkit-details-marker { display: none; }
+#letterList summary::before { content: "▸"; color: var(--muted); width: 12px; }
+#letterList details[open] summary::before { content: "▾"; }
+#letterList summary .unit-name { flex: 1; }
+.letter-glyph {
+  flex: none; width: 52px; text-align: center; font-size: 1.9rem; line-height: 1.2;
+  font-family: "Leelawadee UI", "Noto Sans Thai", "Sukhumvit Set", "Thonburi", system-ui, sans-serif;
+}
+.letter-glyph.cls-mid { color: var(--listen); }
+.letter-glyph.cls-high { color: var(--grade); }
+.letter-glyph.cls-low { color: var(--speak); }

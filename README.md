@@ -16,6 +16,8 @@ The app has two modes, side by side:
   4. Graduated interval recall: lines come back at growing intervals, and a few from the previous lesson open the next.
   5. Closing conversation at natural speed.
 
+- **Letters** is the same kind of flashcards for the Thai script ([app/letters.js](app/letters.js)): all 44 consonants, 28 vowels and the 4 tone marks, in small groups (by consonant class, then vowel pairs). Each one pops up big on screen while a Thai voice says its name and the narrator gives its sound, key word and class. Two cards each: *What is this letter?* (see it, say its name: reading) and *Which letter is this?* (hear the name, picture it: writing). Auto mode keeps going hands-free, so the phone can sit on the desk showing each letter as it is named.
+
 - **Song** learns lyrics line by line ([app/songs.js](app/songs.js)): key words first (they also join Words as a unit), then each line built from the end, "what comes next?" chaining, run-throughs from the top, and finally the whole song spoken, before singing it with the recording. Lyrics belong to their writers; add only songs you have the right to use.
 
 ### Inside a phrase drill
@@ -25,7 +27,7 @@ Optional extras:
 - **Hands-free mode:** no rating buttons, for walking or driving.
 - **Gendered politeness:** the course teaches ครับ/ค่ะ and ผม/ฉัน to match you.
 
-**Screens:** *Today* (start button, reviews due, new today, streak), *Progress*, *Words* (play any phrase, choose the next unit) and *More* (install, sync, settings, backup).
+**Screens:** *Words* (start button, reviews due, new today, streak, every phrase), *Talk*, *Song*, *Letters* (the script, same flashcard method) and *More* (progress, install, sync, settings, backup).
 
 **Tracking progress:** the *Progress* tab shows each unit's phrases as learning / known / mastered, the last 14 days of practice, and totals. Progress is saved in your browser (no account needed); use *Back up progress* / *Restore from backup* to move it between devices.
 
@@ -38,6 +40,7 @@ Once you're comfortable speaking, **[Stage 2: Reading](lessons/)** teaches the T
 ```
 index.html        audio app (the home page)
 app/course.js     course content: units and phrases  ← add material here
+app/letters.js    the script: consonants, vowels, tone marks (Letters tab)
 app/app.js        player, scheduling, speech
 app/style.css
 lessons/          Stage 2 reading lessons (Markdown, built by Jekyll / Just the Docs)

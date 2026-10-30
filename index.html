@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Learn Thai by Ear</title>
   <meta name="description" content="Free audio-first Thai course: listen, recall out loud, and review with spaced repetition. No reading required.">
-  <link rel="stylesheet" href="app/style.css?v=39">
+  <link rel="stylesheet" href="app/style.css?v=40">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#b5452b">
   <link rel="icon" type="image/png" href="app/icons/icon-192.png">
@@ -88,6 +88,31 @@
       <label class="check"><input id="songRom" type="checkbox" checked> Show romanization and meaning</label>
       <p id="songIntro" class="muted small" hidden>No songs yet.</p>
       <div id="songList"></div>
+    </section>
+
+    <!-- Letters: the script, as flashcards with spaced repetition -->
+    <section id="letters" class="view" hidden>
+      <p class="eyebrow">Letters · reading and writing</p>
+      <h1 class="next-title" id="lettersNext"></h1>
+      <div class="stats">
+        <div><b id="statLettersDue">0</b><span>reviews due</span></div>
+        <div><b id="statLettersNew">0</b><span>new letters</span></div>
+        <div><b id="statLettersLearned">0</b><span>learned</span></div>
+      </div>
+      <button id="startLetters" class="primary start">▶&nbsp; Start</button>
+      <div class="row split">
+        <button id="startLettersReview">Review only</button>
+        <button id="startLettersNew">New letters only</button>
+      </div>
+      <p id="lettersEstimate" class="muted small center"></p>
+      <p class="muted small">Each letter pops up big on screen while you hear its name, its sound and its class. Two cards each: <i>What is this letter?</i> for reading, <i>Which letter is this?</i> for writing. Turn on <b>Auto</b> to listen hands-free. The rules behind the letters are in the <a href="lessons/">reading lessons</a>.</p>
+
+      <h2 class="card-title section-title">All letters</h2>
+      <div id="lettersHome">
+        <div id="letterPanel">
+          <div id="letterList"></div>
+        </div>
+      </div>
     </section>
 
     <!-- More -->
@@ -177,6 +202,7 @@
       <details class="card">
         <summary class="card-title">How it works</summary>
         <p class="small"><b>Words</b> is audio flashcards with spaced repetition. Every phrase has two cards: <i>What does this mean?</i> trains your ear, <i>How do you say…?</i> trains your mouth. Each card comes back just before you'd forget it. Rate it Again, Good or Easy; <b>Auto</b> hides the buttons, marks everything OK and keeps going. <b>I know this</b> skips a phrase for a week.</p>
+        <p class="small"><b>Letters</b> is the same kind of flashcards for the Thai script: each consonant, vowel and tone mark pops up big on screen while you hear its name. <i>What is this letter?</i> trains reading; <i>Which letter is this?</i> trains writing (picture it, or trace it in the air). With <b>Auto</b> on it keeps going by itself.</p>
         <p class="small"><b>Talk</b> is a Pimsleur-style lesson for each unit, about 20–30 minutes, no buttons needed:</p>
         <ol class="small">
           <li><b>Opening conversation</b> between Niwat and Premwadee at natural speed. Just listen.</li>
@@ -214,6 +240,10 @@
           <span class="icon" aria-hidden="true"></span>
           <span id="orbLabel">Listen</span>
         </div>
+        <div id="glyph" class="glyph" data-stage="listen" hidden>
+          <span id="glyphText" class="char" lang="th"></span>
+          <span id="glyphLabel" class="label">Listen</span>
+        </div>
         <p id="prompt" class="prompt"></p>
         <p id="peek" class="peek"></p>
         <p id="feedback" class="feedback" aria-live="polite"></p>
@@ -230,7 +260,7 @@
         <button data-grade="easy">Easy</button>
       </div>
       <details id="sessionWordsBox" class="card">
-        <summary>Word list</summary>
+        <summary id="sessionWordsTitle">Word list</summary>
         <div id="sessionWords"></div>
       </details>
     </section>
@@ -240,13 +270,15 @@
     <button data-tab="words"><span aria-hidden="true">≡</span>Words</button>
     <button data-tab="talk"><span aria-hidden="true">❝</span>Talk</button>
     <button data-tab="song"><span aria-hidden="true">♪</span>Song</button>
+    <button data-tab="letters"><span aria-hidden="true" lang="th">ก</span>Letters</button>
     <button data-tab="more"><span aria-hidden="true">⋯</span>More</button>
   </nav>
 
-  <script src="app/course.js?v=39"></script>
-  <script src="app/dialogues.js?v=39"></script>
-  <script src="app/songs.js?v=39"></script>
-  <script src="app/audio-manifest.js?v=39"></script>
-  <script src="app/app.js?v=39"></script>
+  <script src="app/course.js?v=40"></script>
+  <script src="app/dialogues.js?v=40"></script>
+  <script src="app/songs.js?v=40"></script>
+  <script src="app/letters.js?v=40"></script>
+  <script src="app/audio-manifest.js?v=40"></script>
+  <script src="app/app.js?v=40"></script>
 </body>
 </html>

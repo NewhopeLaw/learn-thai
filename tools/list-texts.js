@@ -3,6 +3,7 @@ global.window = {};
 require('../app/course.js');
 require('../app/dialogues.js');
 require('../app/songs.js'); // adds each song's key words as a unit
+require('../app/letters.js');
 
 const MALE = { P: 'ครับ', Pq: 'ครับ', I: 'ผม' };
 const FEMALE = { P: 'ค่ะ', Pq: 'คะ', I: 'ฉัน' };
@@ -32,4 +33,6 @@ for (const d of Object.values(window.DIALOGUES)) {
 for (const song of window.SONGS) {
   for (const sec of song.sections) for (const line of sec.lines) addWithSuffixes(line.th);
 }
+// Letter names and example words for the Letters tab.
+for (const g of window.LETTERS.groups) for (const it of g.items) { texts.add(it.name); if (it.example) texts.add(it.example.th); }
 process.stdout.write(JSON.stringify([...texts]));
