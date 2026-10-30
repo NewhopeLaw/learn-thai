@@ -75,6 +75,30 @@
   .legend { font-size: 10pt; color: #555; display: flex; flex-wrap: wrap; align-items: center; gap: 6pt; }
 
   .chunkhead { font-size: 12pt; margin: 4pt 0 2pt; } .chunkhead b { font-size: 14pt; }
+
+  /* Alphabet sheets */
+  .cls { font-size: 9pt; color: #fff; padding: 1pt 6pt; border-radius: 8pt; }
+  .cls.mid { background: #0e7490; } .cls.high { background: #c2410c; } .cls.low { background: #6d28d9; }
+  .letter .band { font-size: 44pt; margin-bottom: 6pt; }
+  .letter { margin-bottom: 4pt; }
+  .info .name { font-size: 15pt; }
+  .info .snd { color: #333; }
+  .info .snd b { font-weight: 700; }
+  .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3pt; margin-bottom: 8pt; }
+  .cell { border-radius: 6pt; text-align: center; padding: 1pt 2pt 4pt; }
+  .cell.mid { background: #cffafe; } .cell.high { background: #ffedd5; } .cell.low { background: #ede9fe; }
+  .cell.old { opacity: .45; }
+  .cell .L { font-family: "Sarabun", Tahoma, sans-serif; font-size: 26pt; line-height: 1.15; }
+  .cell .nm { font-family: "Sarabun", Tahoma, sans-serif; font-size: 10.5pt; line-height: 1.2; }
+  .cell .r { font-size: 7.5pt; color: #333; }
+  .vt { width: 100%; border-collapse: collapse; margin-bottom: 8pt; font-size: 10pt; }
+  .vt th { text-align: left; font-size: 9.5pt; color: #555; border-bottom: 1.5px solid #1a1a1a; padding: 2pt 6pt; }
+  .vt td { border-bottom: 1px solid #e5e7eb; padding: 1pt 6pt; vertical-align: middle; }
+  .vt .th { font-size: 18pt; line-height: 1.2; }
+  .vt td.ex .th { font-size: 15pt; }
+  .gap { display: inline-block; width: 0.6em; }
+  .small-notes .box { font-size: 10.5pt; padding: 6pt 10pt; margin-bottom: 6pt; }
+  .small-notes .box .th { font-size: 13pt; }
   .howto { font-size: 10.5pt; color: #444; margin: -6pt 0 10pt; }
 </style>
 <script src="worksheets.js"></script>
@@ -122,35 +146,91 @@ const page = (title, sub, body, tip) => {
     <footer><span>${tip}</span><span>${S.title.replace(/ · .*/, "")} · page ${pageNo}</span></footer></section>`;
 };
 
-// Page 1: sentence breakdowns and grammar notes
-const overview = S.sentences.map((s, i) => `
-  <div class="sent"><h2>${i + 1}. ${s.h}</h2><div class="eng">"${s.en}"</div>
-    <div class="chunks">${s.chunks.map(([th, rom, en, role]) =>
-      `<div class="chunk c-${role}"><div class="th">${th}</div><div class="r">${rom}</div><div class="e">${en}</div></div>`).join("")}</div>
-    <div class="lit">${s.lit}</div></div>`).join("") +
-  S.notes.map(n => `<div class="box">${n}</div>`).join("") +
-  `<div class="legend">Tone colors: ${["mid", "low", "falling", "high", "rising"].map(t => `<span class="tone ${t}">${t}</span>`).join("")}
-    &nbsp;·&nbsp; Women: ฉัน for ผม, and ค่ะ (statements) / คะ (questions) for ครับ.</div>`;
-let html = page(S.heading || S.title, "Handwriting & vocab practice", overview,
-  "Tip: most Thai letters start at the little loop (หัว), then follow the line.");
+let html = "";
+const thai = t => `<span class="th">${t}</span>`;
+const CLASS_NAME = { mid: "middle class", high: "high class", low: "low class" };
 
-const PER_PAGE = 3;
-for (let p = 0; p < S.words.length; p += PER_PAGE) {
-  const body = S.words.slice(p, p + PER_PAGE).map(([th, rom, mean, tip], k) => `
-    <div class="word">
-      <div class="info"><span class="n">${p + k + 1}</span><span class="rom">${rom}</span>
-        <span class="tones">${tonePills(rom)}</span><span class="mean">${mean}</span><span class="tip">${(tip || "").replace(/[฀-๿]+/g, m => `<span class="th">${m}</span>`)}</span></div>
-      ${band(w(labelled(th), "model") + w(th, "t1") + Array(8).fill(w(th, "t2")).join(""), "lab")}${band(w(th, "t2"))}</div>`).join("");
-  html += page("Vocabulary: write each word", "Trace the gray, then write your own", body, SOUND_TIP);
+// Alphabet sheet: consonants. Items: [letter, name in Thai, name romanized, key word meaning, class, start sound, end sound, note]
+function consonantSheet() {
+  const grid = `<div class="grid">${S.items.map(([L, nm, rom, mean, cls, start, end, note]) =>
+    `<div class="cell ${cls}${note === "obsolete" ? " old" : ""}"><div class="L">${L}</div><div class="nm">${nm}</div><div class="r">${start}${end && end !== start ? " · -" + end : ""}</div></div>`).join("")}</div>`;
+  html = page(S.heading, "Handwriting practice", S.intro + grid +
+    `<div class="small-notes">${S.notes.map(n => `<div class="box">${n}</div>`).join("")}</div>` +
+    `<div class="legend">Classes: ${["mid", "high", "low"].map(c => `<span class="cls ${c}">${CLASS_NAME[c]}</span>`).join("")}
+      &nbsp;·&nbsp; Faded letters are no longer used.</div>`,
+    "Tip: most Thai letters start at the little loop (หัว), then follow the line.");
+  const PER = 6;
+  for (let p = 0; p < S.items.length; p += PER) {
+    const body = S.items.slice(p, p + PER).map(([L, nm, rom, mean, cls, start, end, note], k) => `
+      <div class="letter word">
+        <div class="info"><span class="n">${p + k + 1}</span><span class="name">${thai(nm)}</span><span class="rom">${rom}</span>
+          <span class="mean">${mean}</span><span class="cls ${cls}">${cls}</span>
+          <span class="tip snd">start <b>${start}</b> · end <b>${end ? "-" + end : "not used"}</b>${note ? " · " + note : ""}</span></div>
+        ${band(w(L, "model") + w(L, "t1") + w(L, "t2") + w(L, "t2"))}</div>`).join("");
+    html += page("Consonants: trace and write", "Trace the gray, then fill the row yourself", body,
+      "Tip: say the letter's name out loud each time you write it.");
+  }
 }
 
-for (let p = 0; p < S.practice.length; p += 2) {
-  const body = (p === 0 ? `<div class="howto">Row 1: read it aloud. Row 2: trace. Row 3: write it yourself.</div>` : "") +
-    S.practice.slice(p, p + 2).map(([th, rom, mean, label]) => `
-      <div class="grp"><div class="chunkhead">${label}: <b>${rom}</b> · "${mean}"</div>
-      ${band(w(labelled(th), "model"), "lab")}${band(w(th, "t1"))}${band("")}</div>`).join('<div style="height:10pt"></div>');
-  html += page("Phrases: trace and write", "Trace the gray, then write your own", body, SOUND_TIP);
+// Alphabet sheet: vowels and tone marks. Pairs: [short, long, short rom, long rom, sound hint, example, example rom, meaning].
+// Singles: [form, rom, what it is, example, example rom, meaning].
+function vowelSheet() {
+  const table = `<table class="vt"><tr><th>Short</th><th>Long</th><th>Sound</th><th>Example</th></tr>${S.pairs.map(([sh, lo, sr, lr, hint, ex, er, em]) =>
+    `<tr><td>${thai(sh)} ${sr}</td><td>${thai(lo)} ${lr}</td><td>${hint}</td><td class="ex">${thai(ex)} ${er} · ${em}</td></tr>`).join("")}
+    ${S.singles.filter(x => x[2] !== "tone mark").map(([f, r, what, ex, er, em]) =>
+    `<tr><td colspan="2">${thai(f)} ${r}</td><td>${what}</td><td class="ex">${thai(ex)} ${er} · ${em}</td></tr>`).join("")}</table>`;
+  html = page(S.heading, "Handwriting practice", S.intro + table +
+    `<div class="small-notes">${S.notes.map(n => `<div class="box">${n}</div>`).join("")}</div>`,
+    "Tip: อ only shows where the vowel goes. Write the vowel around it.");
+  const rows = [
+    ...S.pairs.map(([sh, lo, sr, lr, hint, ex, er, em]) => ({
+      info: `<span class="rom">${sr} / ${lr}</span><span class="mean">${hint}</span><span class="tip">${thai(ex)} ${er} · ${em}</span>`,
+      line: w(sh, "model") + w(sh, "t1") + '<span class="gap"></span>' + w(lo, "model") + w(lo, "t1") })),
+    ...S.singles.map(([f, r, what, ex, er, em]) => ({
+      info: `<span class="name">${thai(f)}</span><span class="rom">${r}</span><span class="mean">${what}</span><span class="tip">${thai(ex)} ${er} · ${em}</span>`,
+      line: w(f, "model") + w(f, "t1") + w(f, "t2") + w(f, "t2") })),
+  ];
+  const PER = 6;
+  for (let p = 0; p < rows.length; p += PER) {
+    const body = rows.slice(p, p + PER).map((r, k) => `
+      <div class="letter word"><div class="info"><span class="n">${p + k + 1}</span>${r.info}</div>${band(r.line)}</div>`).join("");
+    html += page("Vowels and tone marks: trace and write", "Trace the gray, then fill the row yourself", body,
+      "Tip: write the consonant first, then the vowel around it, then the tone mark on top.");
+  }
 }
+
+function unitSheet() {
+  // Page 1: sentence breakdowns and grammar notes
+  const overview = S.sentences.map((s, i) => `
+    <div class="sent"><h2>${i + 1}. ${s.h}</h2><div class="eng">"${s.en}"</div>
+      <div class="chunks">${s.chunks.map(([th, rom, en, role]) =>
+        `<div class="chunk c-${role}"><div class="th">${th}</div><div class="r">${rom}</div><div class="e">${en}</div></div>`).join("")}</div>
+      <div class="lit">${s.lit}</div></div>`).join("") +
+    S.notes.map(n => `<div class="box">${n}</div>`).join("") +
+    `<div class="legend">Tone colors: ${["mid", "low", "falling", "high", "rising"].map(t => `<span class="tone ${t}">${t}</span>`).join("")}
+      &nbsp;·&nbsp; Women: ฉัน for ผม, and ค่ะ (statements) / คะ (questions) for ครับ.</div>`;
+  html = page(S.heading || S.title, "Handwriting & vocab practice", overview,
+    "Tip: most Thai letters start at the little loop (หัว), then follow the line.");
+
+  const PER_PAGE = 3;
+  for (let p = 0; p < S.words.length; p += PER_PAGE) {
+    const body = S.words.slice(p, p + PER_PAGE).map(([th, rom, mean, tip], k) => `
+      <div class="word">
+        <div class="info"><span class="n">${p + k + 1}</span><span class="rom">${rom}</span>
+          <span class="tones">${tonePills(rom)}</span><span class="mean">${mean}</span><span class="tip">${(tip || "").replace(/[฀-๿]+/g, m => `<span class="th">${m}</span>`)}</span></div>
+        ${band(w(labelled(th), "model") + w(th, "t1") + Array(8).fill(w(th, "t2")).join(""), "lab")}${band(w(th, "t2"))}</div>`).join("");
+    html += page("Vocabulary: write each word", "Trace the gray, then write your own", body, SOUND_TIP);
+  }
+
+  for (let p = 0; p < S.practice.length; p += 2) {
+    const body = (p === 0 ? `<div class="howto">Row 1: read it aloud. Row 2: trace. Row 3: write it yourself.</div>` : "") +
+      S.practice.slice(p, p + 2).map(([th, rom, mean, label]) => `
+        <div class="grp"><div class="chunkhead">${label}: <b>${rom}</b> · "${mean}"</div>
+        ${band(w(labelled(th), "model"), "lab")}${band(w(th, "t1"))}${band("")}</div>`).join('<div style="height:10pt"></div>');
+    html += page("Phrases: trace and write", "Trace the gray, then write your own", body, SOUND_TIP);
+  }
+}
+(({ consonants: consonantSheet, vowels: vowelSheet })[S.kind] || unitSheet)();
 document.getElementById("out").outerHTML = html;
 
 document.fonts.ready.then(() => {

@@ -38,7 +38,11 @@ def load_sheets():
 def write_index(sheets):
     """Fill the worksheet table on the Worksheets page from the sheet data."""
     rows = ['| Unit | Practise | Worksheet |', '|------|----------|-----------|']
-    for s in sheets:
+    # Alphabet sheets first, then the units, then extras.
+    for s in sorted(sheets, key=lambda s: (not s.get('kind'), not s['file'].startswith('unit-'))):
+        if s.get('kind'):
+            rows.append(f'| Alphabet · {s["title"]} | {s["summary"]} | [PDF]({s["file"]}.pdf) |')
+            continue
         name = re.sub(r'^Unit (\d+) · ', r'\1 · ', s['title'])
         if not s['file'].startswith('unit-'):
             name = f'Extra · {name}'

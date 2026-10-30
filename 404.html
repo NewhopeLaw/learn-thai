@@ -6,12 +6,16 @@
   <title>Learn Thai by Ear</title>
   <script>
     // Personal links: /learn-thai/clem opens the app as the learner "clem".
+    // The site's own folders and pages are never learner names, even while they are still being published.
     (function () {
       var base = '/learn-thai/';
+      var reserved = ['printables', 'lessons', 'resources', 'app', 'audio', 'docs', 'users', 'worker', 'tools'];
       var p = location.pathname;
       if (p.indexOf(base) === 0) {
         var name = p.slice(base.length).split('/')[0];
-        if (/^[A-Za-z0-9-]{1,30}$/.test(name)) { location.replace(base + '?u=' + encodeURIComponent(name.toLowerCase())); }
+        if (/^[A-Za-z0-9-]{1,30}$/.test(name) && reserved.indexOf(name.toLowerCase()) < 0) {
+          location.replace(base + '?u=' + encodeURIComponent(name.toLowerCase()));
+        }
       }
     })();
   </script>

@@ -37,6 +37,7 @@ for (const s of SHEETS) {
   const at = s.file || '(no file)';
   if (files.has(s.file)) say(at, 'duplicate file name');
   files.add(s.file);
+  if (s.kind) continue; // alphabet sheets have their own layout
   for (const f of ['file', 'title', 'sentences', 'notes', 'words', 'practice']) if (!s[f]) say(at, `missing ${f}`);
   if (!s.sentences || !s.words || !s.practice || !s.notes) continue;
   if (s.sentences.length !== 2) say(at, `${s.sentences.length} sentences, expected 2`);
