@@ -419,11 +419,10 @@
       return;
     }
     // Good / Easy: done for this session; the long-term schedule decides when it returns.
+    // Practice cards (a unit replayed from the list) leave the schedule alone.
     s.active.splice(s.active.indexOf(a), 1);
-    if (!a.practice) {
-      s.done++;
-      if (!a.lapsed) commit(a.id, s.first[a.id], a.review);
-    }
+    s.done++;
+    if (!a.practice && !a.lapsed) commit(a.id, s.first[a.id], a.review);
     save();
     progress(s);
   }
@@ -440,7 +439,7 @@
     if (qi >= 0) { s.newQ.splice(qi, 1); s.done += 2; }
     for (const cid of [id, id + '~r']) {
       const ai = s.active.findIndex(a => a.id === cid);
-      if (ai >= 0) { const [a] = s.active.splice(ai, 1); if (!a.practice) s.done++; }
+      if (ai >= 0) { s.active.splice(ai, 1); s.done++; }
     }
     s.last = id;
     save();
@@ -483,7 +482,7 @@
 
   function newRound(active, newQ, unit = -1) {
     return {
-      active, newQ, total: active.filter(a => !a.practice).length + newQ.length * 2, done: 0, cards: 0,
+      active, newQ, total: active.length + newQ.length * 2, done: 0, cards: 0,
       first: {}, last: null, sinceIntro: 0, unit, tick: Date.now(),
     };
   }
@@ -513,6 +512,29 @@
 
   // ----- Words: which unit's vocabulary comes next -----
   const hasNewWords = u => ALL.some(i => i.unit === u && !store.items[i.id]);
+  // One unit, chosen from the list: its new words are taught (and it becomes the unit the daily Start
+  // continues with); words already learned are drilled as practice, which leaves their schedule alone.
+  async function startUnit(u) {
+    if (!synth) return alert('This browser has no speech support. Try Chrome or Edge.');
+    const mine = ALL.filter(i => i.unit === u);
+    const fresh = mine.filter(i => !store.items[i.id]).map(i => i.id);
+    const practice = mine.filter(i => store.items[i.id]).flatMap(i => [i.id + '~r', i.id]);
+    if (fresh.length) { S.focusUnit = u; save(); }
+    beginSession();
+    talkMode = false;
+    document.body.dataset.level = levelOf(UNITS[u]);
+    try {
+      ui.unit.textContent = UNITS[u].title;
+      setBar('line');
+      await narrate(`${UNITS[u].title.replace('·', '.')}. ${fresh.length && practice.length ? 'New words, and the ones you know for practice.' : fresh.length ? 'New words.' : 'All of it again, for practice.'}`);
+      await runCards(newRound(practice.map(id => ({ id, nextAt: 0, review: true, practice: true })), fresh, u));
+      if (S.focusUnit === u && !hasNewWords(u)) delete S.focusUnit;
+      stage('listen', 'Done!', '');
+      setBar('none');
+      await narrate(`Great work. That's the end of this unit.`);
+    } catch (e) { if (e !== STOP) console.error(e); }
+    finish();
+  }
   function nextWordsUnit() {
     if (S.focusUnit != null && hasNewWords(S.focusUnit)) return S.focusUnit;
     for (let u = 0; u < window.COURSE.units.length; u++) if (hasNewWords(u)) return u;
@@ -615,6 +637,28 @@
     grade(s, a, S.handsFree ? 'ok' : await awaitGrade());
   }
   const hasNewLetters = g => LETTERS_ALL.some(i => i.group === g && !store.items[i.id]);
+  // One group of letters from the list, like startUnit for words.
+  async function startLetterGroup(g) {
+    if (!synth) return alert('This browser has no speech support. Try Chrome or Edge.');
+    const mine = LETTERS_ALL.filter(i => i.group === g);
+    const fresh = mine.filter(i => !store.items[i.id]).map(i => i.id);
+    const practice = mine.filter(i => store.items[i.id]).flatMap(i => [i.id + '~r', i.id]);
+    if (fresh.length) { S.letterFocus = g; save(); }
+    beginSession(true);
+    talkMode = false;
+    try {
+      ui.unit.textContent = LETTER_GROUPS[g].title;
+      setBar('line');
+      await narrate(`${LETTER_GROUPS[g].title.replace('·', '.')}. ${fresh.length && practice.length ? 'New letters, and the ones you know for practice.' : fresh.length ? 'New letters.' : 'All of them again, for practice.'}`);
+      await runCards(newRound(practice.map(id => ({ id, nextAt: 0, review: true, practice: true })), fresh, g));
+      if (S.letterFocus === g && !hasNewLetters(g)) delete S.letterFocus;
+      stage('listen', 'Done!', '');
+      showGlyph(null);
+      setBar('none');
+      await narrate(`Great work. That's the end of this group.`);
+    } catch (e) { if (e !== STOP) console.error(e); }
+    finish();
+  }
   function nextLetterGroup() {
     if (S.letterFocus != null && hasNewLetters(S.letterFocus)) return S.letterFocus;
     for (let g = 0; g < LETTER_GROUPS.length; g++) if (hasNewLetters(g)) return g;
@@ -667,17 +711,13 @@
       const learned = items.filter(i => store.items[i.id]).length;
       name.textContent = `${g.title} (${learned ? `${learned} of ` : ''}${items.length})`;
       sum.appendChild(name);
-      if (!inSession && hasNewLetters(gi)) {
-        const on = S.letterFocus === gi;
+      if (!inSession) {
+        const fresh = hasNewLetters(gi);
         const b = document.createElement('button');
-        b.className = 'study-next' + (on ? ' on' : '');
-        b.textContent = on ? '✓ Learning next' : 'Learn next';
-        b.onclick = e => {
-          e.preventDefault();
-          if (on) delete S.letterFocus; else S.letterFocus = gi;
-          save();
-          on ? renderLetters() : show('letters');
-        };
+        b.className = 'study-next' + (fresh && S.letterFocus === gi ? ' on' : '');
+        b.textContent = fresh ? 'Learn' : 'Replay';
+        b.title = fresh ? 'Learn these letters now; the daily Start continues with them' : 'Practise these letters again (their review schedule is not changed)';
+        b.onclick = e => { e.preventDefault(); startLetterGroup(gi); };
         sum.appendChild(b);
       }
       det.appendChild(sum);
@@ -1340,17 +1380,13 @@
       name.className = 'unit-name';
       name.textContent = `${u.title} (${items.length})`;
       sum.appendChild(name);
-      if (!inSession && hasNewWords(ui_)) {
-        const on = S.focusUnit === ui_;
+      if (!inSession) {
+        const fresh = hasNewWords(ui_);
         const b = document.createElement('button');
-        b.className = 'study-next' + (on ? ' on' : '');
-        b.textContent = on ? '✓ Learning next' : 'Learn next';
-        b.onclick = e => {
-          e.preventDefault();
-          if (on) delete S.focusUnit; else S.focusUnit = ui_;
-          save();
-          on ? renderVocab() : show('words');
-        };
+        b.className = 'study-next' + (fresh && S.focusUnit === ui_ ? ' on' : '');
+        b.textContent = fresh ? 'Learn' : 'Replay';
+        b.title = fresh ? 'Learn this unit now; the daily Start continues with it' : 'Practise this unit again (its review schedule is not changed)';
+        b.onclick = e => { e.preventDefault(); startUnit(ui_); };
         sum.appendChild(b);
       }
       det.appendChild(sum);
@@ -1814,26 +1850,37 @@
     const missing = urls.filter(u => !have.has(u));
     return { total: urls.length, have: urls.length - missing.length, missing };
   }
+  const fmtMB = b => (b >= 10 * 1048576 ? Math.round(b / 1048576) : Math.round(b / 104857.6) / 10) + ' MB';
+  // The same state, in two places: the status line in More and the nudge on Words.
+  function setOfflineStatus(more, nudge) {
+    $('offlineStatus').textContent = more;
+    $('offlineNudgeText').textContent = nudge ?? more;
+  }
   async function renderOffline() {
     const st = await offlineState();
     if (!st || !st.total) return;
+    const size = window.AUDIO_BYTES || 0;          // written by tools/generate_audio.py
+    const left = size ? fmtMB(size * st.missing.length / st.total) : '';
+    const all = size ? ` (${fmtMB(size)})` : '';
     if (!st.missing.length) {
-      $('offlineStatus').textContent = `✓ Ready offline: all ${st.total} audio files are saved on this device.`;
-      $('offlineBtn').hidden = true;
+      setOfflineStatus(`✓ Ready offline: all ${st.total} audio files are saved on this device.`);
+      $('offlineBtn').hidden = $('offlineNudge').hidden = true;
       offlineReady = true; renderChip();
     } else {
-      $('offlineStatus').textContent = st.have
-        ? `${st.have} of ${st.total} audio files saved. Download the rest to use lessons without internet.`
-        : 'Save all the audio (about 9 MB) so lessons work without internet.';
-      $('offlineBtn').hidden = false;
+      setOfflineStatus(
+        st.have ? `${st.have} of ${st.total} audio files saved. Download the rest, about ${left}, to use lessons without internet.`
+                : `Save all the audio${all} so lessons work without internet.`,
+        st.have ? `${st.have} of ${st.total} audio files saved — about ${left} to go.`
+                : `No signal where you are going? Save every phrase${all} to this device.`);
+      $('offlineBtn').hidden = $('offlineNudge').hidden = false;
       offlineReady = false; renderChip();
     }
   }
   let downloading = false;
-  $('offlineBtn').onclick = async () => {
+  async function downloadAudio() {
     if (downloading) return;
     downloading = true;
-    $('offlineBtn').disabled = true;
+    $('offlineBtn').disabled = $('offlineNudgeBtn').disabled = true;
     try {
       try { await navigator.storage?.persist?.(); } catch {} // ask the browser not to evict it
       const st = await offlineState();
@@ -1846,17 +1893,19 @@
           try { const r = await fetch(u, { cache: 'no-store' }); if (r.status === 200) await c.put(u, r); else failed++; }
           catch { failed++; }
           done++;
-          $('offlineStatus').textContent = `Downloading… ${done} / ${st.total}`;
+          setOfflineStatus(`Downloading… ${done} / ${st.total}`);
         }
       };
       await Promise.all(Array.from({ length: 6 }, worker));
-      if (failed) $('offlineStatus').textContent = `${failed} files didn't download. Check your connection and press the button again.`;
+      if (failed) setOfflineStatus(`${failed} files didn't download. Check your connection and press the button again.`);
       else await renderOffline();
     } finally {
       downloading = false;
-      $('offlineBtn').disabled = false;
+      $('offlineBtn').disabled = $('offlineNudgeBtn').disabled = false;
     }
-  };
+  }
+  $('offlineBtn').onclick = downloadAudio;
+  $('offlineNudgeBtn').onclick = downloadAudio;
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   renderOffline();
 

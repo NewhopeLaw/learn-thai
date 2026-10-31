@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Learn Thai by Ear</title>
   <meta name="description" content="Free audio-first Thai course: listen, recall out loud, and review with spaced repetition. No reading required.">
-  <link rel="stylesheet" href="app/style.css?v=40">
+  <link rel="stylesheet" href="app/style.css?v=41">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#b5452b">
   <link rel="icon" type="image/png" href="app/icons/icon-192.png">
@@ -55,6 +55,7 @@
       <p id="estimate" class="muted small center"></p>
       <button id="statusChip" class="chip" type="button"></button>
       <p id="voiceInfo" class="muted small"></p>
+      <p id="offlineNudge" class="muted small center" hidden><span id="offlineNudgeText"></span> <button id="offlineNudgeBtn" class="link">Download for offline</button></p>
 
       <h2 class="card-title section-title">All words</h2>
       <div id="wordsHome">
@@ -201,7 +202,7 @@
 
       <details class="card">
         <summary class="card-title">How it works</summary>
-        <p class="small"><b>Words</b> is audio flashcards with spaced repetition. Every phrase has two cards: <i>What does this mean?</i> trains your ear, <i>How do you say…?</i> trains your mouth. Each card comes back just before you'd forget it. Rate it Again, Good or Easy; <b>Auto</b> hides the buttons, marks everything OK and keeps going. <b>I know this</b> skips a phrase for a week.</p>
+        <p class="small"><b>Words</b> is audio flashcards with spaced repetition. Every phrase has two cards: <i>What does this mean?</i> trains your ear, <i>How do you say…?</i> trains your mouth. Each card comes back just before you'd forget it. Rate it Again, Good or Easy; <b>Auto</b> hides the buttons, marks everything OK and keeps going. <b>I know this</b> skips a phrase for a week. <b>Learn</b> next to a unit in the list starts that unit now (and the daily Start carries on with it); <b>Replay</b> runs a finished unit again as practice, without changing when its words come back.</p>
         <p class="small"><b>Letters</b> is the same kind of flashcards for the Thai script: each consonant, vowel and tone mark pops up big on screen while you hear its name. <i>What is this letter?</i> trains reading; <i>Which letter is this?</i> trains writing (picture it, or trace it in the air). With <b>Auto</b> on it keeps going by itself.</p>
         <p class="small"><b>Talk</b> is a Pimsleur-style lesson for each unit, about 20–30 minutes, no buttons needed:</p>
         <ol class="small">
@@ -274,11 +275,11 @@
     <button data-tab="more"><span aria-hidden="true">⋯</span>More</button>
   </nav>
 
-  <script src="app/course.js?v=40"></script>
-  <script src="app/dialogues.js?v=40"></script>
-  <script src="app/songs.js?v=40"></script>
-  <script src="app/letters.js?v=40"></script>
-  <script src="app/audio-manifest.js?v=40"></script>
-  <script src="app/app.js?v=40"></script>
+  <script src="app/course.js?v=41"></script>
+  <script src="app/dialogues.js?v=41"></script>
+  <script src="app/songs.js?v=41"></script>
+  <script src="app/letters.js?v=41"></script>
+  <script src="app/audio-manifest.js?v=41"></script>
+  <script src="app/app.js?v=41"></script>
 </body>
 </html>

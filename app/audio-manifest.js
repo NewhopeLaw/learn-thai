@@ -2779,3 +2779,5 @@ window.AUDIO = {
  "ไอ แล้วก็น้ำมูกไหลครับ": "5023a7dca7",
  "ไอ แล้วก็น้ำมูกไหลค่ะ": "028948d670"
 };
+// Every file the offline download fetches, both voices, in bytes.
+window.AUDIO_BYTES = 79972992;
