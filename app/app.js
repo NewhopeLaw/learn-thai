@@ -728,7 +728,11 @@
         play.className = 'play';
         play.textContent = '▶';
         play.setAttribute('aria-label', `Play: ${it.rom}`);
-        play.onclick = () => playLetter(it);
+        play.onclick = e => { e.stopPropagation(); playLetter(it); };
+        row.onclick = () => openLetterCard(it);
+        row.tabIndex = 0;
+        row.setAttribute('role', 'button');
+        row.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLetterCard(it); } };
         const glyph = document.createElement('span');
         glyph.className = 'letter-glyph' + (it.cls ? ` cls-${it.cls}` : '');
         glyph.lang = 'th';
@@ -754,6 +758,40 @@
     silence();
     speakThai(it.name, voiceFolder()).catch(() => {});
   }
+  // The letter card: tap a letter in the list to see it big with its details; ‹ › walk through the list.
+  let cardLetter = null;
+  function openLetterCard(it) {
+    cardLetter = it;
+    $('cardGlyph').textContent = it.th;
+    $('cardGlyph').className = 'card-glyph' + (it.cls ? ` cls-${it.cls}` : '');
+    $('cardName').textContent = it.rom;
+    $('cardThai').textContent = it.name;
+    $('cardDesc').textContent = letterDesc(it);
+    const ex = $('cardExample');
+    ex.innerHTML = '';
+    ex.hidden = !it.example;
+    if (it.example) {
+      const th = document.createElement('span');
+      th.className = 'thai'; th.lang = 'th';
+      th.textContent = it.example.th;
+      const r = document.createElement('span');
+      r.className = 'muted';
+      r.textContent = `${it.example.rom} · ${it.example.en}`;
+      const play = document.createElement('button');
+      play.className = 'play';
+      play.textContent = '▶';
+      play.setAttribute('aria-label', `Play: ${it.example.en}`);
+      play.onclick = () => { silence(); speakThai(it.example.th, voiceFolder()).catch(() => {}); };
+      ex.append(th, r, play);
+    }
+    const i = LETTERS_ALL.indexOf(it);
+    $('cardPrev').disabled = i <= 0;
+    $('cardNext').disabled = i >= LETTERS_ALL.length - 1;
+    $('letterCard').hidden = false;
+    $('cardPlay').focus();
+    playLetter(it);
+  }
+  function closeLetterCard() { $('letterCard').hidden = true; cardLetter = null; silence(); }
 
   // ----- Talk: Pimsleur-style lessons -----
   const DIALOGUES = window.DIALOGUES || {};
@@ -1781,6 +1819,11 @@
   $('startLetters').onclick = () => startLetters('both');
   $('startLettersReview').onclick = () => startLetters('review');
   $('startLettersNew').onclick = () => startLetters('new');
+  $('cardClose').onclick = closeLetterCard;
+  $('letterCard').onclick = e => { if (e.target === $('letterCard')) closeLetterCard(); };
+  $('cardPlay').onclick = () => cardLetter && playLetter(cardLetter);
+  $('cardPrev').onclick = () => { const i = LETTERS_ALL.indexOf(cardLetter); if (i > 0) openLetterCard(LETTERS_ALL[i - 1]); };
+  $('cardNext').onclick = () => { const i = LETTERS_ALL.indexOf(cardLetter); if (i < LETTERS_ALL.length - 1) openLetterCard(LETTERS_ALL[i + 1]); };
   $('startTalk').onclick = () => startTalk();
   $('stop').onclick = stopSession;
   ui.pause.onclick = togglePause;
@@ -1809,6 +1852,12 @@
   setVoice(VOICE_ORDER.includes(S.voice) ? S.voice : 'both');
 
   document.addEventListener('keydown', e => {
+    if (!$('letterCard').hidden) {
+      if (e.key === 'Escape') closeLetterCard();
+      else if (e.key === 'ArrowLeft') $('cardPrev').click();
+      else if (e.key === 'ArrowRight') $('cardNext').click();
+      return;
+    }
     if (ui.session.hidden || e.target.closest('input,select,button')) return;
     if (e.key === ' ') { e.preventDefault(); togglePause(); }
     else if (e.key === 'Escape') stopSession();

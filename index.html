@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Learn Thai by Ear</title>
   <meta name="description" content="Free audio-first Thai course: listen, recall out loud, and review with spaced repetition. No reading required.">
-  <link rel="stylesheet" href="app/style.css?v=41">
+  <link rel="stylesheet" href="app/style.css?v=42">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#b5452b">
   <link rel="icon" type="image/png" href="app/icons/icon-192.png">
@@ -267,6 +267,23 @@
     </section>
   </main>
 
+  <!-- Letter card: one letter from the list, enlarged, with its details -->
+  <div id="letterCard" class="sheet" hidden>
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="cardName">
+      <button id="cardClose" class="icon sheet-close" aria-label="Close">✕</button>
+      <div class="card-glyph-wrap"><span id="cardGlyph" class="card-glyph" lang="th"></span></div>
+      <p id="cardName" class="card-name"></p>
+      <p id="cardThai" class="card-thai" lang="th"></p>
+      <p id="cardDesc" class="muted"></p>
+      <p id="cardExample" class="card-example" hidden></p>
+      <div class="row">
+        <button id="cardPrev" class="icon" aria-label="Previous letter">‹</button>
+        <button id="cardPlay" class="primary grow">▶&nbsp; Play</button>
+        <button id="cardNext" class="icon" aria-label="Next letter">›</button>
+      </div>
+    </div>
+  </div>
+
   <nav id="tabbar" class="tabbar" hidden>
     <button data-tab="words"><span aria-hidden="true">≡</span>Words</button>
     <button data-tab="talk"><span aria-hidden="true">❝</span>Talk</button>
@@ -275,11 +292,11 @@
     <button data-tab="more"><span aria-hidden="true">⋯</span>More</button>
   </nav>
 
-  <script src="app/course.js?v=41"></script>
-  <script src="app/dialogues.js?v=41"></script>
-  <script src="app/songs.js?v=41"></script>
-  <script src="app/letters.js?v=41"></script>
-  <script src="app/audio-manifest.js?v=41"></script>
-  <script src="app/app.js?v=41"></script>
+  <script src="app/course.js?v=42"></script>
+  <script src="app/dialogues.js?v=42"></script>
+  <script src="app/songs.js?v=42"></script>
+  <script src="app/letters.js?v=42"></script>
+  <script src="app/audio-manifest.js?v=42"></script>
+  <script src="app/app.js?v=42"></script>
 </body>
 </html>

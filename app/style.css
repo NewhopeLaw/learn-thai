@@ -308,3 +308,27 @@ button.link.who::after { content: ' ▾'; color: var(--muted); }
 .letter-glyph.cls-mid { color: var(--listen); }
 .letter-glyph.cls-high { color: var(--grade); }
 .letter-glyph.cls-low { color: var(--speak); }
+
+/* A letter from the list, enlarged as a card over the page. */
+.sheet { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0, 0, 0, 0.45); }
+.sheet[hidden] { display: none; }
+.sheet-card { position: relative; width: min(400px, 100%); max-height: calc(100dvh - 32px); overflow: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 20px 20px 16px; text-align: center; }
+.sheet-close { position: absolute; top: 10px; right: 10px; }
+.card-glyph-wrap { display: flex; justify-content: center; margin: 8px 0 12px; }
+.card-glyph {
+  display: flex; align-items: center; justify-content: center; min-width: 200px; min-height: 200px; padding: 0 28px;
+  font-size: 8rem; line-height: 1.25; border: 3px solid var(--listen); border-radius: 28px;
+  font-family: "Leelawadee UI", "Noto Sans Thai", "Sukhumvit Set", "Thonburi", system-ui, sans-serif;
+}
+.card-glyph.cls-mid { border-color: var(--listen); }
+.card-glyph.cls-high { border-color: var(--grade); }
+.card-glyph.cls-low { border-color: var(--speak); }
+.card-name { font-size: 1.5rem; font-weight: 600; margin: 0; }
+.card-thai { font-size: 1.3rem; margin: 2px 0 6px; }
+.card-example { margin: 10px 0 0; }
+.card-example .thai { font-size: 1.4rem; margin-right: 6px; }
+.card-example .play { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; min-height: 36px; padding: 0; border-radius: 50%; margin-left: 8px; vertical-align: middle; }
+.sheet .row { justify-content: center; align-items: stretch; flex-wrap: nowrap; margin-top: 16px; }
+.sheet .row .grow { flex: 1; }
+#letterList .vocab-row { cursor: pointer; border-radius: 10px; }
+#letterList .vocab-row:hover { background: var(--surface-2); }
