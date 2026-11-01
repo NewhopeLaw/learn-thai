@@ -1,5 +1,7 @@
 // Songs for the Song tab. Lyrics are the property of their writers; keep this to songs you have the right to use.
-//   sections: lines of th (Thai, spaces mark the pieces used for reverse building), rom, en (meaning)
+//   sections: lines of th (Thai, spaces mark the pieces used for reverse building), rom, en (meaning),
+//             gloss: [English, Thai] pairs in English order, so the meaning lights up word by word with the Thai
+//             (Thai can be a list when several Thai words make one English word)
 //   words: key vocabulary, taught at the start of the song lesson
 //   more:  every other word in the lyrics, small grammar words and particles included, taught next
 //   Both lists are also added to the Words tab as a unit, so they enter spaced repetition.
@@ -17,18 +19,25 @@ window.SONGS = [
       {
         name: 'Verse',
         lines: [
-          { th: 'ใจที่กระหายและเหนื่อย', rom: 'jai thîi kra-hǎai lɛ́ nùeai', en: 'A heart that is thirsty and tired' },
-          { th: 'ใจที่ทนทุกข์ลำบาก', rom: 'jai thîi thon thúk lam-bàak', en: 'A heart that bears suffering and hardship' },
-          { th: 'ใจที่หมดหวังทุกอย่าง จงเข้ามา', rom: 'jai thîi mòt wǎng thúk yàang, jong khâo maa', en: 'A heart that has lost all hope: come' },
+          { th: 'ใจที่กระหายและเหนื่อย', rom: 'jai thîi kra-hǎai lɛ́ nùeai', en: 'A heart that is thirsty and tired',
+            gloss: [['A heart', 'ใจ'], ['that is', 'ที่'], ['thirsty', 'กระหาย'], ['and', 'และ'], ['tired', 'เหนื่อย']] },
+          { th: 'ใจที่ทนทุกข์ลำบาก', rom: 'jai thîi thon thúk lam-bàak', en: 'A heart that bears suffering and hardship',
+            gloss: [['A heart', 'ใจ'], ['that', 'ที่'], ['bears', 'ทน'], ['suffering', 'ทุกข์'], ['and hardship', 'ลำบาก']] },
+          { th: 'ใจที่หมดหวังทุกอย่าง จงเข้ามา', rom: 'jai thîi mòt wǎng thúk yàang, jong khâo maa', en: 'A heart that has lost all hope: come',
+            gloss: [['A heart', 'ใจ'], ['that', 'ที่'], ['has lost', 'หมด'], ['all', 'ทุกอย่าง'], ['hope', 'หวัง'], ['come', ['จง', 'เข้ามา']]] },
         ],
       },
       {
         name: 'Chorus',
         lines: [
-          { th: 'พระองค์เป็นน้ำแห่งชีวิต', rom: 'phrá-ong pen náam hɛ̀ng chii-wít', en: 'He is the water of life' },
-          { th: 'ให้เราดื่มน้ำแห่งชีวิต', rom: 'hâi rao dùuem náam hɛ̀ng chii-wít', en: 'Let us drink the water of life' },
-          { th: 'หล่อเลี้ยงหัวใจ ให้ชีวิตใหม่', rom: 'lɔ̀ɔ-líang hǔa-jai, hâi chii-wít mài', en: 'Nourishing the heart, giving new life' },
-          { th: 'แม่น้ำแห่งชีวิตจะรินไหล มาจากใจ', rom: 'mɛ̂ɛ-náam hɛ̀ng chii-wít jà rin lǎi, maa jàak jai', en: 'The river of life will flow from the heart' },
+          { th: 'พระองค์เป็นน้ำแห่งชีวิต', rom: 'phrá-ong pen náam hɛ̀ng chii-wít', en: 'He is the water of life',
+            gloss: [['He', 'พระองค์'], ['is', 'เป็น'], ['the water', 'น้ำ'], ['of', 'แห่ง'], ['life', 'ชีวิต']] },
+          { th: 'ให้เราดื่มน้ำแห่งชีวิต', rom: 'hâi rao dùuem náam hɛ̀ng chii-wít', en: 'Let us drink the water of life',
+            gloss: [['Let', 'ให้'], ['us', 'เรา'], ['drink', 'ดื่ม'], ['the water', 'น้ำ'], ['of', 'แห่ง'], ['life', 'ชีวิต']] },
+          { th: 'หล่อเลี้ยงหัวใจ ให้ชีวิตใหม่', rom: 'lɔ̀ɔ-líang hǔa-jai, hâi chii-wít mài', en: 'Nourishing the heart, giving new life',
+            gloss: [['Nourishing', 'หล่อเลี้ยง'], ['the heart', 'หัวใจ'], ['giving', 'ให้'], ['new', 'ใหม่'], ['life', 'ชีวิต']] },
+          { th: 'แม่น้ำแห่งชีวิตจะรินไหล มาจากใจ', rom: 'mɛ̂ɛ-náam hɛ̀ng chii-wít jà rin lǎi, maa jàak jai', en: 'The river of life will flow from the heart',
+            gloss: [['The river', 'แม่น้ำ'], ['of', 'แห่ง'], ['life', 'ชีวิต'], ['will', 'จะ'], ['flow', 'รินไหล'], ['from', ['มา', 'จาก']], ['the heart', 'ใจ']] },
         ],
       },
     ],

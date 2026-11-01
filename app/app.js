@@ -236,9 +236,18 @@
     }
     for (const d of Object.values(window.DIALOGUES || {})) for (const l of d.lines) addLine(fillAs(l.th, false, f), fillAs(l.rom, true, f));
   }
+  // The English for each Thai word, so the meaning lights up with it (songs: each line's `gloss`).
+  // By Thai text, which can be a line or a "from the end" piece of one; a line can share it with a word.
+  const GLOSS_OF = new Map();
+  const glossOf = x => ({ th: x.th, en: x.en, gloss: x.gloss || [[x.en, x.th]] }); // no gloss: the meaning lights whole
+  const addGloss = (th, g) => (GLOSS_OF.get(th) || GLOSS_OF.set(th, []).get(th)).push(g);
   for (const song of window.SONGS || []) {
-    for (const sec of song.sections) for (const l of sec.lines) addLine(l.th, l.rom);
-    for (const w of [...song.words, ...(song.more || [])]) addRom(w.th, w.rom);
+    for (const sec of song.sections) for (const l of sec.lines) {
+      addLine(l.th, l.rom);
+      const ps = l.th.split(' ').filter(Boolean);
+      for (let i = 0; i < ps.length; i++) addGloss(ps.slice(i).join(' '), glossOf(l));
+    }
+    for (const w of [...song.words, ...(song.more || [])]) { addRom(w.th, w.rom); addGloss(w.th, glossOf(w)); }
   }
   for (const it of LETTERS_ALL) { addRom(it.name, it.rom); if (it.example) addRom(it.example.th, it.example.rom); }
 
@@ -281,7 +290,7 @@
     const inStage = !target;
     if (inStage) {
       if (!reveal || !run) return hideLyric();
-      target = glyphOn ? { box: ui.lyric, th: unshown(), rom: ui.lyricRom, glyph: ui.glyphText } : { box: ui.lyric, th: ui.lyricTh, rom: ui.lyricRom };
+      target = glyphOn ? { box: ui.lyric, th: unshown(), rom: ui.lyricRom, glyph: ui.glyphText } : { box: ui.lyric, th: ui.lyricTh, rom: ui.lyricRom, en: ui.prompt };
       ui.lyricTh.textContent = '';
     }
     hideLyric();
@@ -289,7 +298,7 @@
     const rom = ROM_OF.get(text) || '';
     const t = TIMING[AUDIO[text]]?.[folder === 'female' ? 'f' : 'm'] || [];
     const words = [];
-    for (let i = 0; i + 3 < t.length; i += 4) words.push({ start: t[i], end: t[i + 1], at: t[i + 2], syl: t[i + 3], th: null, rom: [] });
+    for (let i = 0; i + 3 < t.length; i += 4) words.push({ start: t[i], end: t[i + 1], at: t[i + 2], syl: t[i + 3], th: null, rom: [], en: [] });
     const thEl = target.th, romEl = target.rom;
     thEl.textContent = ''; romEl.textContent = '';
     lyric = { words: [], cur: -2, raf: 0, prompt: stagePrompt, box: inStage ? null : target.box, glyph: inStage && glyphOn ? ui.glyphText.textContent : null, glyphEl: target.glyph || null };
@@ -299,6 +308,7 @@
         const to = i === words.length - 1 ? text.length : w.at;
         w.th = addSpan(thEl, text.slice(from, to));
         w.word = text.slice(from, to).replace(/[^\u0E00-\u0E7F]/g, ''); // its own recording (tools/generate_audio.py: spoken_words)
+        w.from = from; w.to = to;
         from = to;
       });
       const syl = [...rom.matchAll(/[^\s-]+/g)];
@@ -318,6 +328,9 @@
         w.rom.push(sp);
       });
       if (last < rom.length) romEl.append(rom.slice(last));
+      // The meaning, if it is on screen: the English that goes with each Thai word lights with it.
+      const g = target.en && (target.gloss || (GLOSS_OF.get(text) || []).find(c => target.en.textContent.includes(c.en)));
+      if (g) lightMeaning(target.en, g, text, words, folder);
       lyric.words = words;
       paintLyric(-1);
       // Tap a word (Thai or romanization) to hear just that word, cut from the same recording.
@@ -331,6 +344,52 @@
     if (target.box) target.box.hidden = false;
     // On the lesson screen it replaces the romanization line (a letter's name, with a letter up).
     if (inStage) glyphOn ? (ui.prompt.textContent = '') : (ui.peek.textContent = '');
+  }
+  // Split the English meaning in `el` into spans, one per gloss pair, each tied to the spoken Thai words
+  // it overlaps. `text` is the line itself or a "from the end" piece of it (its gloss covers the whole line).
+  const findWord = (s, sub, from) => {
+    for (let i = s.indexOf(sub, from); i >= 0; i = s.indexOf(sub, i + 1)) if (!/\w/.test(s[i - 1] || '') && !/\w/.test(s[i + sub.length] || '')) return i;
+    return -1;
+  };
+  function lightMeaning(el, g, text, words, folder) {
+    const off = g.th.length - text.length;
+    const full = el.textContent, base = full.indexOf(g.en);
+    if (off < 0 || g.th.slice(off) !== text || base < 0) return;
+    const used = [], parts = [];
+    let epos = 0;
+    for (const [en, th] of g.gloss) {
+      const at = findWord(g.en, en, epos);
+      if (at < 0) continue;
+      epos = at + en.length;
+      const ranges = [];
+      for (const t of [].concat(th)) {
+        let i = -1;
+        do i = g.th.indexOf(t, i + 1); while (i >= 0 && used.some(([a, b]) => i < b && a < i + t.length));
+        if (i < 0) continue;
+        used.push([i, i + t.length]);
+        ranges.push([i - off, i - off + t.length]);
+      }
+      const ws = words.filter(w => ranges.some(([a, b]) => w.from < b && a < w.to));
+      if (ws.length) parts.push({ at, len: en.length, ws });
+    }
+    if (!parts.length) return;
+    el.textContent = full.slice(0, base);
+    let last = 0;
+    for (const p of parts) {
+      if (p.at > last) el.append(g.en.slice(last, p.at));
+      last = p.at + p.len;
+      const sp = document.createElement('span');
+      sp.textContent = g.en.slice(p.at, last);
+      el.append(sp);
+      const m = { sp, ws: p.ws };
+      p.ws.forEach(w => w.en.push(m));
+      // Tapping the English plays its Thai word.
+      sp.classList.add('tap');
+      sp.setAttribute('role', 'button');
+      sp.title = 'Tap to hear this word in Thai';
+      sp.onclick = e => { e.stopPropagation(); playWord(words, words.indexOf(p.ws[0]), folder); };
+    }
+    el.append(g.en.slice(last) + full.slice(base + g.en.length));
   }
   // Which romanization syllables go with which spoken Thai word. `want` is each word's syllable count
   // (an estimate), `dur` how long each takes to say, `sep` the separator before each syllable ('-' inside
@@ -376,6 +435,12 @@
     for (const sp of [w.th, ...w.rom]) {
       sp.classList.remove('said', 'now', 'todo');
       sp.classList.add(c);
+    }
+    // An English word can stand for several Thai words: lit while any of them is.
+    for (const m of w.en || []) {
+      const cs = m.ws.map(x => x.th.classList);
+      m.sp.classList.remove('said', 'now', 'todo');
+      m.sp.classList.add(cs.some(l => l.contains('now')) ? 'now' : cs.some(l => l.contains('todo')) ? 'todo' : 'said');
     }
   }
   // One word on its own, from its own recording (made separately, so nothing is clipped).
@@ -1641,12 +1706,13 @@
             line2.append(r, en);
             txt.appendChild(line2);
           }
-          play.onclick = () => { if (run && !run.paused) togglePause(); silence(); endPlayback?.(); speakThai(L.th, voiceOf('A'), undefined, { box: null, th, rom: r }).catch(() => {}); };
+          play.onclick = () => { if (run && !run.paused) togglePause(); silence(); endPlayback?.(); speakThai(L.th, voiceOf('A'), undefined, { box: null, th, rom: r, en: txt.querySelector('.en'), gloss: glossOf(L) }).catch(() => {}); };
           line.append(play, txt);
           lyrics.appendChild(line);
         }
       }
       const words = document.createElement('details');
+      words.className = 'follow';
       const ws = document.createElement('summary');
       ws.textContent = `Words in this song (${song.words.length + song.more.length}) · also in Words as "Song · ${song.titleEn}"`;
       words.appendChild(ws);
@@ -1676,7 +1742,7 @@
           en.textContent = ` · ${w.en}`;
           line2.append(r, en);
           t.append(th, line2);
-          play.onclick = () => { if (run && !run.paused) togglePause(); silence(); endPlayback?.(); speakThai(w.th, voiceOf('A'), undefined, { box: null, th, rom: r }).catch(() => {}); };
+          play.onclick = () => { if (run && !run.paused) togglePause(); silence(); endPlayback?.(); speakThai(w.th, voiceOf('A'), undefined, { box: null, th, rom: r, en, gloss: glossOf(w) }).catch(() => {}); };
           wr.append(play, t);
           words.appendChild(wr);
         }
