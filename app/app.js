@@ -254,7 +254,7 @@
     const rom = ROM_OF.get(text) || '';
     const t = TIMING[AUDIO[text]]?.[folder === 'female' ? 'f' : 'm'] || [];
     const words = [];
-    for (let i = 0; i + 3 < t.length; i += 4) words.push({ start: t[i], at: t[i + 2], syl: t[i + 3], th: null, rom: [] });
+    for (let i = 0; i + 3 < t.length; i += 4) words.push({ start: t[i], end: t[i + 1], at: t[i + 2], syl: t[i + 3], th: null, rom: [] });
     const thEl = ui.lyricTh, romEl = ui.lyricRom;
     thEl.textContent = ''; romEl.textContent = '';
     lyric = { words: [], cur: -2, raf: 0, prompt: stagePrompt };
@@ -265,33 +265,55 @@
         w.th = addSpan(thEl, text.slice(from, to));
         from = to;
       });
-      // Share the romanization's syllables out over the spoken words, in proportion to each word's syllables.
       const syl = [...rom.matchAll(/[^\s-]+/g)];
-      const total = words.reduce((n, w) => n + w.syl, 0);
-      let pos = 0, acc = 0;
+      const dur = words.map((w, i) => (i < words.length - 1 ? words[i + 1].start - w.start : (w.end - w.start) * 0.6)); // the last word is drawn out
+      const cnt = shareSyllables(words.map(w => w.syl), dur, syl.map((m, j) => (j ? rom.slice(syl[j - 1].index + syl[j - 1][0].length, m.index) : '')));
+      // One romanization span per spoken word (its syllables and the hyphens between them).
+      let pos = 0, last = 0;
       words.forEach((w, i) => {
-        acc += w.syl;
-        const upto = i === words.length - 1 ? syl.length : Math.round((acc * syl.length) / total);
-        for (; pos < upto; pos++) w.rom.push(pos);
-      });
-      const owner = [];
-      words.forEach((w, i) => w.rom.forEach(k => { owner[k] = i; }));
-      let last = 0;
-      const romSpans = [];
-      syl.forEach(m => {
-        if (m.index > last) romEl.append(rom.slice(last, m.index));
+        if (!cnt[i]) return;
+        const first = syl[pos], end = syl[pos + cnt[i] - 1];
+        pos += cnt[i];
+        if (first.index > last) romEl.append(rom.slice(last, first.index));
+        last = end.index + end[0].length;
         const sp = document.createElement('span');
-        sp.textContent = m[0];
-        romEl.append(sp); romSpans.push(sp);
-        last = m.index + m[0].length;
+        sp.textContent = rom.slice(first.index, last);
+        romEl.append(sp);
+        w.rom.push(sp);
       });
       if (last < rom.length) romEl.append(rom.slice(last));
-      words.forEach(w => { w.rom = w.rom.map(k => romSpans[k]); });
       lyric.words = words;
       paintLyric(-1);
     } else { thEl.textContent = text; romEl.textContent = rom; } // no timings: show it, unlit
     ui.lyric.hidden = false;
     ui.peek.textContent = '';
+  }
+  // Which romanization syllables go with which spoken Thai word. `want` is each word's syllable count
+  // (an estimate), `dur` how long each takes to say, `sep` the separator before each syllable ('-' inside
+  // a word, a space between words). The best split matches the counts and the timing, and keeps
+  // hyphenated syllables (sa-wàt-dii) with one word where it can.
+  function shareSyllables(want, dur, sep) {
+    const n = want.length, R = sep.length;
+    const total = dur.reduce((a, b) => a + b, 0) || 1;
+    const cost = (i, a, b) => {
+      let c = Math.abs(b - a - want[i]) * 2 + Math.abs(b - a - (R * dur[i]) / total) + (b === a ? 5 : 0);
+      if (a > 0 && a < R && sep[a] === '-') c += 3;        // splits a hyphenated word
+      for (let j = a + 1; j < b; j++) if (sep[j] !== '-') c += 1; // spans a space
+      return c;
+    };
+    const f = Array.from({ length: n + 1 }, () => new Array(R + 1).fill(Infinity));
+    const from = Array.from({ length: n + 1 }, () => new Array(R + 1).fill(0));
+    f[0][0] = 0;
+    for (let i = 0; i < n; i++) for (let a = 0; a <= R; a++) {
+      if (f[i][a] === Infinity) continue;
+      for (let b = a; b <= R; b++) {
+        const v = f[i][a] + cost(i, a, b);
+        if (v < f[i + 1][b]) { f[i + 1][b] = v; from[i + 1][b] = a; }
+      }
+    }
+    const cnt = new Array(n);
+    for (let i = n, b = R; i > 0; i--) { const a = from[i][b]; cnt[i - 1] = b - a; b = a; }
+    return cnt;
   }
   // Light up the word being spoken at `ms` into the recording (Infinity: all spoken).
   function paintLyric(ms) {
