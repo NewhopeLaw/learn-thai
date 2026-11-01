@@ -183,20 +183,21 @@
       player.play().catch(() => fin(false));
     });
   }
-  async function speakThai(text, folder, rate) {
+  // `target` (optional): where to show the follow-along text outside a lesson, e.g. a word-list row.
+  async function speakThai(text, folder, rate, target) {
     folder = folder || voiceFolder();
-    showLyric(text, folder);
+    showLyric(text, folder, target);
     if (!(await playRecorded(text, folder, rate))) { endLyric(); await rawSpeak(text, 'th', rate || S.thaiRate); }
   }
   // Speak a phrase template ({P} {I} …) in a voice, filled with that voice's own gender forms.
   const otherVoice = f => (f === 'male' ? 'female' : 'male');
-  async function sayRaw(raw, folder, rate) {
+  async function sayRaw(raw, folder, rate, target) {
     const text = fillAs(raw, false, folder === 'female');
     currentText = text; currentFolder = folder;
     // Outside a lesson (the word list, "Test voice") there is no run to check against.
-    if (run) checkpoint();
-    await speakThai(text, folder, rate);
-    if (run) checkpoint();
+    if (run && !target) checkpoint();
+    await speakThai(text, folder, rate, target);
+    if (run && !target) checkpoint();
   }
   const romFor = (it, folder) => fillAs(it.rom, true, folder === 'female');
   // Syllables in a romanization (split at spaces and hyphens). Reverse building is only worth it from 3 syllables up.
@@ -232,13 +233,28 @@
     for (const d of Object.values(window.DIALOGUES || {})) for (const l of d.lines) addLine(fillAs(l.th, false, f), fillAs(l.rom, true, f));
   }
   for (const song of window.SONGS || []) for (const sec of song.sections) for (const l of sec.lines) addLine(l.th, l.rom);
+  for (const it of LETTERS_ALL) { addRom(it.name, it.rom); if (it.example) addRom(it.example.th, it.example.rom); }
 
   let lyric = null, reveal = false, stagePrompt = '';
-  const lyricShown = () => !!lyric;
+  const lyricShown = () => !!lyric && !lyric.box; // up on the lesson screen
   function hideLyric() {
-    if (lyric) cancelAnimationFrame(lyric.raf);
+    if (lyric) { cancelAnimationFrame(lyric.raf); if (lyric.box) lyric.box.hidden = true; }
     lyric = null;
     if (ui.lyric) ui.lyric.hidden = true;
+  }
+  // A word-list row's own follow-along lines, made the first time the row is played.
+  function rowTarget(row) {
+    let box = row.querySelector('.vocab-follow');
+    if (!box) {
+      box = document.createElement('span');
+      box.className = 'vocab-follow follow';
+      box.hidden = true;
+      const th = document.createElement('span'); th.className = 'lyric-th'; th.lang = 'th';
+      const rom = document.createElement('span'); rom.className = 'lyric-rom';
+      box.append(th, rom);
+      (row.querySelector('.vocab-text') || row).appendChild(box);
+    }
+    return { box, th: box.firstChild, rom: box.lastChild };
   }
   function addSpan(box, str) {
     const lead = str.match(/^\s*/)[0];
@@ -248,16 +264,21 @@
     box.append(sp);
     return sp;
   }
-  function showLyric(text, folder) {
-    if (!S.follow || !reveal || glyphOn || !run) return hideLyric();
+  function showLyric(text, folder, target) {
+    if (!S.follow) return hideLyric();
+    const inStage = !target;
+    if (inStage) {
+      if (!reveal || !run) return hideLyric();
+      target = { box: ui.lyric, th: ui.lyricTh, rom: ui.lyricRom };
+    }
     hideLyric();
     const rom = ROM_OF.get(text) || '';
     const t = TIMING[AUDIO[text]]?.[folder === 'female' ? 'f' : 'm'] || [];
     const words = [];
     for (let i = 0; i + 3 < t.length; i += 4) words.push({ start: t[i], end: t[i + 1], at: t[i + 2], syl: t[i + 3], th: null, rom: [] });
-    const thEl = ui.lyricTh, romEl = ui.lyricRom;
+    const thEl = target.th, romEl = target.rom;
     thEl.textContent = ''; romEl.textContent = '';
-    lyric = { words: [], cur: -2, raf: 0, prompt: stagePrompt };
+    lyric = { words: [], cur: -2, raf: 0, prompt: stagePrompt, box: inStage ? null : target.box, glyph: inStage && glyphOn ? ui.glyphText.textContent : null };
     if (words.length && words.every((w, i) => w.at > 0 && (!i || w.at > words[i - 1].at))) {
       let from = 0;
       words.forEach((w, i) => {
@@ -285,8 +306,9 @@
       lyric.words = words;
       paintLyric(-1);
     } else { thEl.textContent = text; romEl.textContent = rom; } // no timings: show it, unlit
-    ui.lyric.hidden = false;
-    ui.peek.textContent = '';
+    if (target.box) target.box.hidden = false;
+    // On the lesson screen it replaces the romanization line (a letter's name, with a letter up).
+    if (inStage) glyphOn ? (ui.prompt.textContent = '') : (ui.peek.textContent = '');
   }
   // Which romanization syllables go with which spoken Thai word. `want` is each word's syllable count
   // (an estimate), `dur` how long each takes to say, `sep` the separator before each syllable ('-' inside
@@ -708,7 +730,6 @@
   // The letter itself, big, in place of the orb ('?' while it is hidden; null puts the orb back).
   function showGlyph(text) {
     glyphOn = text != null;
-    if (glyphOn) hideLyric();
     ui.stageBox.classList.toggle('has-glyph', glyphOn);
     ui.glyph.hidden = !glyphOn;
     ui.glyphText.textContent = text ?? '';
@@ -716,8 +737,11 @@
   }
   function stageLetter(kind, label, glyph, name, desc) {
     stage(kind, label);
+    // Follow-along text only once the name is given away, and only for the letter on screen.
+    reveal = !!name;
+    if (!name || (lyric && !lyric.box && lyric.glyph !== glyph)) hideLyric();
     showGlyph(glyph);
-    ui.prompt.textContent = name || '';
+    ui.prompt.textContent = lyricShown() ? '' : name || '';
     ui.peek.textContent = desc || '';
   }
   async function sayLetter(it, folder) {
@@ -876,7 +900,7 @@
         play.className = 'play';
         play.textContent = '▶';
         play.setAttribute('aria-label', `Play: ${it.rom}`);
-        play.onclick = e => { e.stopPropagation(); playLetter(it); };
+        play.onclick = e => { e.stopPropagation(); playLetter(it, rowTarget(row)); };
         row.onclick = () => openLetterCard(it);
         row.tabIndex = 0;
         row.setAttribute('role', 'button');
@@ -901,11 +925,12 @@
       list.appendChild(det);
     });
   }
-  function playLetter(it) {
+  function playLetter(it, target) {
     if (run && !run.paused) togglePause(); // listening to the list pauses the session
     silence();
-    speakThai(it.name, voiceFolder()).catch(() => {});
+    speakThai(it.name, voiceFolder(), undefined, target).catch(() => {});
   }
+  const cardTarget = () => ({ box: null, th: $('cardThai'), rom: $('cardName') });
   // The letter card: tap a letter in the list to see it big with its details; ‹ › walk through the list.
   let cardLetter = null;
   function openLetterCard(it) {
@@ -923,21 +948,23 @@
       th.className = 'thai'; th.lang = 'th';
       th.textContent = it.example.th;
       const r = document.createElement('span');
-      r.className = 'muted';
-      r.textContent = `${it.example.rom} · ${it.example.en}`;
+      r.textContent = it.example.rom;
+      const m = document.createElement('span');
+      m.className = 'muted';
+      m.textContent = ` · ${it.example.en}`;
       const play = document.createElement('button');
       play.className = 'play';
       play.textContent = '▶';
       play.setAttribute('aria-label', `Play: ${it.example.en}`);
-      play.onclick = () => { silence(); speakThai(it.example.th, voiceFolder()).catch(() => {}); };
-      ex.append(th, r, play);
+      play.onclick = () => { silence(); speakThai(it.example.th, voiceFolder(), undefined, { box: null, th, rom: r }).catch(() => {}); };
+      ex.append(th, r, m, play);
     }
     const i = LETTERS_ALL.indexOf(it);
     $('cardPrev').disabled = i <= 0;
     $('cardNext').disabled = i >= LETTERS_ALL.length - 1;
     $('letterCard').hidden = false;
     $('cardPlay').focus();
-    playLetter(it);
+    playLetter(it, cardTarget());
   }
   function closeLetterCard() { $('letterCard').hidden = true; cardLetter = null; silence(); }
 
@@ -1623,7 +1650,7 @@
     const slow = lastVocab === it.id;
     lastVocab = slow ? null : it.id;
     if (btn) { btn.textContent = slow ? '🐢' : '▶'; btn.title = slow ? 'Slow. Tap again for normal speed' : 'Tap again for slow'; }
-    sayRaw(it.th, voiceFolder(), slow ? slowRate() : undefined).catch(() => {});
+    sayRaw(it.th, voiceFolder(), slow ? slowRate() : undefined, btn ? rowTarget(btn.closest('.vocab-row')) : undefined).catch(() => {});
   }
 
   // Strength of a phrase, from its review interval.
@@ -1984,7 +2011,7 @@
   $('startLettersNew').onclick = () => startLetters('new');
   $('cardClose').onclick = closeLetterCard;
   $('letterCard').onclick = e => { if (e.target === $('letterCard')) closeLetterCard(); };
-  $('cardPlay').onclick = () => cardLetter && playLetter(cardLetter);
+  $('cardPlay').onclick = () => cardLetter && playLetter(cardLetter, cardTarget());
   $('cardPrev').onclick = () => { const i = LETTERS_ALL.indexOf(cardLetter); if (i > 0) openLetterCard(LETTERS_ALL[i - 1]); };
   $('cardNext').onclick = () => { const i = LETTERS_ALL.indexOf(cardLetter); if (i < LETTERS_ALL.length - 1) openLetterCard(LETTERS_ALL[i + 1]); };
   $('startTalk').onclick = () => startTalk();
