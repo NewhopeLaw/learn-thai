@@ -13,6 +13,7 @@ import asyncio
 import hashlib
 import json
 import pathlib
+import re
 import subprocess
 import sys
 
@@ -57,6 +58,22 @@ def word_timing(text, bounds):
             end = cursor = at + len(word)
         start = round(b['offset'] / 10000)  # edge-tts times are in 100 ns ticks
         out += [start, start + round(b['duration'] / 10000), end, syllables(word)]
+    return out
+
+
+def spoken_words(text, flat):
+    """The single words the voice said in `text`, as the app cuts them (app.js: wordsOf):
+    from the end of one word to the end of the next, Thai letters only."""
+    out, prev = [], 0
+    ends = flat[2::4]
+    if not ends or any(e <= 0 for e in ends):
+        return out
+    for i, end in enumerate(ends):
+        piece = text[prev:len(text) if i == len(ends) - 1 else end]
+        prev = end
+        word = re.sub(r'[^\u0E00-\u0E7F]', '', piece)
+        if word:
+            out.append(word)
     return out
 
 
@@ -118,6 +135,13 @@ async def main():
     timing = load_timing()
     try:
         await asyncio.gather(*(generate(sem, v, f, t, failures, timing) for f, v in VOICES.items() for t in texts))
+        # Every word on its own, recorded separately, for tapping a word in the follow-along text
+        # (cutting it out of the phrase clips it or catches a bit of the next word).
+        have = set(texts)
+        words = sorted({w for t in texts for flat in timing.get(key(t), {}).values() for w in spoken_words(t, flat)} - have)
+        texts = texts + words
+        PROGRESS['texts'] = texts
+        await asyncio.gather(*(generate(sem, v, f, t, failures, timing) for f, v in VOICES.items() for t in words))
     finally:  # keep what was fetched even if the run is interrupted
         save_timing(timing, texts)
 

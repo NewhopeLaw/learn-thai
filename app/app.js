@@ -162,7 +162,7 @@
   let endPlayback = null; // finishes the recording in progress, so something else can use the player
   const voiceFolder = () => (S.voice === 'both' ? (alt++ % 2 ? 'female' : 'male') : S.voice === 'female' ? 'female' : 'male');
   const playRate = rate => Math.min(2, Math.max(0.5, (rate || S.thaiRate) / THAI_BASE_RATE));
-  function playRecorded(text, folder, rate) {
+  function playRecorded(text, folder, rate, follow = true) {
     const id = AUDIO[text];
     if (!id) return Promise.resolve(false);
     const h = hush;
@@ -172,14 +172,14 @@
         if (done) return; done = true; clearTimeout(t);
         player.onended = player.onpause = player.onerror = player.onplaying = null;
         endPlayback = null;
-        endLyric();
+        if (follow) endLyric();
         res(ok || hush !== h); // interrupted on purpose: don't fall back to TTS
       };
       const t = setTimeout(() => fin(true), 15000);
       player.onended = () => fin(true);
       player.onpause = () => fin(true);
       player.onerror = () => fin(false);
-      player.onplaying = followLyric;
+      player.onplaying = follow ? followLyric : null;
       endPlayback = () => fin(true);
       player.src = `audio/${folder || voiceFolder()}/${id}.mp3`;
       player.preservesPitch = true;
@@ -288,6 +288,7 @@
       words.forEach((w, i) => {
         const to = i === words.length - 1 ? text.length : w.at;
         w.th = addSpan(thEl, text.slice(from, to));
+        w.word = text.slice(from, to).replace(/[^\u0E00-\u0E7F]/g, ''); // its own recording (tools/generate_audio.py: spoken_words)
         from = to;
       });
       const syl = [...rom.matchAll(/[^\s-]+/g)];
@@ -314,7 +315,7 @@
         sp.classList.add('tap');
         sp.setAttribute('role', 'button');
         sp.title = 'Tap to hear this word';
-        sp.onclick = e => { e.stopPropagation(); playWord(text, folder, words, i); };
+        sp.onclick = e => { e.stopPropagation(); playWord(words, i, folder); };
       }));
     } else { thEl.textContent = text; romEl.textContent = rom; } // no timings: show it, unlit
     if (target.box) target.box.hidden = false;
@@ -367,55 +368,23 @@
       sp.classList.add(c);
     }
   }
-  // One word on its own: the slice of the recording between its start and end, a little padded.
+  // One word on its own, from its own recording (made separately, so nothing is clipped).
   // In a lesson this pauses it first, so you can tap around and then press ▶ to carry on.
-  let wordRun = 0;
-  function playWord(text, folder, words, i) {
-    const id = AUDIO[text], w = words[i];
-    if (!id || !w) return;
+  // Tapping the same word again plays it slower, like the word list.
+  let wordRun = 0, lastWord = null;
+  async function playWord(words, i, folder) {
+    const w = words[i];
+    if (!w?.word) return;
     if (run && !run.paused) togglePause();
     silence();
     endPlayback?.();
     const mine = ++wordRun;
     words.forEach((x, k) => setWordClass(x, k === i ? 'now' : 'said'));
-    const from = Math.max(0, w.start - 40) / 1000, to = (w.end + 90) / 1000;
-    const done = () => {
-      if (mine !== wordRun) return;
-      player.pause();
-      setWordClass(w, 'said');
-    };
-    const go = () => {
-      if (mine !== wordRun) return;
-      player.currentTime = from;
-      player.play().then(() => {
-        const watch = () => {
-          if (mine !== wordRun) return;
-          if (player.paused || player.ended || player.currentTime >= to) return done();
-          requestAnimationFrame(watch);
-        };
-        watch();
-      }).catch(done);
-    };
-    player.onended = player.onpause = player.onerror = player.onplaying = null;
-    wordBlob(`audio/${folder}/${id}.mp3`).then(url => {
-      if (mine !== wordRun) return;
-      player.src = url;
-      player.preservesPitch = true;
-      player.defaultPlaybackRate = player.playbackRate = playRate();
-      player.addEventListener('loadedmetadata', go, { once: true });
-    }, done);
-  }
-  // The recording as an in-memory copy: jumping to the middle of a file works on these everywhere,
-  // including files that come from the offline cache, which can only be read from the start.
-  const blobs = new Map();
-  async function wordBlob(path) {
-    if (!blobs.has(path)) {
-      const r = await fetch(path);
-      if (!r.ok) throw new Error(r.status);
-      blobs.set(path, URL.createObjectURL(await r.blob()));
-      if (blobs.size > 40) { const [k, u] = blobs.entries().next().value; URL.revokeObjectURL(u); blobs.delete(k); }
-    }
-    return blobs.get(path);
+    const slow = lastWord === w;
+    lastWord = slow ? null : w;
+    const rate = slow ? slowRate() : undefined;
+    if (!(await playRecorded(w.word, folder, rate, false)) && mine === wordRun) await rawSpeak(w.word, 'th', rate || S.thaiRate);
+    if (mine === wordRun) setWordClass(w, 'said');
   }
   function followLyric() {
     if (!lyric?.words.length) return;
