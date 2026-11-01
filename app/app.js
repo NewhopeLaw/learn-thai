@@ -159,7 +159,9 @@
   const player = new Audio();
   player.preload = 'auto';
   let alt = 0, hush = 0;
+  let endPlayback = null; // finishes the recording in progress, so something else can use the player
   const voiceFolder = () => (S.voice === 'both' ? (alt++ % 2 ? 'female' : 'male') : S.voice === 'female' ? 'female' : 'male');
+  const playRate = rate => Math.min(2, Math.max(0.5, (rate || S.thaiRate) / THAI_BASE_RATE));
   function playRecorded(text, folder, rate) {
     const id = AUDIO[text];
     if (!id) return Promise.resolve(false);
@@ -169,6 +171,7 @@
       const fin = ok => {
         if (done) return; done = true; clearTimeout(t);
         player.onended = player.onpause = player.onerror = player.onplaying = null;
+        endPlayback = null;
         endLyric();
         res(ok || hush !== h); // interrupted on purpose: don't fall back to TTS
       };
@@ -177,9 +180,10 @@
       player.onpause = () => fin(true);
       player.onerror = () => fin(false);
       player.onplaying = followLyric;
+      endPlayback = () => fin(true);
       player.src = `audio/${folder || voiceFolder()}/${id}.mp3`;
       player.preservesPitch = true;
-      player.defaultPlaybackRate = player.playbackRate = Math.min(2, Math.max(0.5, (rate || S.thaiRate) / THAI_BASE_RATE));
+      player.defaultPlaybackRate = player.playbackRate = playRate(rate);
       player.play().catch(() => fin(false));
     });
   }
@@ -203,7 +207,7 @@
   // Syllables in a romanization (split at spaces and hyphens). Reverse building is only worth it from 3 syllables up.
   const syllables = rom => fillAs(rom, true, false).replace(/[,.?!]/g, '').split(/[\s-]+/).filter(Boolean).length;
   const needsBuilding = rom => syllables(rom) >= 3;
-  function silence() { hush++; synth?.cancel(); player.pause(); }
+  function silence() { hush++; wordRun++; synth?.cancel(); player.pause(); }
 
   // ---------- follow-along text ----------
   // While Thai plays, the Thai and its romanization are shown with the word being spoken lit up,
@@ -305,6 +309,13 @@
       if (last < rom.length) romEl.append(rom.slice(last));
       lyric.words = words;
       paintLyric(-1);
+      // Tap a word (Thai or romanization) to hear just that word, cut from the same recording.
+      words.forEach((w, i) => [w.th, ...w.rom].forEach(sp => {
+        sp.classList.add('tap');
+        sp.setAttribute('role', 'button');
+        sp.title = 'Tap to hear this word';
+        sp.onclick = e => { e.stopPropagation(); playWord(text, folder, words, i); };
+      }));
     } else { thEl.textContent = text; romEl.textContent = rom; } // no timings: show it, unlit
     if (target.box) target.box.hidden = false;
     // On the lesson screen it replaces the romanization line (a letter's name, with a letter up).
@@ -347,9 +358,64 @@
     lyric.cur = cur;
     lyric.words.forEach((w, i) => {
       const c = i < cur ? 'said' : i === cur ? 'now' : 'todo';
-      w.th.className = c;
-      w.rom.forEach(sp => { sp.className = c; });
+      setWordClass(w, c);
     });
+  }
+  function setWordClass(w, c) {
+    for (const sp of [w.th, ...w.rom]) {
+      sp.classList.remove('said', 'now', 'todo');
+      sp.classList.add(c);
+    }
+  }
+  // One word on its own: the slice of the recording between its start and end, a little padded.
+  // In a lesson this pauses it first, so you can tap around and then press ▶ to carry on.
+  let wordRun = 0;
+  function playWord(text, folder, words, i) {
+    const id = AUDIO[text], w = words[i];
+    if (!id || !w) return;
+    if (run && !run.paused) togglePause();
+    silence();
+    endPlayback?.();
+    const mine = ++wordRun;
+    words.forEach((x, k) => setWordClass(x, k === i ? 'now' : 'said'));
+    const from = Math.max(0, w.start - 40) / 1000, to = (w.end + 90) / 1000;
+    const done = () => {
+      if (mine !== wordRun) return;
+      player.pause();
+      setWordClass(w, 'said');
+    };
+    const go = () => {
+      if (mine !== wordRun) return;
+      player.currentTime = from;
+      player.play().then(() => {
+        const watch = () => {
+          if (mine !== wordRun) return;
+          if (player.paused || player.ended || player.currentTime >= to) return done();
+          requestAnimationFrame(watch);
+        };
+        watch();
+      }).catch(done);
+    };
+    player.onended = player.onpause = player.onerror = player.onplaying = null;
+    wordBlob(`audio/${folder}/${id}.mp3`).then(url => {
+      if (mine !== wordRun) return;
+      player.src = url;
+      player.preservesPitch = true;
+      player.defaultPlaybackRate = player.playbackRate = playRate();
+      player.addEventListener('loadedmetadata', go, { once: true });
+    }, done);
+  }
+  // The recording as an in-memory copy: jumping to the middle of a file works on these everywhere,
+  // including files that come from the offline cache, which can only be read from the start.
+  const blobs = new Map();
+  async function wordBlob(path) {
+    if (!blobs.has(path)) {
+      const r = await fetch(path);
+      if (!r.ok) throw new Error(r.status);
+      blobs.set(path, URL.createObjectURL(await r.blob()));
+      if (blobs.size > 40) { const [k, u] = blobs.entries().next().value; URL.revokeObjectURL(u); blobs.delete(k); }
+    }
+    return blobs.get(path);
   }
   function followLyric() {
     if (!lyric?.words.length) return;
@@ -735,7 +801,11 @@
     ui.glyphText.textContent = text ?? '';
     ui.glyphText.classList.toggle('hidden-letter', text === '?');
   }
+  // The letter on the lesson screen, so tapping it can say its name.
+  let stageLetterItem = null;
   function stageLetter(kind, label, glyph, name, desc) {
+    stageLetterItem = LETTERS_ALL.find(i => i.th === glyph) || null;
+    ui.glyph.classList.toggle('tap', !!name && !!stageLetterItem);
     stage(kind, label);
     // Follow-along text only once the name is given away, and only for the letter on screen.
     reveal = !!name;
@@ -928,6 +998,7 @@
   function playLetter(it, target) {
     if (run && !run.paused) togglePause(); // listening to the list pauses the session
     silence();
+    endPlayback?.();
     speakThai(it.name, voiceFolder(), undefined, target).catch(() => {});
   }
   const cardTarget = () => ({ box: null, th: $('cardThai'), rom: $('cardName') });
@@ -2012,6 +2083,22 @@
   $('cardClose').onclick = closeLetterCard;
   $('letterCard').onclick = e => { if (e.target === $('letterCard')) closeLetterCard(); };
   $('cardPlay').onclick = () => cardLetter && playLetter(cardLetter, cardTarget());
+  // Tap the big letter to hear its name: on the card any time, in a lesson once the name has been given
+  // (not while it is the question). In a lesson this pauses it, like tapping a word.
+  $('cardGlyph').onclick = () => cardLetter && playLetter(cardLetter, cardTarget());
+  ui.glyph.onclick = () => {
+    if (!ui.glyph.classList.contains('tap') || !stageLetterItem) return;
+    if (run && !run.paused) togglePause();
+    silence();
+    endPlayback?.();
+    speakThai(stageLetterItem.name, voiceFolder()).catch(() => {});
+  };
+  for (const el of [$('cardGlyph'), ui.glyph]) {
+    el.title = 'Tap to hear it';
+    el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.onclick(); } };
+  }
+  $('cardGlyph').tabIndex = 0;
+  $('cardGlyph').setAttribute('role', 'button');
   $('cardPrev').onclick = () => { const i = LETTERS_ALL.indexOf(cardLetter); if (i > 0) openLetterCard(LETTERS_ALL[i - 1]); };
   $('cardNext').onclick = () => { const i = LETTERS_ALL.indexOf(cardLetter); if (i < LETTERS_ALL.length - 1) openLetterCard(LETTERS_ALL[i + 1]); };
   $('startTalk').onclick = () => startTalk();

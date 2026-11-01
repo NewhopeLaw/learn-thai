@@ -209,6 +209,10 @@ button.icon.wide { font-size: 0.85rem; white-space: nowrap; }
 .follow .todo, .follow .now, .follow .said { border-radius: 6px; transition: color .12s, background-color .12s, opacity .12s; }
 .follow .todo { opacity: .45; }
 .follow .now { color: var(--accent); background: var(--accent-soft); opacity: 1; box-shadow: 0 0 0 2px var(--accent-soft); }
+/* Words you can tap to hear on their own; the big letter too. */
+.follow .tap, .glyph.tap .char, .card-glyph { cursor: pointer; }
+.follow .tap:hover { text-decoration: underline dotted; text-underline-offset: 4px; }
+.glyph.tap .char:active, .card-glyph:active { transform: scale(.97); }
 /* In the word and letter lists: under the phrase while it plays. */
 .vocab-follow { display: block; margin-top: 4px; }
 .vocab-follow .lyric-th, .vocab-follow .lyric-rom { display: block; }

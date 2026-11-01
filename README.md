@@ -25,7 +25,7 @@ The app has two modes, side by side:
 Optional extras:
 - **Microphone check:** speech recognition confirms whether your answer sounded right (Chrome/Edge).
 - **Hands-free mode:** no rating buttons, for walking or driving.
-- **Follow along:** while Thai plays, the Thai text and its romanization are shown with the word being spoken lit up (on by default, in Settings). It stays hidden whenever seeing it would give away the answer.
+- **Follow along:** while Thai plays, the Thai text and its romanization are shown with the word being spoken lit up (on by default, in Settings). It stays hidden whenever seeing it would give away the answer. Tap any word in it to hear just that word (in a lesson this pauses it; press ▶ to carry on). Tap the big letter on a letter card, or in a Letters lesson once its name has been said, to hear the name again.
 - **Gendered politeness:** the course teaches ครับ/ค่ะ and ผม/ฉัน to match you.
 
 **Screens:** *Words* (start button, reviews due, new today, streak, every phrase), *Talk*, *Song*, *Letters* (the script, same flashcard method) and *More* (progress, install, sync, settings, backup).
