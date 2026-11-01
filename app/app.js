@@ -1475,6 +1475,19 @@
         await wait(repeatGap(w.th));
       });
     }
+    if (song.more.length) {
+      phase('Other words', 6);
+      await narrate('Now the other words in the song, including the small words that hold the lines together.');
+      for (const w of song.more) {
+        await step(async () => {
+          stage('listen', 'Listen', w.en, w.rom);
+          await en(w.en);
+          await sayText(w.th, folder);
+          stage('speak', 'Repeat', w.en, w.rom);
+          await wait(repeatGap(w.th));
+        });
+      }
+    }
     await narrate('Now the lines, one at a time. Spoken, not sung, so you hear every word.');
     for (let i = 0; i < lines.length; i++) {
       const L = lines[i];
@@ -1621,24 +1634,34 @@
       }
       const words = document.createElement('details');
       const ws = document.createElement('summary');
-      ws.textContent = `Key words (${song.words.length}) · also in Words as "Song · ${song.titleEn}"`;
+      ws.textContent = `Words in this song (${song.words.length + song.more.length}) · also in Words as "Song · ${song.titleEn}"`;
       words.appendChild(ws);
-      for (const w of song.words) {
-        const wr = document.createElement('div');
-        wr.className = 'vocab-row';
-        const play = document.createElement('button');
-        play.className = 'play'; play.textContent = '▶';
-        play.onclick = () => { silence(); speakThai(w.th, voiceOf('A')); };
-        const t = document.createElement('span');
-        t.className = 'vocab-text';
-        t.textContent = `${w.th} · ${w.en}`;
-        const r = document.createElement('span');
-        r.className = 'muted small vocab-rom';
-        r.textContent = w.rom;
-        t.appendChild(r);
-        wr.append(play, t);
-        words.appendChild(wr);
-      }
+      const wordGroup = (title, list) => {
+        if (!list.length) return;
+        const gh = document.createElement('p');
+        gh.className = 'level-head';
+        gh.textContent = title;
+        words.appendChild(gh);
+        for (const w of list) {
+          const wr = document.createElement('div');
+          wr.className = 'vocab-row';
+          const play = document.createElement('button');
+          play.className = 'play'; play.textContent = '▶';
+          play.setAttribute('aria-label', `Play: ${w.en}`);
+          const t = document.createElement('span');
+          t.className = 'vocab-text';
+          t.textContent = `${w.th} · ${w.en}`;
+          const r = document.createElement('span');
+          r.className = 'muted small vocab-rom';
+          r.textContent = w.rom;
+          t.appendChild(r);
+          play.onclick = () => { if (run && !run.paused) togglePause(); silence(); speakThai(w.th, voiceOf('A'), undefined, rowTarget(wr)).catch(() => {}); };
+          wr.append(play, t);
+          words.appendChild(wr);
+        }
+      };
+      wordGroup('Key words', song.words);
+      wordGroup('Other words and particles', song.more);
       card.append(h, artist, about, row, lyrics, words);
       box.appendChild(card);
     }

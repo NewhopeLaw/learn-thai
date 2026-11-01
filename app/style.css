@@ -218,7 +218,7 @@ button.icon.wide { font-size: 0.85rem; white-space: nowrap; }
 .vocab-follow .lyric-th, .vocab-follow .lyric-rom { display: block; }
 .vocab-follow .lyric-th { font-size: 1.4rem; line-height: 1.5; }
 .vocab-follow .lyric-rom { font-size: .95rem; }
-#vocabList .vocab-text:has(.vocab-follow:not([hidden])) > .vocab-rom { display: none; } /* the follow-along repeats it */
+#vocabList .vocab-text:has(.vocab-follow:not([hidden])) > .vocab-rom, .song .vocab-text:has(.vocab-follow:not([hidden])) > .vocab-rom { display: none; } /* the follow-along repeats it */
 .feedback { text-align: center; min-height: 1.5em; margin: 2px 0; font-weight: 600; }
 .links { display: flex; gap: 16px; align-items: center; justify-content: center; color: var(--muted); margin: 4px 0; }
 .bottombar {

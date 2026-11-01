@@ -1,6 +1,8 @@
 // Songs for the Song tab. Lyrics are the property of their writers; keep this to songs you have the right to use.
 //   sections: lines of th (Thai, spaces mark the pieces used for reverse building), rom, en (meaning)
-//   words: key vocabulary; also added to the Words tab as a unit so it enters spaced repetition
+//   words: key vocabulary, taught at the start of the song lesson
+//   more:  every other word in the lyrics, small grammar words and particles included, taught next
+//   Both lists are also added to the Words tab as a unit, so they enter spaced repetition.
 //   video: YouTube video id for sing-along (empty = link to the source page only)
 window.SONGS = [
   {
@@ -49,10 +51,42 @@ window.SONGS = [
       { id: 'song1-flow', en: 'to flow', th: 'รินไหล', rom: 'rin lǎi' },
       { id: 'song1-from-heart', en: 'from the heart', th: 'มาจากใจ', rom: 'maa jàak jai' },
     ],
+    more: [
+      { id: 'song1-thii', en: 'that, which, who (ใจที่… a heart that…)', th: 'ที่', rom: 'thîi',
+        note: [{ en: 'It joins a description to a word. Heart, that is thirsty:' }, { th: 'ใจที่กระหาย' }] },
+      { id: 'song1-lae', en: 'and', th: 'และ', rom: 'lɛ́' },
+      { id: 'song1-tired', en: 'tired', th: 'เหนื่อย', rom: 'nùeai' },
+      { id: 'song1-thon', en: 'to endure, to put up with', th: 'ทน', rom: 'thon' },
+      { id: 'song1-suffering', en: 'suffering', th: 'ทุกข์', rom: 'thúk' },
+      { id: 'song1-mot', en: 'to run out, to be all gone', th: 'หมด', rom: 'mòt' },
+      { id: 'song1-wang', en: 'to hope, hope', th: 'หวัง', rom: 'wǎng' },
+      { id: 'song1-every', en: 'every', th: 'ทุก', rom: 'thúk',
+        note: [{ en: 'It sounds just like the word for suffering, but is spelled differently.' }] },
+      { id: 'song1-yaang', en: 'kind, sort, way', th: 'อย่าง', rom: 'yàang',
+        note: [{ en: 'Every kind means everything:' }, { th: 'ทุกอย่าง' }] },
+      { id: 'song1-jong', en: 'do…! (a solemn command word, in prayers and hymns)', th: 'จง', rom: 'jong' },
+      { id: 'song1-come-in', en: 'to come in, to come near', th: 'เข้ามา', rom: 'khâo maa' },
+      { id: 'song1-pen', en: 'to be (is, are)', th: 'เป็น', rom: 'pen' },
+      { id: 'song1-water', en: 'water', th: 'น้ำ', rom: 'náam' },
+      { id: 'song1-hai', en: 'to let; to give', th: 'ให้', rom: 'hâi' },
+      { id: 'song1-rao', en: 'we, us', th: 'เรา', rom: 'rao' },
+      { id: 'song1-drink', en: 'to drink', th: 'ดื่ม', rom: 'dùuem' },
+      { id: 'song1-new', en: 'new', th: 'ใหม่', rom: 'mài' },
+      { id: 'song1-head', en: 'head', th: 'หัว', rom: 'hǔa',
+        note: [{ en: 'Head and heart together make the word for the heart itself:' }, { th: 'หัวใจ' }] },
+      { id: 'song1-mother', en: 'mother', th: 'แม่', rom: 'mɛ̂ɛ',
+        note: [{ en: 'A river is the mother of waters:' }, { th: 'แม่น้ำ' }] },
+      { id: 'song1-ja', en: 'will (the future)', th: 'จะ', rom: 'jà' },
+      { id: 'song1-rin', en: 'to pour gently, to trickle', th: 'ริน', rom: 'rin' },
+      { id: 'song1-lai', en: 'to flow', th: 'ไหล', rom: 'lǎi' },
+      { id: 'song1-maa', en: 'to come; toward here', th: 'มา', rom: 'maa' },
+      { id: 'song1-jaak', en: 'from', th: 'จาก', rom: 'jàak' },
+    ],
   },
 ];
 
-// Each song's key words become a Words unit, so they get spaced repetition like everything else.
+// Each song's words become a Words unit (key words first), so they get spaced repetition like everything else.
 for (const song of window.SONGS) {
-  window.COURSE.units.push({ key: `song-${song.id}`, title: `Song · ${song.titleEn}`, items: song.words, song: song.id });
+  song.more = song.more || [];
+  window.COURSE.units.push({ key: `song-${song.id}`, title: `Song · ${song.titleEn}`, items: [...song.words, ...song.more], song: song.id });
 }
