@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Learn Thai by Ear</title>
   <meta name="description" content="Free audio-first Thai course: listen, recall out loud, and review with spaced repetition. No reading required.">
-  <link rel="stylesheet" href="app/style.css?v=45">
+  <link rel="stylesheet" href="app/style.css?v=46">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#b5452b">
   <link rel="icon" type="image/png" href="app/icons/icon-192.png">
@@ -40,32 +40,50 @@
 
     <!-- Words: audio flashcards with spaced repetition -->
     <section id="words" class="view" hidden>
-      <p class="eyebrow"><button id="whoName" class="link who" title="Switch learner" aria-label="Switch learner"></button> · <span id="statStreak">0</span>-day streak</p>
-      <h1 class="next-title" id="nextUp"></h1>
-      <div class="stats">
-        <div><b id="statDue">0</b><span>reviews due</span></div>
-        <div><b id="statNew">0</b><span>new words</span></div>
-        <div><b id="statLearned">0</b><span>learned</span></div>
-      </div>
-      <button id="start" class="primary start">▶&nbsp; Start</button>
-      <div class="row split">
-        <button id="startReview">Review only</button>
-        <button id="startNew">New words only</button>
-      </div>
-      <p id="estimate" class="muted small center"></p>
-      <button id="statusChip" class="chip" type="button"></button>
-      <p id="voiceInfo" class="muted small"></p>
-      <p id="offlineNudge" class="muted small center" hidden><span id="offlineNudgeText"></span> <button id="offlineNudgeBtn" class="link">Download for offline</button></p>
+      <nav class="seg" role="tablist" aria-label="Words">
+        <button role="tab" data-pane="learn">Learn</button>
+        <button role="tab" data-pane="progress">Progress</button>
+      </nav>
+      <div class="pane" data-pane="learn" role="tabpanel">
+        <p class="eyebrow"><button id="whoName" class="link who" title="Switch learner" aria-label="Switch learner"></button> · <span id="statStreak">0</span>-day streak</p>
+        <h1 class="next-title" id="nextUp"></h1>
+        <div class="stats">
+          <div><b id="statDue">0</b><span>reviews due</span></div>
+          <div><b id="statNew">0</b><span>new words</span></div>
+          <div><b id="statLearned">0</b><span>learned</span></div>
+        </div>
+        <button id="start" class="primary start">▶&nbsp; Start</button>
+        <div class="row split">
+          <button id="startReview">Review only</button>
+          <button id="startNew">New words only</button>
+        </div>
+        <p id="estimate" class="muted small center"></p>
+        <button id="statusChip" class="chip" type="button"></button>
+        <p id="voiceInfo" class="muted small"></p>
+        <p id="offlineNudge" class="muted small center" hidden><span id="offlineNudgeText"></span> <button id="offlineNudgeBtn" class="link">Download for offline</button></p>
 
-      <h2 class="card-title section-title">All words</h2>
-      <div id="wordsHome">
-        <div id="vocabPanel">
-          <input id="vocabSearch" type="search" placeholder="Search words" aria-label="Search words">
-          <div class="row tight">
-            <label class="check"><input id="vocabLearned" type="checkbox"> Learned only</label>
-            <label class="check"><input id="vocabRom" type="checkbox"> Romanization</label>
+        <h2 class="card-title section-title">All words</h2>
+        <div id="wordsHome">
+          <div id="vocabPanel">
+            <input id="vocabSearch" type="search" placeholder="Search words" aria-label="Search words">
+            <div class="row tight">
+              <label class="check"><input id="vocabLearned" type="checkbox"> Learned only</label>
+              <label class="check"><input id="vocabRom" type="checkbox"> Romanization</label>
+            </div>
+            <div id="vocabList"></div>
           </div>
-          <div id="vocabList"></div>
+        </div>
+      </div>
+      <div class="pane" data-pane="progress" role="tabpanel" hidden>
+        <div class="card">
+          <h2 class="card-title">Practice</h2>
+          <div id="activity" class="activity"></div>
+          <p id="totals" class="muted small"></p>
+        </div>
+        <div class="card">
+          <h2 class="card-title">Units</h2>
+          <p class="legend small"><i class="mastered"></i> mastered <i class="known"></i> known <i class="learning"></i> learning · ✓ talk lesson done</p>
+          <div id="units"></div>
         </div>
       </div>
     </section>
@@ -93,138 +111,147 @@
 
     <!-- Letters: the script, as flashcards with spaced repetition -->
     <section id="letters" class="view" hidden>
-      <p class="eyebrow">Letters · reading and writing</p>
-      <h1 class="next-title" id="lettersNext"></h1>
-      <div class="stats">
-        <div><b id="statLettersDue">0</b><span>reviews due</span></div>
-        <div><b id="statLettersNew">0</b><span>new letters</span></div>
-        <div><b id="statLettersLearned">0</b><span>learned</span></div>
-      </div>
-      <button id="startLetters" class="primary start">▶&nbsp; Start</button>
-      <div class="row split">
-        <button id="startLettersReview">Review only</button>
-        <button id="startLettersNew">New letters only</button>
-      </div>
-      <p id="lettersEstimate" class="muted small center"></p>
-      <p class="muted small">Each letter pops up big on screen while you hear its name, its sound and its class. Two cards each: <i>What is this letter?</i> for reading, <i>Which letter is this?</i> for writing. Turn on <b>Auto</b> to listen hands-free. The rules behind the letters are in the <a href="lessons/">reading lessons</a>.</p>
+      <nav class="seg" role="tablist" aria-label="Letters">
+        <button role="tab" data-pane="learn">Learn</button>
+        <button role="tab" data-pane="progress">Progress</button>
+      </nav>
+      <div class="pane" data-pane="learn" role="tabpanel">
+        <p class="eyebrow">Letters · reading and writing</p>
+        <h1 class="next-title" id="lettersNext"></h1>
+        <div class="stats">
+          <div><b id="statLettersDue">0</b><span>reviews due</span></div>
+          <div><b id="statLettersNew">0</b><span>new letters</span></div>
+          <div><b id="statLettersLearned">0</b><span>learned</span></div>
+        </div>
+        <button id="startLetters" class="primary start">▶&nbsp; Start</button>
+        <div class="row split">
+          <button id="startLettersReview">Review only</button>
+          <button id="startLettersNew">New letters only</button>
+        </div>
+        <p id="lettersEstimate" class="muted small center"></p>
+        <p class="muted small">Each letter pops up big on screen while you hear its name, its sound and its class. Two cards each: <i>What is this letter?</i> for reading, <i>Which letter is this?</i> for writing. Turn on <b>Auto</b> to listen hands-free. The rules behind the letters are in the <a href="lessons/">reading lessons</a>.</p>
 
-      <h2 class="card-title section-title">All letters</h2>
-      <div id="lettersHome">
-        <div id="letterPanel">
-          <div id="letterList"></div>
+        <h2 class="card-title section-title">All letters</h2>
+        <div id="lettersHome">
+          <div id="letterPanel">
+            <div id="letterList"></div>
+          </div>
+        </div>
+      </div>
+      <div class="pane" data-pane="progress" role="tabpanel" hidden>
+        <div class="card">
+          <h2 class="card-title">Letters</h2>
+          <p id="letterTotals" class="muted small"></p>
+          <p class="legend small"><i class="mastered"></i> mastered <i class="known"></i> known <i class="learning"></i> learning</p>
+          <div id="letterUnits"></div>
         </div>
       </div>
     </section>
 
-    <!-- More -->
+    <!-- More: settings, offline & sync, help -->
     <section id="more" class="view" hidden>
-      <h1>More</h1>
-
-      <div class="card">
-        <h2 class="card-title">Progress</h2>
-        <div id="activity" class="activity"></div>
-        <p id="totals" class="muted small"></p>
-        <p class="legend small"><i class="mastered"></i> mastered <i class="known"></i> known <i class="learning"></i> learning · ✓ talk lesson done</p>
-        <div id="units"></div>
-      </div>
-
-      <div class="card">
-        <h2 class="card-title">This device</h2>
-        <div class="row">
-          <button id="installBtn" class="primary" hidden>Install app</button>
-          <button id="offlineBtn" hidden>Download for offline</button>
+      <nav class="seg" role="tablist" aria-label="More">
+        <button role="tab" data-pane="settings">Settings</button>
+        <button role="tab" data-pane="sync">Offline &amp; sync</button>
+        <button role="tab" data-pane="help">Help</button>
+      </nav>
+      <div class="pane" data-pane="settings" role="tabpanel">
+        <div class="card">
+          <h2 class="card-title">Settings</h2>
+          <label class="field">Polite speech
+            <select id="setGender"><option value="male">Speak as a man</option><option value="female">Speak as a woman</option></select>
+          </label>
+          <label class="field">Thai voice for words
+            <select id="setVoice">
+              <option value="male">Niwat only (male forms: khráp, phǒm)</option>
+              <option value="female">Premwadee only (female forms: khâ, chǎn)</option>
+              <option value="both">Both: hear each phrase in both forms</option>
+            </select>
+          </label>
+          <label class="field">Thai speaking speed <output id="rateVal"></output>
+            <input id="setRate" type="range" min="0.5" max="1.2" step="0.05">
+          </label>
+          <label class="field">Thinking pause <output id="pauseVal"></output>
+            <input id="setPause" type="range" min="2" max="10" step="1">
+          </label>
+          <label class="check"><input id="setMic" type="checkbox"> Check my answer with the microphone <span id="micNote" class="muted small"></span></label>
+          <label class="check"><input id="setHands" type="checkbox"> Auto mode for words: mark every card OK and keep going</label>
+          <label class="check"><input id="setFollow" type="checkbox"> Follow along: show the Thai and romanization as they're spoken, word by word</label>
+          <label class="check"><input id="setPeek" type="checkbox"> Show romanization during sessions</label>
+          <div class="row">
+            <button id="testVoice">Test voice</button>
+          </div>
         </div>
-        <p id="offlineStatus" class="muted small"></p>
-        <p id="installHint" class="muted small" hidden>To install, open the browser menu (⋮) and choose <b>Install app</b> or <b>Add to Home screen</b>.</p>
-      </div>
-
-      <div class="card">
-        <h2 class="card-title">Your link</h2>
-        <p class="small">Open your personal link on any device to be you there. Your progress syncs live between all of them, nothing to set up.</p>
-        <p class="my-link"><a id="myLink" target="_blank" rel="noopener"></a></p>
-        <div class="row">
-          <button id="copyLink">Copy</button>
-          <button id="qrLink">Show QR code</button>
-          <button id="syncBtn">Sync now</button>
-        </div>
-        <div id="myQR" class="qr" hidden></div>
-        <p id="syncStatus" class="muted small"></p>
-      </div>
-
-      <details class="card">
-        <summary class="card-title">Backup file</summary>
-        <p class="small">Your progress is already synced. A file is a spare copy, or a way to move progress to a different name.</p>
-        <div class="row">
-          <button id="exportBtn">Back up now</button>
-        </div>
-        <div id="backupHelp" class="small" hidden>
-          <p><b>Saved <span id="backupFile"></span></b> to your Downloads.</p>
-        </div>
-      </details>
-
-      <div class="card">
-        <h2 class="card-title">Settings</h2>
-        <label class="field">Polite speech
-          <select id="setGender"><option value="male">Speak as a man</option><option value="female">Speak as a woman</option></select>
-        </label>
-        <label class="field">Thai voice for words
-          <select id="setVoice">
-            <option value="male">Niwat only (male forms: khráp, phǒm)</option>
-            <option value="female">Premwadee only (female forms: khâ, chǎn)</option>
-            <option value="both">Both: hear each phrase in both forms</option>
-          </select>
-        </label>
-        <label class="field">Thai speaking speed <output id="rateVal"></output>
-          <input id="setRate" type="range" min="0.5" max="1.2" step="0.05">
-        </label>
-        <label class="field">Thinking pause <output id="pauseVal"></output>
-          <input id="setPause" type="range" min="2" max="10" step="1">
-        </label>
-        <label class="check"><input id="setMic" type="checkbox"> Check my answer with the microphone <span id="micNote" class="muted small"></span></label>
-        <label class="check"><input id="setHands" type="checkbox"> Auto mode for words: mark every card OK and keep going</label>
-        <label class="check"><input id="setFollow" type="checkbox"> Follow along: show the Thai and romanization as they're spoken, word by word</label>
-        <label class="check"><input id="setPeek" type="checkbox"> Show romanization during sessions</label>
-        <div class="row">
-          <button id="testVoice">Test voice</button>
+        <div class="card">
+          <h2 class="card-title">Learner</h2>
+          <div class="row">
+            <button id="importBtn">Restore from a file</button>
+            <input id="importFile" type="file" accept="application/json,.json" hidden>
+          </div>
+          <div class="row">
+            <button id="switchUser" class="ghost">Switch learner</button>
+            <button id="reset" class="ghost danger">Reset progress</button>
+          </div>
         </div>
       </div>
-
-      <div class="card">
-        <h2 class="card-title">Learner</h2>
-        <div class="row">
-          <button id="importBtn">Restore from a file</button>
-          <input id="importFile" type="file" accept="application/json,.json" hidden>
+      <div class="pane" data-pane="sync" role="tabpanel" hidden>
+        <div class="card">
+          <h2 class="card-title">This device</h2>
+          <div class="row">
+            <button id="installBtn" class="primary" hidden>Install app</button>
+            <button id="offlineBtn" hidden>Download for offline</button>
+          </div>
+          <p id="offlineStatus" class="muted small"></p>
+          <p id="installHint" class="muted small" hidden>To install, open the browser menu (⋮) and choose <b>Install app</b> or <b>Add to Home screen</b>.</p>
         </div>
-        <div class="row">
-          <button id="switchUser" class="ghost">Switch learner</button>
-          <button id="reset" class="ghost danger">Reset progress</button>
+        <div class="card">
+          <h2 class="card-title">Your link</h2>
+          <p class="small">Open your personal link on any device to be you there. Your progress syncs live between all of them, nothing to set up.</p>
+          <p class="my-link"><a id="myLink" target="_blank" rel="noopener"></a></p>
+          <div class="row">
+            <button id="copyLink">Copy</button>
+            <button id="qrLink">Show QR code</button>
+            <button id="syncBtn">Sync now</button>
+          </div>
+          <div id="myQR" class="qr" hidden></div>
+          <p id="syncStatus" class="muted small"></p>
         </div>
+        <details class="card">
+          <summary class="card-title">Backup file</summary>
+          <p class="small">Your progress is already synced. A file is a spare copy, or a way to move progress to a different name.</p>
+          <div class="row">
+            <button id="exportBtn">Back up now</button>
+          </div>
+          <div id="backupHelp" class="small" hidden>
+            <p><b>Saved <span id="backupFile"></span></b> to your Downloads.</p>
+          </div>
+        </details>
       </div>
-
-      <details class="card">
-        <summary class="card-title">How it works</summary>
-        <p class="small"><b>Words</b> is audio flashcards with spaced repetition. Every phrase has two cards: <i>What does this mean?</i> trains your ear, <i>How do you say…?</i> trains your mouth. Each card comes back just before you'd forget it. Rate it Again, Good or Easy; <b>Auto</b> hides the buttons, marks everything OK and keeps going. <b>I know this</b> skips a phrase for a week. <b>Learn</b> next to a unit in the list starts that unit now (and the daily Start carries on with it); <b>Replay</b> runs a finished unit again as practice, without changing when its words come back.</p>
-        <p class="small"><b>Letters</b> is the same kind of flashcards for the Thai script: each consonant, vowel and tone mark pops up big on screen while you hear its name. <i>What is this letter?</i> trains reading; <i>Which letter is this?</i> trains writing (picture it, or trace it in the air). With <b>Auto</b> on it keeps going by itself.</p>
-        <p class="small"><b>Talk</b> is a Pimsleur-style lesson for each unit, about 20–30 minutes, no buttons needed:</p>
-        <ol class="small">
-          <li><b>Opening conversation</b> between Niwat and Premwadee at natural speed. Just listen.</li>
-          <li><b>Breakdown and reverse building.</b> Each line is explained and built from its last piece backwards, so the rhythm and tones come out right.</li>
-          <li><b>Anticipation.</b> You're asked to say a line or its meaning before you hear the answer. Use the pause.</li>
-          <li><b>Graduated recall.</b> Lines come back at growing intervals through the lesson, and a few from the previous lesson return at the start of the next.</li>
-          <li><b>Closing conversation</b> at natural speed. Notice how much more you catch.</li>
-        </ol>
-        <h3 class="card-title" style="margin-top:12px">Learning Thai fast</h3>
-        <ul class="small">
-          <li><b>Always out loud.</b> Whispering or thinking the answer doesn't build the mouth memory you'll need.</li>
-          <li><b>Copy the tone exactly,</b> even exaggerate it. A wrong tone is a different word.</li>
-          <li><b>Ears before mouth.</b> Understanding comes first; that's why the meaning card comes before the speaking card.</li>
-          <li><b>15 minutes every day</b> beats 2 hours on Sunday. Keep the streak.</li>
-          <li><b>Use it immediately.</b> Say today's phrases to a Thai person, a friend, or yourself in the mirror.</li>
-        </ul>
-        <p class="muted small">Keys: <kbd>1</kbd> Again · <kbd>2</kbd> Good · <kbd>3</kbd> Easy · <kbd>N</kbd> next · <kbd>K</kbd> know it · <kbd>A</kbd> auto · <kbd>V</kbd> voice · <kbd>R</kbd> replay · <kbd>Space</kbd> pause · <kbd>Esc</kbd> end</p>
-      </details>
-
-      <p class="center small"><a href="lessons/">Reading and writing Thai →</a> &nbsp;·&nbsp; <a href="printables/">Printable worksheets →</a></p>
+      <div class="pane" data-pane="help" role="tabpanel" hidden>
+        <div class="card">
+          <h2 class="card-title">How it works</h2>
+          <p class="small"><b>Words</b> is audio flashcards with spaced repetition. Every phrase has two cards: <i>What does this mean?</i> trains your ear, <i>How do you say…?</i> trains your mouth. Each card comes back just before you'd forget it. Rate it Again, Good or Easy; <b>Auto</b> hides the buttons, marks everything OK and keeps going. <b>I know this</b> skips a phrase for a week. <b>Learn</b> next to a unit in the list starts that unit now (and the daily Start carries on with it); <b>Replay</b> runs a finished unit again as practice, without changing when its words come back.</p>
+          <p class="small"><b>Letters</b> is the same kind of flashcards for the Thai script: each consonant, vowel and tone mark pops up big on screen while you hear its name. <i>What is this letter?</i> trains reading; <i>Which letter is this?</i> trains writing (picture it, or trace it in the air). With <b>Auto</b> on it keeps going by itself.</p>
+          <p class="small"><b>Talk</b> is a Pimsleur-style lesson for each unit, about 20–30 minutes, no buttons needed:</p>
+          <ol class="small">
+            <li><b>Opening conversation</b> between Niwat and Premwadee at natural speed. Just listen.</li>
+            <li><b>Breakdown and reverse building.</b> Each line is explained and built from its last piece backwards, so the rhythm and tones come out right.</li>
+            <li><b>Anticipation.</b> You're asked to say a line or its meaning before you hear the answer. Use the pause.</li>
+            <li><b>Graduated recall.</b> Lines come back at growing intervals through the lesson, and a few from the previous lesson return at the start of the next.</li>
+            <li><b>Closing conversation</b> at natural speed. Notice how much more you catch.</li>
+          </ol>
+          <h3 class="card-title" style="margin-top:12px">Learning Thai fast</h3>
+          <ul class="small">
+            <li><b>Always out loud.</b> Whispering or thinking the answer doesn't build the mouth memory you'll need.</li>
+            <li><b>Copy the tone exactly,</b> even exaggerate it. A wrong tone is a different word.</li>
+            <li><b>Ears before mouth.</b> Understanding comes first; that's why the meaning card comes before the speaking card.</li>
+            <li><b>15 minutes every day</b> beats 2 hours on Sunday. Keep the streak.</li>
+            <li><b>Use it immediately.</b> Say today's phrases to a Thai person, a friend, or yourself in the mirror.</li>
+          </ul>
+          <p class="muted small">Keys: <kbd>1</kbd> Again · <kbd>2</kbd> Good · <kbd>3</kbd> Easy · <kbd>N</kbd> next · <kbd>K</kbd> know it · <kbd>A</kbd> auto · <kbd>V</kbd> voice · <kbd>R</kbd> replay · <kbd>Space</kbd> pause · <kbd>Esc</kbd> end</p>
+        </div>
+        <p class="center small"><a href="lessons/">Reading and writing Thai →</a> &nbsp;·&nbsp; <a href="printables/">Printable worksheets →</a></p>
+      </div>
     </section>
 
     <!-- Session (shared by Words and Talk) -->
@@ -297,12 +324,12 @@
     <button data-tab="more"><span aria-hidden="true">⋯</span>More</button>
   </nav>
 
-  <script src="app/course.js?v=45"></script>
-  <script src="app/dialogues.js?v=45"></script>
-  <script src="app/songs.js?v=45"></script>
-  <script src="app/letters.js?v=45"></script>
-  <script src="app/audio-manifest.js?v=45"></script>
-  <script src="app/audio-timing.js?v=45"></script>
-  <script src="app/app.js?v=45"></script>
+  <script src="app/course.js?v=46"></script>
+  <script src="app/dialogues.js?v=46"></script>
+  <script src="app/songs.js?v=46"></script>
+  <script src="app/letters.js?v=46"></script>
+  <script src="app/audio-manifest.js?v=46"></script>
+  <script src="app/audio-timing.js?v=46"></script>
+  <script src="app/app.js?v=46"></script>
 </body>
 </html>

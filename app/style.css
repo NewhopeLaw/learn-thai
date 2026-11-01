@@ -350,3 +350,21 @@ button.link.who::after { content: ' ▾'; color: var(--muted); }
 .sheet .row .grow { flex: 1; }
 #letterList .vocab-row { cursor: pointer; border-radius: 10px; }
 #letterList .vocab-row:hover { background: var(--surface-2); }
+
+/* Tabs inside a screen: Learn / Progress, Settings / Offline & sync / Help. Stays at the top while
+   the page scrolls, so switching never needs a scroll back up. */
+.seg {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; gap: 4px;
+  margin: -12px -16px 12px; padding: 10px 16px;
+  background: var(--bg);
+}
+.seg button {
+  flex: 1; min-height: 40px; padding: 6px 10px;
+  border-radius: 999px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--muted);
+  font-weight: 600; font-size: .95rem; white-space: nowrap;
+}
+.seg button[aria-selected="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.seg button:active { transform: none; }
+.pane[hidden] { display: none; }

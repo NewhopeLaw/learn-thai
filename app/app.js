@@ -1290,10 +1290,37 @@
 
   const TABS = ['words', 'talk', 'song', 'letters', 'more'];
   let tab = 'words';
+  // Tabs inside a screen (Learn / Progress, Settings / Offline & sync / Help). Each screen opens on its
+  // first one when the app starts; the last one chosen is kept while the app is open.
+  const panes = {};
+  function setPane(view, pane) {
+    const sec = $(view);
+    const btns = [...sec.querySelectorAll(':scope > .seg [data-pane]')];
+    if (!btns.length) return;
+    if (!btns.some(b => b.dataset.pane === pane)) pane = btns[0].dataset.pane;
+    panes[view] = pane;
+    btns.forEach(b => { const on = b.dataset.pane === pane; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; });
+    sec.querySelectorAll(':scope > .pane').forEach(el => { el.hidden = el.dataset.pane !== pane; });
+  }
+  document.querySelectorAll('.seg').forEach(nav => {
+    const view = nav.closest('section').id;
+    const btns = [...nav.querySelectorAll('[data-pane]')];
+    btns.forEach((b, k) => {
+      b.onclick = () => { setPane(view, b.dataset.pane); window.scrollTo(0, 0); };
+      b.onkeydown = e => { // arrow keys move between tabs
+        const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (!d) return;
+        const nb = btns[(k + d + btns.length) % btns.length];
+        nb.click(); nb.focus();
+      };
+    });
+    setPane(view);
+  });
   let offlineReady = null; // set by the offline section
-  function show(view) {
+  function show(view, pane) {
     if (view === 'home') view = tab;
     if (TABS.includes(view)) tab = view;
+    if (pane) setPane(view, pane);
     for (const v of ['setup', 'session', ...TABS]) $(v).hidden = v !== view;
     $('tabbar').hidden = !TABS.includes(view);
     document.querySelectorAll('#tabbar [data-tab]').forEach(b => b.setAttribute('aria-current', b.dataset.tab === view ? 'page' : 'false'));
@@ -1302,7 +1329,11 @@
     ui.pause.setAttribute('aria-label', 'Pause');
     window.scrollTo(0, 0);
   }
-  document.querySelectorAll('#tabbar [data-tab]').forEach(b => b.onclick = () => show(b.dataset.tab));
+  // Tapping the tab you're already on goes back to its first pane (e.g. Words › Progress → Learn).
+  document.querySelectorAll('#tabbar [data-tab]').forEach(b => b.onclick = () => {
+    const again = !$(b.dataset.tab).hidden;
+    show(b.dataset.tab, again ? 'first' : undefined);
+  });
   // One-line status on Today; tap it to open More.
   function renderChip() {
     const el = $('statusChip');
@@ -1315,7 +1346,7 @@
     if (offlineReady === true) parts.push('offline ready');
     el.textContent = parts.join(' · ');
   }
-  $('statusChip').onclick = () => show('more');
+  $('statusChip').onclick = () => show('more', 'sync');
   function stage(kind, label, prompt, rom) {
     ui.orb.dataset.stage = kind; ui.glyph.dataset.stage = kind;
     ui.orbLabel.textContent = label; ui.glyphLabel.textContent = label;
@@ -1700,10 +1731,12 @@
     const iv = Math.min(...cards.map(c => c.interval));
     return iv >= 21 ? 'mastered' : iv >= 7 ? 'known' : 'learning';
   }
+  // Progress lives with what it measures: phrases under Words › Progress, letters under Letters › Progress.
   function renderProgress() {
-    const units = $('units');
+    const units = $('units'), letterUnits = $('letterUnits');
     units.innerHTML = '';
-    const addRow = (title, shown, items, what) => {
+    letterUnits.innerHTML = '';
+    const addRow = (title, shown, items, what, box = units) => {
       const c = { learning: 0, known: 0, mastered: 0, new: 0 };
       items.forEach(i => c[strength(i.id)]++);
       const pct = k => (c[k] / items.length) * 100 + '%';
@@ -1725,16 +1758,10 @@
         };
         row.querySelector('.unit-head').appendChild(b);
       }
-      units.appendChild(row);
+      box.appendChild(row);
     };
     window.COURSE.units.forEach((u, ui_) => addRow(u.title, u.title + (store.lessons[u.key] ? '  ✓' : ''), ALL.filter(i => i.unit === ui_), 'phrases'));
-    if (LETTER_GROUPS.length) {
-      const h = document.createElement('p');
-      h.className = 'level-head';
-      h.textContent = 'Letters';
-      units.appendChild(h);
-      LETTER_GROUPS.forEach((g, gi) => addRow(g.title, g.title, LETTERS_ALL.filter(i => i.group === gi), 'letters'));
-    }
+    LETTER_GROUPS.forEach((g, gi) => addRow(g.title, g.title, LETTERS_ALL.filter(i => i.group === gi), 'letters', letterUnits));
 
     const days = [];
     for (let k = 13; k >= 0; k--) { const t = Date.now() - k * DAY; days.push({ t, n: store.log[dayKey(t)] || 0 }); }
@@ -1753,7 +1780,9 @@
     const totalMin = Math.round(Object.values(store.secs).reduce((a, b) => a + b, 0) / 60);
     const mastered = ALL.filter(i => strength(i.id) === 'mastered').length;
     const lettersKnown = LETTERS_ALL.filter(i => ['known', 'mastered'].includes(strength(i.id))).length;
-    $('totals').textContent = `${totalCards} cards reviewed · ${totalMin} min studied · ${mastered} phrases mastered` + (lettersKnown ? ` · ${lettersKnown} letters known` : '') + ` · ${Object.keys(store.log).length} days practised`;
+    const lettersSeen = LETTERS_ALL.filter(i => store.items[i.id]).length;
+    $('totals').textContent = `${totalCards} cards reviewed · ${totalMin} min studied · ${mastered} phrases mastered · ${Object.keys(store.log).length} days practised · ${streak()}-day streak`;
+    $('letterTotals').textContent = `${lettersSeen} of ${LETTERS_ALL.length} letters started · ${lettersKnown} known or mastered`;
   }
   function renderVoiceInfo() {
     const el = document.getElementById('voiceInfo');
