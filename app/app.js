@@ -1292,7 +1292,7 @@
   let tab = 'words';
   // Tabs inside a screen (Learn / Progress, Settings / Offline & sync / Help). Each screen opens on its
   // first one when the app starts; the last one chosen is kept while the app is open.
-  const panes = {};
+  const panes = {}, picked = {};
   function setPane(view, pane) {
     const sec = $(view);
     const btns = [...sec.querySelectorAll(':scope > .seg [data-pane]')];
@@ -1306,7 +1306,7 @@
     const view = nav.closest('section').id;
     const btns = [...nav.querySelectorAll('[data-pane]')];
     btns.forEach((b, k) => {
-      b.onclick = () => { setPane(view, b.dataset.pane); window.scrollTo(0, 0); };
+      b.onclick = () => { picked[view] = true; setPane(view, b.dataset.pane); window.scrollTo(0, 0); };
       b.onkeydown = e => { // arrow keys move between tabs
         const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
         if (!d) return;
@@ -1417,20 +1417,17 @@
     renderChip();
     syncSettings();
   }
+  // Talk lessons in two tabs, A1 and A2; the tab shows the level, so no headings in the lists.
   function renderLessons() {
-    const list = $('lessonList');
-    list.innerHTML = '';
-    let lastLevel = null;
+    const lists = { A1: $('lessonListA1'), A2: $('lessonListA2') };
+    Object.values(lists).forEach(l => { l.innerHTML = ''; });
+    // Open on the level of the next lesson until a tab is picked by hand.
+    const t = nextTalk();
+    if (!picked.talk && t != null && lists[levelOf(UNITS[t])]) setPane('talk', levelOf(UNITS[t]));
     UNITS.forEach((unit, u) => {
       const d = DIALOGUES[unit.key];
-      if (!d) return;
-      if (levelOf(unit) !== lastLevel) {
-        lastLevel = levelOf(unit);
-        const h = document.createElement('p');
-        h.className = 'level-head';
-        h.textContent = LEVEL_NAMES[lastLevel] || lastLevel;
-        list.appendChild(h);
-      }
+      const list = lists[levelOf(unit)];
+      if (!d || !list) return;
       const done = store.lessons[unit.key];
       const row = document.createElement('div');
       row.className = 'lesson-row level-' + levelOf(unit) + (done ? ' done' : '');
@@ -1449,6 +1446,7 @@
       row.append(text, b);
       list.appendChild(row);
     });
+    for (const l of Object.values(lists)) if (!l.children.length) l.innerHTML = '<p class="muted small">No lessons here yet.</p>';
   }
 
   // ---------- Song: learn lyrics line by line ----------

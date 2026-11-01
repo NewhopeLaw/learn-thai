@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Learn Thai by Ear</title>
   <meta name="description" content="Free audio-first Thai course: listen, recall out loud, and review with spaced repetition. No reading required.">
-  <link rel="stylesheet" href="app/style.css?v=46">
+  <link rel="stylesheet" href="app/style.css?v=47">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#b5452b">
   <link rel="icon" type="image/png" href="app/icons/icon-192.png">
@@ -90,14 +90,18 @@
 
     <!-- Talk: Pimsleur-style lessons -->
     <section id="talk" class="view" hidden>
+      <nav class="seg" role="tablist" aria-label="Talk lessons by level">
+        <button role="tab" data-pane="A1">A1 · Beginner</button>
+        <button role="tab" data-pane="A2">A2 · Elementary</button>
+      </nav>
       <p class="eyebrow">Talk · <span id="statTalk">0</span> lessons done</p>
       <h1 class="next-title" id="talkNext"></h1>
       <p id="talkScene" class="muted"></p>
       <button id="startTalk" class="primary start">▶&nbsp; Start lesson</button>
       <p id="talkEstimate" class="muted small center"></p>
 
-      <h2 class="card-title section-title">All lessons</h2>
-      <div id="lessonList"></div>
+      <div class="pane" data-pane="A1" role="tabpanel"><div id="lessonListA1"></div></div>
+      <div class="pane" data-pane="A2" role="tabpanel" hidden><div id="lessonListA2"></div></div>
     </section>
 
     <!-- Song: learn lyrics -->
@@ -324,12 +328,12 @@
     <button data-tab="more"><span aria-hidden="true">⋯</span>More</button>
   </nav>
 
-  <script src="app/course.js?v=46"></script>
-  <script src="app/dialogues.js?v=46"></script>
-  <script src="app/songs.js?v=46"></script>
-  <script src="app/letters.js?v=46"></script>
-  <script src="app/audio-manifest.js?v=46"></script>
-  <script src="app/audio-timing.js?v=46"></script>
-  <script src="app/app.js?v=46"></script>
+  <script src="app/course.js?v=47"></script>
+  <script src="app/dialogues.js?v=47"></script>
+  <script src="app/songs.js?v=47"></script>
+  <script src="app/letters.js?v=47"></script>
+  <script src="app/audio-manifest.js?v=47"></script>
+  <script src="app/audio-timing.js?v=47"></script>
+  <script src="app/app.js?v=47"></script>
 </body>
 </html>

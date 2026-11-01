@@ -28,7 +28,7 @@ Optional extras:
 - **Follow along:** while Thai plays, the Thai text and its romanization are shown with the word being spoken lit up (on by default, in Settings). It stays hidden whenever seeing it would give away the answer. Tap any word in it to hear just that word, from its own recording (tap it again for slow) (in a lesson this pauses it; press ▶ to carry on). Tap the big letter on a letter card, or in a Letters lesson once its name has been said, to hear the name again.
 - **Gendered politeness:** the course teaches ครับ/ค่ะ and ผม/ฉัน to match you.
 
-**Screens:** *Words* (Learn: start button, reviews due, new today, every phrase · Progress: practice chart, totals, each unit), *Talk*, *Song*, *Letters* (Learn · Progress, the same way) and *More* (Settings · Offline & sync · Help). The tab row stays at the top while you scroll; tapping the bottom tab you're already on goes back to its first tab.
+**Screens:** *Words* (Learn: start button, reviews due, new today, every phrase · Progress: practice chart, totals, each unit), *Talk* (lessons in two tabs, A1 · A2; it opens on the level of your next lesson), *Song*, *Letters* (Learn · Progress, the same way) and *More* (Settings · Offline & sync · Help). The tab row stays at the top while you scroll; tapping the bottom tab you're already on goes back to its first tab.
 
 **Tracking progress:** *Words › Progress* shows the last 14 days of practice, totals, and each unit's phrases as learning / known / mastered; *Letters › Progress* does the same for each group of letters. Progress is saved in your browser and syncs through your personal link; *More › Offline & sync* also has a backup file.
 
