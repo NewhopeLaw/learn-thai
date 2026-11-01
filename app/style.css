@@ -262,7 +262,14 @@ button.icon.on { background: var(--accent-soft); border-color: var(--accent); co
 .lyric-row { display: flex; align-items: center; gap: 12px; padding: 6px 0; }
 .lyric-row .play { width: 44px; height: 44px; min-height: 44px; padding: 0; border-radius: 50%; flex: none; }
 .lyric-text { flex: 1; min-width: 0; }
-.lyric-text .thai { font-size: 1.15rem; }
+.lyric-text .thai { font-size: 1.5rem; line-height: 1.4; }
+.lyric-text .vocab-rom .en { font-style: normal; }
+.vocab-text .thai { font-size: 1.35rem; }
+.vocab-text .vocab-rom .en { font-style: normal; }
+/* The letter itself is lit while its name plays: on the lesson screen, the card and the list. */
+.glyph .char.now, .card-glyph.now { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.letter-glyph.now { color: var(--accent); background: var(--accent-soft); border-radius: 10px; }
+.glyph .char, .card-glyph, .letter-glyph { transition: color .12s, background-color .12s, border-color .12s; }
 .video { position: relative; width: 100%; aspect-ratio: 16 / 9; margin: 12px 0; border-radius: 12px; overflow: hidden; background: #000; }
 .video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .link-btn { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 16px; border: 1px solid var(--border); border-radius: 12px; text-decoration: none; }
@@ -341,8 +348,7 @@ button.link.who::after { content: ' ▾'; color: var(--muted); }
 .card-glyph.cls-mid { border-color: var(--listen); }
 .card-glyph.cls-high { border-color: var(--grade); }
 .card-glyph.cls-low { border-color: var(--speak); }
-.card-name { font-size: 1.5rem; font-weight: 600; margin: 0; }
-.card-thai { font-size: 1.3rem; margin: 2px 0 6px; }
+.card-name { font-size: 1.5rem; font-weight: 600; margin: 0 0 6px; }
 .card-example { margin: 10px 0 0; }
 .card-example .thai { font-size: 1.4rem; margin-right: 6px; }
 .card-example .play { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; min-height: 36px; padding: 0; border-radius: 50%; margin-left: 8px; vertical-align: middle; }

@@ -236,16 +236,24 @@
     }
     for (const d of Object.values(window.DIALOGUES || {})) for (const l of d.lines) addLine(fillAs(l.th, false, f), fillAs(l.rom, true, f));
   }
-  for (const song of window.SONGS || []) for (const sec of song.sections) for (const l of sec.lines) addLine(l.th, l.rom);
+  for (const song of window.SONGS || []) {
+    for (const sec of song.sections) for (const l of sec.lines) addLine(l.th, l.rom);
+    for (const w of [...song.words, ...(song.more || [])]) addRom(w.th, w.rom);
+  }
   for (const it of LETTERS_ALL) { addRom(it.name, it.rom); if (it.example) addRom(it.example.th, it.example.rom); }
 
   let lyric = null, reveal = false, stagePrompt = '';
   const lyricShown = () => !!lyric && !lyric.box; // up on the lesson screen
   function hideLyric() {
-    if (lyric) { cancelAnimationFrame(lyric.raf); if (lyric.box) lyric.box.hidden = true; }
+    if (lyric) { cancelAnimationFrame(lyric.raf); if (lyric.box) lyric.box.hidden = true; lyric.glyphEl?.classList.remove('now'); }
     lyric = null;
     if (ui.lyric) ui.lyric.hidden = true;
   }
+  // Thai that is already on screen is lit in place rather than shown again: a target with the row's own
+  // Thai and romanization elements. A letter's `glyph` (the big letter) is lit whole while its name plays,
+  // and the name's Thai spelling is not shown, only its romanization.
+  const unshown = () => document.createElement('span');
+  const letterTarget = (glyph, rom) => ({ box: null, th: unshown(), rom, glyph });
   // A word-list row's own follow-along lines, made the first time the row is played.
   function rowTarget(row) {
     let box = row.querySelector('.vocab-follow');
@@ -273,16 +281,18 @@
     const inStage = !target;
     if (inStage) {
       if (!reveal || !run) return hideLyric();
-      target = { box: ui.lyric, th: ui.lyricTh, rom: ui.lyricRom };
+      target = glyphOn ? { box: ui.lyric, th: unshown(), rom: ui.lyricRom, glyph: ui.glyphText } : { box: ui.lyric, th: ui.lyricTh, rom: ui.lyricRom };
+      ui.lyricTh.textContent = '';
     }
     hideLyric();
+    target.glyph?.classList.add('now');
     const rom = ROM_OF.get(text) || '';
     const t = TIMING[AUDIO[text]]?.[folder === 'female' ? 'f' : 'm'] || [];
     const words = [];
     for (let i = 0; i + 3 < t.length; i += 4) words.push({ start: t[i], end: t[i + 1], at: t[i + 2], syl: t[i + 3], th: null, rom: [] });
     const thEl = target.th, romEl = target.rom;
     thEl.textContent = ''; romEl.textContent = '';
-    lyric = { words: [], cur: -2, raf: 0, prompt: stagePrompt, box: inStage ? null : target.box, glyph: inStage && glyphOn ? ui.glyphText.textContent : null };
+    lyric = { words: [], cur: -2, raf: 0, prompt: stagePrompt, box: inStage ? null : target.box, glyph: inStage && glyphOn ? ui.glyphText.textContent : null, glyphEl: target.glyph || null };
     if (words.length && words.every((w, i) => w.at > 0 && (!i || w.at > words[i - 1].at))) {
       let from = 0;
       words.forEach((w, i) => {
@@ -400,6 +410,7 @@
     if (!lyric) return;
     cancelAnimationFrame(lyric.raf);
     paintLyric(Infinity);
+    lyric.glyphEl?.classList.remove('now');
   }
 
   // ---------- run control (pause / stop) ----------
@@ -939,7 +950,7 @@
         play.className = 'play';
         play.textContent = '▶';
         play.setAttribute('aria-label', `Play: ${it.rom}`);
-        play.onclick = e => { e.stopPropagation(); playLetter(it, rowTarget(row)); };
+        play.onclick = e => { e.stopPropagation(); playLetter(it, letterTarget(glyph, name)); };
         row.onclick = () => openLetterCard(it);
         row.tabIndex = 0;
         row.setAttribute('role', 'button');
@@ -950,11 +961,12 @@
         glyph.textContent = it.th;
         const text = document.createElement('span');
         text.className = 'vocab-text';
-        text.textContent = it.rom;
+        const name = document.createElement('span');
+        name.textContent = it.rom;
         const r = document.createElement('span');
         r.className = 'muted small vocab-rom';
         r.textContent = letterDesc(it) + (it.example ? ` · ${it.example.th} ${it.example.rom}, ${it.example.en}` : '');
-        text.appendChild(r);
+        text.append(name, r);
         const dot = document.createElement('span');
         dot.className = `dot ${strength(it.id)}`;
         dot.title = strength(it.id);
@@ -970,7 +982,7 @@
     endPlayback?.();
     speakThai(it.name, voiceFolder(), undefined, target).catch(() => {});
   }
-  const cardTarget = () => ({ box: null, th: $('cardThai'), rom: $('cardName') });
+  const cardTarget = () => letterTarget($('cardGlyph'), $('cardName'));
   // The letter card: tap a letter in the list to see it big with its details; ‹ › walk through the list.
   let cardLetter = null;
   function openLetterCard(it) {
@@ -978,7 +990,6 @@
     $('cardGlyph').textContent = it.th;
     $('cardGlyph').className = 'card-glyph' + (it.cls ? ` cls-${it.cls}` : '');
     $('cardName').textContent = it.rom;
-    $('cardThai').textContent = it.name;
     $('cardDesc').textContent = letterDesc(it);
     const ex = $('cardExample');
     ex.innerHTML = '';
@@ -1600,7 +1611,7 @@
         row.appendChild(a);
       }
       const lyrics = document.createElement('div');
-      lyrics.className = 'lyrics';
+      lyrics.className = 'lyrics follow';
       for (const sec of song.sections) {
         const sh = document.createElement('p');
         sh.className = 'muted small section-name';
@@ -1613,19 +1624,24 @@
           play.className = 'play';
           play.textContent = '▶';
           play.setAttribute('aria-label', `Play: ${L.en}`);
-          play.onclick = () => { if (run && !run.paused) togglePause(); silence(); speakThai(L.th, voiceOf('A')); };
           const txt = document.createElement('div');
           txt.className = 'lyric-text';
           const th = document.createElement('span');
-          th.className = 'thai';
+          th.className = 'thai'; th.lang = 'th';
           th.textContent = L.th;
           txt.appendChild(th);
+          const r = document.createElement('span');
           if (showRom) {
-            const r = document.createElement('span');
-            r.className = 'muted small vocab-rom';
-            r.textContent = `${L.rom} · ${L.en}`;
-            txt.appendChild(r);
+            const line2 = document.createElement('span');
+            line2.className = 'muted small vocab-rom';
+            r.textContent = L.rom;
+            const en = document.createElement('span');
+            en.className = 'en';
+            en.textContent = ` · ${L.en}`;
+            line2.append(r, en);
+            txt.appendChild(line2);
           }
+          play.onclick = () => { if (run && !run.paused) togglePause(); silence(); endPlayback?.(); speakThai(L.th, voiceOf('A'), undefined, { box: null, th, rom: r }).catch(() => {}); };
           line.append(play, txt);
           lyrics.appendChild(line);
         }
@@ -1648,12 +1664,19 @@
           play.setAttribute('aria-label', `Play: ${w.en}`);
           const t = document.createElement('span');
           t.className = 'vocab-text';
-          t.textContent = `${w.th} · ${w.en}`;
+          const th = document.createElement('span');
+          th.className = 'thai'; th.lang = 'th';
+          th.textContent = w.th;
+          const line2 = document.createElement('span');
+          line2.className = 'muted small vocab-rom';
           const r = document.createElement('span');
-          r.className = 'muted small vocab-rom';
           r.textContent = w.rom;
-          t.appendChild(r);
-          play.onclick = () => { if (run && !run.paused) togglePause(); silence(); speakThai(w.th, voiceOf('A'), undefined, rowTarget(wr)).catch(() => {}); };
+          const en = document.createElement('span');
+          en.className = 'en';
+          en.textContent = ` · ${w.en}`;
+          line2.append(r, en);
+          t.append(th, line2);
+          play.onclick = () => { if (run && !run.paused) togglePause(); silence(); endPlayback?.(); speakThai(w.th, voiceOf('A'), undefined, { box: null, th, rom: r }).catch(() => {}); };
           wr.append(play, t);
           words.appendChild(wr);
         }
