@@ -34,7 +34,7 @@
   const KEY = profile ? `${BASE_KEY}:${profile}` : BASE_KEY;
   const DAY = 86400000;
   const LADDER = [8, 30, 90, 240]; // seconds between in-session recalls
-  const DEFAULTS = { name: '', gender: null, voice: 'both', thaiRate: 0.8, pause: 4, mic: false, handsFree: false, peek: false };
+  const DEFAULTS = { name: '', gender: null, voice: 'both', thaiRate: 0.8, pause: 4, mic: false, handsFree: false, peek: false, follow: true };
 
   // ---------- storage ----------
   let store;
@@ -168,20 +168,26 @@
       let done = false;
       const fin = ok => {
         if (done) return; done = true; clearTimeout(t);
-        player.onended = player.onpause = player.onerror = null;
+        player.onended = player.onpause = player.onerror = player.onplaying = null;
+        endLyric();
         res(ok || hush !== h); // interrupted on purpose: don't fall back to TTS
       };
       const t = setTimeout(() => fin(true), 15000);
       player.onended = () => fin(true);
       player.onpause = () => fin(true);
       player.onerror = () => fin(false);
+      player.onplaying = followLyric;
       player.src = `audio/${folder || voiceFolder()}/${id}.mp3`;
       player.preservesPitch = true;
       player.defaultPlaybackRate = player.playbackRate = Math.min(2, Math.max(0.5, (rate || S.thaiRate) / THAI_BASE_RATE));
       player.play().catch(() => fin(false));
     });
   }
-  async function speakThai(text, folder, rate) { if (!(await playRecorded(text, folder, rate))) await rawSpeak(text, 'th', rate || S.thaiRate); }
+  async function speakThai(text, folder, rate) {
+    folder = folder || voiceFolder();
+    showLyric(text, folder);
+    if (!(await playRecorded(text, folder, rate))) { endLyric(); await rawSpeak(text, 'th', rate || S.thaiRate); }
+  }
   // Speak a phrase template ({P} {I} …) in a voice, filled with that voice's own gender forms.
   const otherVoice = f => (f === 'male' ? 'female' : 'male');
   async function sayRaw(raw, folder, rate) {
@@ -197,6 +203,125 @@
   const syllables = rom => fillAs(rom, true, false).replace(/[,.?!]/g, '').split(/[\s-]+/).filter(Boolean).length;
   const needsBuilding = rom => syllables(rom) >= 3;
   function silence() { hush++; synth?.cancel(); player.pause(); }
+
+  // ---------- follow-along text ----------
+  // While Thai plays, the Thai and its romanization are shown with the word being spoken lit up,
+  // using word timings saved with the recordings (app/audio-timing.js). stage() decides when the
+  // text may show: never while it would give away the answer.
+  const TIMING = window.TIMING || {};
+  // Romanization of a "from the end" piece: Thai lines are split at spaces, their romanization at
+  // the matching punctuation (สบายดี ขอบคุณ = sa-baai dii, khɔ̀ɔp-khun).
+  function suffixRom(th, rom, piece) {
+    const ths = th.split(' ').filter(Boolean), roms = rom.split(/(?<=[,.…!?])\s+/);
+    const n = piece.split(' ').filter(Boolean).length;
+    return ths.length === roms.length && n <= ths.length ? roms.slice(-n).join(' ') : '';
+  }
+  // Romanization of everything the app speaks, by the exact Thai text (both polite forms).
+  const ROM_OF = new Map();
+  const addRom = (th, rom) => { if (th && rom && !ROM_OF.has(th)) ROM_OF.set(th, rom); };
+  const addLine = (th, rom) => {
+    addRom(th, rom);
+    const ps = th.split(' ').filter(Boolean);
+    for (let i = 1; i < ps.length; i++) { const p = ps.slice(i).join(' '); addRom(p, suffixRom(th, rom, p)); }
+  };
+  for (const f of [false, true]) {
+    for (const it of ALL) {
+      addLine(fillAs(it.th, false, f), fillAs(it.rom || '', true, f));
+      for (const p of it.parts || []) addRom(fillAs(p.th, false, f), fillAs(p.rom || '', true, f));
+    }
+    for (const d of Object.values(window.DIALOGUES || {})) for (const l of d.lines) addLine(fillAs(l.th, false, f), fillAs(l.rom, true, f));
+  }
+  for (const song of window.SONGS || []) for (const sec of song.sections) for (const l of sec.lines) addLine(l.th, l.rom);
+
+  let lyric = null, reveal = false, stagePrompt = '';
+  const lyricShown = () => !!lyric;
+  function hideLyric() {
+    if (lyric) cancelAnimationFrame(lyric.raf);
+    lyric = null;
+    if (ui.lyric) ui.lyric.hidden = true;
+  }
+  function addSpan(box, str) {
+    const lead = str.match(/^\s*/)[0];
+    if (lead) box.append(lead);
+    const sp = document.createElement('span');
+    sp.textContent = str.slice(lead.length);
+    box.append(sp);
+    return sp;
+  }
+  function showLyric(text, folder) {
+    if (!S.follow || !reveal || glyphOn || !run) return hideLyric();
+    hideLyric();
+    const rom = ROM_OF.get(text) || '';
+    const t = TIMING[AUDIO[text]]?.[folder === 'female' ? 'f' : 'm'] || [];
+    const words = [];
+    for (let i = 0; i + 3 < t.length; i += 4) words.push({ start: t[i], at: t[i + 2], syl: t[i + 3], th: null, rom: [] });
+    const thEl = ui.lyricTh, romEl = ui.lyricRom;
+    thEl.textContent = ''; romEl.textContent = '';
+    lyric = { words: [], cur: -2, raf: 0, prompt: stagePrompt };
+    if (words.length && words.every((w, i) => w.at > 0 && (!i || w.at > words[i - 1].at))) {
+      let from = 0;
+      words.forEach((w, i) => {
+        const to = i === words.length - 1 ? text.length : w.at;
+        w.th = addSpan(thEl, text.slice(from, to));
+        from = to;
+      });
+      // Share the romanization's syllables out over the spoken words, in proportion to each word's syllables.
+      const syl = [...rom.matchAll(/[^\s-]+/g)];
+      const total = words.reduce((n, w) => n + w.syl, 0);
+      let pos = 0, acc = 0;
+      words.forEach((w, i) => {
+        acc += w.syl;
+        const upto = i === words.length - 1 ? syl.length : Math.round((acc * syl.length) / total);
+        for (; pos < upto; pos++) w.rom.push(pos);
+      });
+      const owner = [];
+      words.forEach((w, i) => w.rom.forEach(k => { owner[k] = i; }));
+      let last = 0;
+      const romSpans = [];
+      syl.forEach(m => {
+        if (m.index > last) romEl.append(rom.slice(last, m.index));
+        const sp = document.createElement('span');
+        sp.textContent = m[0];
+        romEl.append(sp); romSpans.push(sp);
+        last = m.index + m[0].length;
+      });
+      if (last < rom.length) romEl.append(rom.slice(last));
+      words.forEach(w => { w.rom = w.rom.map(k => romSpans[k]); });
+      lyric.words = words;
+      paintLyric(-1);
+    } else { thEl.textContent = text; romEl.textContent = rom; } // no timings: show it, unlit
+    ui.lyric.hidden = false;
+    ui.peek.textContent = '';
+  }
+  // Light up the word being spoken at `ms` into the recording (Infinity: all spoken).
+  function paintLyric(ms) {
+    if (!lyric?.words.length) return;
+    let cur = -1;
+    if (ms === Infinity) cur = lyric.words.length;
+    else lyric.words.forEach((w, i) => { if (w.start <= ms) cur = i; });
+    if (cur === lyric.cur) return;
+    lyric.cur = cur;
+    lyric.words.forEach((w, i) => {
+      const c = i < cur ? 'said' : i === cur ? 'now' : 'todo';
+      w.th.className = c;
+      w.rom.forEach(sp => { sp.className = c; });
+    });
+  }
+  function followLyric() {
+    if (!lyric?.words.length) return;
+    cancelAnimationFrame(lyric.raf);
+    const tick = () => {
+      if (!lyric || player.paused || player.ended) return;
+      paintLyric(player.currentTime * 1000 + 60); // a hair early reads as in time
+      lyric.raf = requestAnimationFrame(tick);
+    };
+    tick();
+  }
+  function endLyric() {
+    if (!lyric) return;
+    cancelAnimationFrame(lyric.raf);
+    paintLyric(Infinity);
+  }
 
   // ---------- run control (pause / stop) ----------
   const STOP = Symbol('stop'), PAUSE = Symbol('pause'), SKIP = Symbol('skip'), GRADE = Symbol('grade'), NEXT = Symbol('next');
@@ -561,6 +686,7 @@
   // The letter itself, big, in place of the orb ('?' while it is hidden; null puts the orb back).
   function showGlyph(text) {
     glyphOn = text != null;
+    if (glyphOn) hideLyric();
     ui.stageBox.classList.toggle('has-glyph', glyphOn);
     ui.glyph.hidden = !glyphOn;
     ui.glyphText.textContent = text ?? '';
@@ -853,7 +979,10 @@
     const strip = t => t.replace(/(ครับ|ค่ะ|คะ)$/, ''); // match a course phrase whichever polite particle it ends with
     const lastIt = ALL.find(i => strip(thOf(i)) === strip(chunks[chunks.length - 1]));
     if (lastIt?.parts?.length) for (const p of lastIt.parts) steps.push({ th: fill(p.th), rom: fill(p.rom, true) });
-    for (let i = chunks.length - 1; i >= 0; i--) steps.push({ th: chunks.slice(i).join(' '), rom: i === 0 ? fill(line.rom, true) : '' });
+    for (let i = chunks.length - 1; i >= 0; i--) {
+      const th = chunks.slice(i).join(' ');
+      steps.push({ th, rom: i === 0 ? fill(line.rom, true) : suffixRom(text, fill(line.rom, true), th) });
+    }
     return steps.filter((st, k) => !k || st.th !== steps[k - 1].th);
   }
   // Breakdown of one line: meaning, the line, then reverse building with the learner repeating each piece.
@@ -971,6 +1100,7 @@
   function beginSession(letters = false) {
     inSession = true;
     run = { stopped: false, paused: false };
+    hideLyric(); reveal = false;
     // Unlock audio playback on phones while we're still inside the tap.
     const firstId = Object.values(AUDIO)[0];
     if (firstId) {
@@ -1036,6 +1166,7 @@
     if (!inSession) return;
     inSession = false;
     talkMode = false;
+    hideLyric();
     delete document.body.dataset.level;
     save();
     sess = null; run = null; currentText = null;
@@ -1063,6 +1194,7 @@
   const ui = {
     session: $('session'), setup: $('setup'),
     orb: $('orb'), orbLabel: $('orbLabel'), prompt: $('prompt'), peek: $('peek'), feedback: $('feedback'),
+    lyric: $('lyric'), lyricTh: $('lyricTh'), lyricRom: $('lyricRom'),
     grades: $('grades'), unit: $('unit'), bar: $('bar'), count: $('count'), pause: $('pause'),
     glyph: $('glyph'), glyphText: $('glyphText'), glyphLabel: $('glyphLabel'), stageBox: document.querySelector('#session .stage'),
   };
@@ -1099,7 +1231,14 @@
     ui.orb.dataset.stage = kind; ui.glyph.dataset.stage = kind;
     ui.orbLabel.textContent = label; ui.glyphLabel.textContent = label;
     if (prompt !== undefined) ui.prompt.textContent = prompt ? `“${prompt}”` : '';
-    if (rom !== undefined || !glyphOn) ui.peek.textContent = S.peek && rom ? rom : ''; // a letter's description stays while it is up
+    // Follow-along text: allowed while the meaning or the romanization is on screen (never in a
+    // "what does it mean / how do you say" moment). It stays up for the same phrase, e.g. while repeating.
+    if (prompt !== undefined || rom !== undefined) {
+      reveal = !!(prompt || rom);
+      if (!reveal || rom === undefined || (prompt !== undefined && lyric && prompt !== lyric.prompt)) hideLyric();
+      if (prompt !== undefined) stagePrompt = prompt;
+    }
+    if (rom !== undefined || !glyphOn) ui.peek.textContent = S.peek && rom && !lyricShown() ? rom : ''; // a letter's description stays while it is up
   }
   function progress(s) {
     const pct = s.total ? Math.round((s.done / s.total) * 100) : 0;
@@ -1230,7 +1369,7 @@
         for (let k = chunks.length - 1; k >= 0; k--) steps.push(chunks.slice(k).join(' '));
         if (steps.length > 1) await en('From the end.');
         for (const st of steps) {
-          const rom = st === L.th ? L.rom : '';
+          const rom = st === L.th ? L.rom : suffixRom(L.th, L.rom, st);
           stage('listen', 'Listen', L.en, rom);
           await sayText(st, folder);
           stage('speak', 'Repeat', L.en, rom);
@@ -1550,6 +1689,7 @@
     if (inSession) setBar(barMode);
     renderAuto();
     $('setPeek').checked = S.peek;
+    $('setFollow').checked = S.follow;
   }
 
   $('setGender').onchange = e => { S.gender = e.target.value; save(); };
@@ -1574,6 +1714,7 @@
     if (S.handsFree && run?.canGrade && !run.paused && ui.orb.dataset.stage === 'grade') { run.grade = 'ok'; } // waiting on a rating right now: move on
   };
   $('setPeek').onchange = e => { S.peek = e.target.checked; save(); };
+  $('setFollow').onchange = e => { S.follow = e.target.checked; save(); if (!S.follow) hideLyric(); };
   $('testVoice').onclick = () => { silence(); sayRaw('สวัสดี{P}', voiceFolder()).catch(() => {}); };
   $('vocabSearch').oninput = renderVocab;
   $('vocabLearned').onchange = renderVocab;

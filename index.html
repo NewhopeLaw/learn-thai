@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Learn Thai by Ear</title>
   <meta name="description" content="Free audio-first Thai course: listen, recall out loud, and review with spaced repetition. No reading required.">
-  <link rel="stylesheet" href="app/style.css?v=42">
+  <link rel="stylesheet" href="app/style.css?v=43">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#b5452b">
   <link rel="icon" type="image/png" href="app/icons/icon-192.png">
@@ -182,6 +182,7 @@
         </label>
         <label class="check"><input id="setMic" type="checkbox"> Check my answer with the microphone <span id="micNote" class="muted small"></span></label>
         <label class="check"><input id="setHands" type="checkbox"> Auto mode for words: mark every card OK and keep going</label>
+        <label class="check"><input id="setFollow" type="checkbox"> Follow along: show the Thai and romanization as they're spoken, word by word</label>
         <label class="check"><input id="setPeek" type="checkbox"> Show romanization during sessions</label>
         <div class="row">
           <button id="testVoice">Test voice</button>
@@ -246,6 +247,10 @@
           <span id="glyphLabel" class="label">Listen</span>
         </div>
         <p id="prompt" class="prompt"></p>
+        <div id="lyric" class="lyric" hidden>
+          <p id="lyricTh" class="lyric-th" lang="th"></p>
+          <p id="lyricRom" class="lyric-rom"></p>
+        </div>
         <p id="peek" class="peek"></p>
         <p id="feedback" class="feedback" aria-live="polite"></p>
         <p class="links">
@@ -292,11 +297,12 @@
     <button data-tab="more"><span aria-hidden="true">⋯</span>More</button>
   </nav>
 
-  <script src="app/course.js?v=42"></script>
-  <script src="app/dialogues.js?v=42"></script>
-  <script src="app/songs.js?v=42"></script>
-  <script src="app/letters.js?v=42"></script>
-  <script src="app/audio-manifest.js?v=42"></script>
-  <script src="app/app.js?v=42"></script>
+  <script src="app/course.js?v=43"></script>
+  <script src="app/dialogues.js?v=43"></script>
+  <script src="app/songs.js?v=43"></script>
+  <script src="app/letters.js?v=43"></script>
+  <script src="app/audio-manifest.js?v=43"></script>
+  <script src="app/audio-timing.js?v=43"></script>
+  <script src="app/app.js?v=43"></script>
 </body>
 </html>

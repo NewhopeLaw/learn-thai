@@ -201,6 +201,15 @@ button.icon.wide { font-size: 0.85rem; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { #orb { animation: none !important; } }
 .prompt { text-align: center; font-size: 1.35rem; min-height: 1.9em; margin: 18px 0 0; }
 .peek { text-align: center; color: var(--muted); font-style: italic; min-height: 1.5em; margin: 2px 0; }
+/* Follow-along text: the word being spoken is lit up in the Thai and the romanization. */
+.lyric { text-align: center; margin: 6px 0 0; }
+.lyric p { margin: 0; }
+.lyric-th { font-size: 1.9rem; line-height: 1.6; overflow-wrap: anywhere; }
+.lyric-rom { color: var(--muted); font-size: 1.05rem; line-height: 1.5; }
+.lyric span { border-radius: 6px; transition: color .12s, background-color .12s, opacity .12s; }
+.lyric .todo { opacity: .45; }
+.lyric .now { color: var(--accent); background: var(--accent-soft); opacity: 1; }
+.lyric-th .now { box-shadow: 0 0 0 2px var(--accent-soft); }
 .feedback { text-align: center; min-height: 1.5em; margin: 2px 0; font-weight: 600; }
 .links { display: flex; gap: 16px; align-items: center; justify-content: center; color: var(--muted); margin: 4px 0; }
 .bottombar {
