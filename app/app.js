@@ -507,6 +507,14 @@
 
   // ---------- speech recognition (optional) ----------
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  // Whose servers hear it: every browser on iPhone and iPad (and Safari) uses Apple's, Edge Microsoft's, Chrome Google's.
+  const speechService = () => {
+    const ua = navigator.userAgent;
+    if (/iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) || (/Safari/.test(ua) && !/Chrome|Chromium|Edg/.test(ua))) return 'Apple’s servers';
+    if (/Edg\//.test(ua)) return 'Microsoft’s servers';
+    if (/Chrome/.test(ua)) return 'Google’s servers';
+    return 'your browser’s speech service';
+  };
   function listen(ms) {
     return new Promise(res => {
       if (!SR) return res(null);
@@ -1382,7 +1390,7 @@
     const view = nav.closest('section').id;
     const btns = [...nav.querySelectorAll('[data-pane]')];
     btns.forEach((b, k) => {
-      b.onclick = () => { picked[view] = true; setPane(view, b.dataset.pane); window.scrollTo(0, 0); };
+      b.onclick = () => { picked[view] = true; setPane(view, b.dataset.pane); toHash(); window.scrollTo(0, 0); };
       b.onkeydown = e => { // arrow keys move between tabs
         const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
         if (!d) return;
@@ -1392,17 +1400,36 @@
     });
     setPane(view);
   });
+  // The tab, and the tab inside it once one is chosen, is kept in the address (#song, #more/sync),
+  // so a screen can be linked to or bookmarked.
+  function fromHash() {
+    const [view, p] = decodeURIComponent(location.hash.slice(1)).toLowerCase().split('/');
+    if (!TABS.includes(view)) return null;
+    const pane = p && [...$(view).querySelectorAll(':scope > .seg [data-pane]')].map(b => b.dataset.pane).find(x => x.toLowerCase() === p);
+    return { view, pane };
+  }
+  function toHash() {
+    if ($(tab).hidden) return; // a lesson or setup is up
+    const first = $(tab).querySelector(':scope > .seg [data-pane]')?.dataset.pane;
+    const h = `#${tab}${picked[tab] && panes[tab] !== first ? `/${panes[tab]}` : ''}`;
+    if (location.hash !== h) history.replaceState(null, '', h);
+  }
+  window.addEventListener('hashchange', () => {
+    const h = fromHash();
+    if (h && ui.session.hidden && ui.setup.hidden) show(h.view, h.pane);
+  });
   let offlineReady = null; // set by the offline section
   function show(view, pane) {
     if (view === 'home') view = tab;
     if (TABS.includes(view)) tab = view;
-    if (pane) setPane(view, pane);
+    if (pane) { setPane(view, pane); if (pane !== 'first') picked[view] = true; }
     for (const v of ['setup', 'session', ...TABS]) $(v).hidden = v !== view;
     $('tabbar').hidden = !TABS.includes(view);
     document.querySelectorAll('#tabbar [data-tab]').forEach(b => b.setAttribute('aria-current', b.dataset.tab === view ? 'page' : 'false'));
     if (TABS.includes(view)) renderHome();
     ui.pause.textContent = '⏸';
     ui.pause.setAttribute('aria-label', 'Pause');
+    toHash();
     window.scrollTo(0, 0);
   }
   // Tapping the tab you're already on goes back to its first pane (e.g. Words › Progress → Learn).
@@ -1912,7 +1939,7 @@
     $('setRate').value = S.thaiRate; $('rateVal').textContent = S.thaiRate.toFixed(2) + '×';
     $('setPause').value = S.pause; $('pauseVal').textContent = S.pause + ' s';
     $('setMic').checked = S.mic && !!SR; $('setMic').disabled = !SR;
-    $('micNote').textContent = SR ? '' : '(not supported in this browser — try Chrome)';
+    $('micNote').textContent = SR ? `(needs internet: your voice goes to ${speechService()})` : '(not supported in this browser — try Chrome)';
     $('setHands').checked = S.handsFree;
     if (inSession) setBar(barMode);
     renderAuto();
@@ -2272,6 +2299,11 @@
     installEvt = null;
     $('installBtn').hidden = true;
   };
+  // iPhone and iPad have no install prompt: only the browser's Share menu can add the app, so say where it is.
+  // Opened from the Home Screen, the app keeps its own storage, which iOS doesn't clear after a week away.
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (ios) $('installHint').innerHTML = 'To install, tap <b>Share</b> (□↑; in Chrome it is in the address bar), then <b>Add to Home Screen</b>. '
+    + 'Open the app from there and download the audio in it: the Home Screen app keeps its own copy, and iPhone won’t clear it if you are away for a week.';
   if (!standalone()) setTimeout(() => { if (!installEvt) $('installHint').hidden = false; }, 3000);
 
   const audioUrls = () => [...new Set(Object.values(AUDIO))]
@@ -2344,5 +2376,7 @@
   renderOffline();
 
   renderVoiceInfo();
+  const start = fromHash(); // opened from a link like …/#song: that tab, now or once setup is done
+  if (start) { tab = start.view; if (start.pane) { picked[tab] = true; setPane(tab, start.pane); } }
   show(profile && S.gender ? 'home' : 'setup');
 })();
