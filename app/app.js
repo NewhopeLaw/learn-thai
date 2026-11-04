@@ -1785,14 +1785,19 @@
 
   // ---------- vocabulary list ----------
   const vocabOpen = new Set();
+  // Rows are only made for units that are open (the rest when opened), and a search opens units only
+  // until about this many matches show: rebuilding all ~1000 rows on every key froze slower phones.
+  const SEARCH_OPEN_ROWS = 80;
+  let vocabTimer = 0; // a search waiting for typing to pause
   function renderVocab() {
+    clearTimeout(vocabTimer);
     const q = $('vocabSearch').value.trim().toLowerCase();
     const learnedOnly = $('vocabLearned').checked;
     const showRom = $('vocabRom').checked;
     const list = $('vocabList');
     list.innerHTML = '';
     const current = nextWordsUnit() ?? 0;
-    let lastLevel = null;
+    let lastLevel = null, shown = 0;
     window.COURSE.units.forEach((u, ui_) => {
       const items = ALL.filter(i => i.unit === ui_)
         .filter(i => !learnedOnly || store.items[i.id])
@@ -1807,8 +1812,12 @@
       }
       const det = document.createElement('details');
       det.className = 'level-' + levelOf(u);
-      det.open = q ? true : vocabOpen.size ? vocabOpen.has(ui_) : ui_ === current;
-      det.ontoggle = () => (det.open ? vocabOpen.add(ui_) : vocabOpen.delete(ui_));
+      det.open = q ? shown < SEARCH_OPEN_ROWS : vocabOpen.size ? vocabOpen.has(ui_) : ui_ === current;
+      if (det.open) shown += items.length;
+      det.ontoggle = () => {
+        if (det.open) fillRows();
+        if (!q) det.open ? vocabOpen.add(ui_) : vocabOpen.delete(ui_); // units a search opened aren't remembered
+      };
       const sum = document.createElement('summary');
       const name = document.createElement('span');
       name.className = 'unit-name';
@@ -1824,7 +1833,8 @@
         sum.appendChild(b);
       }
       det.appendChild(sum);
-      for (const it of items) {
+      let filled = false;
+      const fillRows = () => { if (filled) return; filled = true; for (const it of items) {
         const row = document.createElement('div');
         row.className = 'vocab-row';
         const play = document.createElement('button');
@@ -1846,7 +1856,8 @@
         dot.title = strength(it.id);
         row.append(play, text, dot);
         det.appendChild(row);
-      }
+      } };
+      if (det.open) fillRows();
       list.appendChild(det);
     });
     if (!list.children.length) list.innerHTML = '<p class="muted small">Nothing here yet. Phrases appear as you learn them.</p>';
@@ -1971,7 +1982,8 @@
   $('setPeek').onchange = e => { S.peek = e.target.checked; save(); };
   $('setFollow').onchange = e => { S.follow = e.target.checked; save(); if (!S.follow) hideLyric(); };
   $('testVoice').onclick = () => { silence(); sayRaw('สวัสดี{P}', voiceFolder()).catch(() => {}); };
-  $('vocabSearch').oninput = renderVocab;
+  // Search once typing pauses, not on every key.
+  $('vocabSearch').oninput = () => { clearTimeout(vocabTimer); vocabTimer = setTimeout(renderVocab, 250); };
   $('vocabLearned').onchange = renderVocab;
   $('vocabRom').onchange = renderVocab;
   $('reset').onclick = () => {
