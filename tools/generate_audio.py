@@ -108,7 +108,9 @@ async def generate(sem, voice, folder, text, failures, timing):
                 # Word timings come with the speech. For a file that already exists the speech
                 # is synthesized again only to read them (same voice, text and rate, so they match).
                 audio, bounds = bytearray(), []
-                async for chunk in edge_tts.Communicate(text, voice, rate=RATE, boundary='WordBoundary').stream():
+                # A few single words come back silent from one voice; a full stop after them fixes it.
+                say = text + '.' if attempt >= 2 else text
+                async for chunk in edge_tts.Communicate(say, voice, rate=RATE, boundary='WordBoundary').stream():
                     if chunk['type'] == 'audio':
                         audio += chunk['data']
                     elif chunk['type'] == 'WordBoundary':
