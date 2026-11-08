@@ -374,3 +374,30 @@ button.link.who::after { content: ' ▾'; color: var(--muted); }
 .seg button[aria-selected="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 .seg button:active { transform: none; }
 .pane[hidden] { display: none; }
+
+/* Word card: a tapped word's meaning and where it comes from. Sits above the tab bar. */
+.follow .ety { text-decoration: underline dotted; text-decoration-color: var(--muted); text-underline-offset: 6px; }
+.word-card {
+  position: fixed; z-index: 20; left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--tabbar-h) + 12px + env(safe-area-inset-bottom));
+  width: calc(100% - 32px); max-width: 528px; max-height: 55vh; overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .18); padding: 14px 16px 12px;
+}
+.word-card[hidden] { display: none; }
+.tabbar[hidden] + .word-card { bottom: calc(16px + env(safe-area-inset-bottom)); }
+.wc-close { position: absolute; top: 8px; right: 8px; min-height: 36px; min-width: 36px; padding: 4px; }
+.word-card p { margin: 0; }
+.wc-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; padding-right: 40px; }
+.wc-th { font-size: 1.9rem; line-height: 1.3; padding: 0 6px; min-height: 0; border: 0; background: none; color: var(--text); }
+.wc-th.now, .wc-part.now { color: var(--accent); background: var(--accent-soft); }
+.wc-rom { color: var(--muted); font-size: 1.05rem; }
+.wc-en { font-size: 1.1rem; font-weight: 600; margin-top: 2px !important; }
+.wc-label { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; margin-top: 12px !important; }
+.wc-parts { display: flex; flex-wrap: wrap; align-items: stretch; gap: 6px; margin-top: 6px; }
+.wc-plus { align-self: center; color: var(--muted); }
+.wc-part { display: flex; flex-direction: column; align-items: flex-start; gap: 0; padding: 6px 10px; min-height: 0; text-align: left; border-radius: 10px; }
+.wc-part-th { font-size: 1.25rem; line-height: 1.4; }
+.wc-part-rom { color: var(--muted); font-size: .85rem; }
+.wc-part-en { font-size: .85rem; }
+.wc-note { color: var(--muted); font-size: .9rem; margin-top: 10px !important; }

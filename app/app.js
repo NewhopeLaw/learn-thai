@@ -333,7 +333,9 @@
       if (g) lightMeaning(target.en, g, text, words, folder);
       lyric.words = words;
       paintLyric(-1);
-      // Tap a word (Thai or romanization) to hear just that word, cut from the same recording.
+      // Tap a word (Thai or romanization) to hear it on its own and see what it means. Words with a
+      // story behind them (app/etymology.js) are marked with a dotted underline.
+      words.forEach(w => { if (ETYMOLOGY[w.word]) w.th.classList.add('ety'); });
       words.forEach((w, i) => [w.th, ...w.rom].forEach(sp => {
         sp.classList.add('tap');
         sp.setAttribute('role', 'button');
@@ -455,11 +457,65 @@
     endPlayback?.();
     const mine = ++wordRun;
     words.forEach((x, k) => setWordClass(x, k === i ? 'now' : 'said'));
+    showWordCard(w.word, w.rom.map(sp => sp.textContent).join(' '), folder);
     const slow = lastWord === w;
     lastWord = slow ? null : w;
     const rate = slow ? slowRate() : undefined;
     if (!(await playRecorded(w.word, folder, rate, false)) && mine === wordRun) await rawSpeak(w.word, 'th', rate || S.thaiRate);
     if (mine === wordRun) setWordClass(w, 'said');
+  }
+  // ---------- word card: meaning and origin of a tapped word ----------
+  const ETYMOLOGY = window.ETYMOLOGY || {};
+  // Meanings of single words, from the course (both polite forms) and the songs.
+  const MEANING = new Map();
+  for (const f of [false, true]) for (const it of ALL) {
+    const th = fillAs(it.th, false, f);
+    if (!/\s/.test(th) && !MEANING.has(th)) MEANING.set(th, it.en);
+  }
+  function hideWordCard() { const c = $('wordCard'); if (c) c.hidden = true; }
+  function showWordCard(word, rom, folder) {
+    const info = ETYMOLOGY[word];
+    const meaning = info?.en || MEANING.get(word);
+    if (!info && !meaning) return hideWordCard();
+    const body = $('wordCardBody');
+    body.textContent = '';
+    const el = (tag, cls, text, lang) => {
+      const e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (text != null) e.textContent = text;
+      if (lang) e.lang = lang;
+      return e;
+    };
+    const say = (th, btn) => {
+      silence(); endPlayback?.();
+      const mine = ++wordRun;
+      btn?.classList.add('now');
+      playRecorded(th, folder || voiceFolder(), undefined, false)
+        .then(ok => ok || mine !== wordRun ? 0 : rawSpeak(th, 'th', S.thaiRate))
+        .finally(() => btn?.classList.remove('now'));
+    };
+    const head = el('p', 'wc-head');
+    const thBtn = el('button', 'wc-th', word, 'th');
+    thBtn.title = 'Play';
+    thBtn.onclick = () => say(word, thBtn);
+    head.append(thBtn, el('span', 'wc-rom', rom || ''));
+    body.append(head);
+    if (meaning) body.append(el('p', 'wc-en', meaning));
+    if (info?.parts?.length) {
+      body.append(el('p', 'wc-label', 'Built from'));
+      const row = el('div', 'wc-parts');
+      info.parts.forEach(([th, r, en], k) => {
+        if (k) row.append(el('span', 'wc-plus', '+'));
+        const b = el('button', 'wc-part');
+        b.append(el('span', 'wc-part-th', th, 'th'), el('span', 'wc-part-rom', r), el('span', 'wc-part-en', en));
+        b.title = 'Play';
+        b.onclick = () => say(th, b);
+        row.append(b);
+      });
+      body.append(row);
+    }
+    if (info?.note) body.append(el('p', 'wc-note', info.note));
+    $('wordCard').hidden = false;
   }
   function followLyric() {
     if (!lyric?.words.length) return;
@@ -1336,6 +1392,7 @@
   }
 
   function finish() {
+    hideWordCard();
     if (!inSession) return;
     inSession = false;
     talkMode = false;
@@ -1358,6 +1415,7 @@
     if (!run) return;
     run.paused = !run.paused;
     if (run.paused) { silence(); try { recognizer?.abort(); } catch {} }
+    else hideWordCard();
     ui.pause.textContent = run.paused ? '▶' : '⏸';
     ui.pause.setAttribute('aria-label', run.paused ? 'Resume' : 'Pause');
   }
@@ -1420,6 +1478,7 @@
   });
   let offlineReady = null; // set by the offline section
   function show(view, pane) {
+    hideWordCard();
     if (view === 'home') view = tab;
     if (TABS.includes(view)) tab = view;
     if (pane) { setPane(view, pane); if (pane !== 'first') picked[view] = true; }
@@ -1450,6 +1509,10 @@
     el.textContent = parts.join(' · ');
   }
   $('statusChip').onclick = () => show('more', 'sync');
+  // The word card closes with ✕, Escape, or a tap anywhere else (a tapped word opens its own card).
+  $('wordCardClose').onclick = hideWordCard;
+  document.addEventListener('click', e => { if (!$('wordCard').hidden && !e.target.closest('#wordCard, .tap')) hideWordCard(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('wordCard').hidden) { hideWordCard(); e.stopImmediatePropagation(); } }, true);
   function stage(kind, label, prompt, rom) {
     ui.orb.dataset.stage = kind; ui.glyph.dataset.stage = kind;
     ui.orbLabel.textContent = label; ui.glyphLabel.textContent = label;
