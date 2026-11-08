@@ -42,7 +42,7 @@
           C('ส', 'สอ เสือ', 'sɔ̌ɔ sǔea', 'tiger', 'high', 's'),
           C('ห', 'หอ หีบ', 'hɔ̌ɔ hìip', 'chest (box)', 'high', 'h'),
           C('ศ', 'ศอ ศาลา', 'sɔ̌ɔ sǎa-laa', 'pavilion', 'high', 's'),
-          C('ษ', 'ษอ ฤๅษี', 'sɔ̌ɔ rue-sǐi', 'hermit', 'high', 's'),
+          C('ษ', 'ษอ ฤๅษี', 'sɔ̌ɔ ruue-sǐi', 'hermit', 'high', 's'),
           C('ฐ', 'ฐอ ฐาน', 'thɔ̌ɔ thǎan', 'pedestal', 'high', 'th'),
           C('ฃ', 'ขอ ขวด', 'khɔ̌ɔ khùat', 'bottle', 'high', 'kh', 'no longer used'),
         ],
@@ -123,7 +123,7 @@
       {
         key: 'vowels-4', title: 'Vowels 4 · am, ai, ao',
         items: [
-          V('อำ', 'สระ อำ', 'sà-rà am', 'am', 'am, as in hum', ex('น้ำ', 'náam', 'water')),
+          V('อำ', 'สระ อำ', 'sà-rà am', 'am', 'am, as in hum', ex('ทำ', 'tham', 'to do')),
           V('ไอ', 'สระ ไอ ไม้มลาย', 'sà-rà ai (mái má-laai)', 'ai, as in "high" · most words', 'ai, as in high. Used in most words', ex('ไป', 'pai', 'go')),
           V('ใอ', 'สระ ใอ ไม้ม้วน', 'sà-rà ai (mái múan)', 'ai, as in "high" · about 20 words', 'ai, as in high. Used in about twenty words', ex('ใจ', 'jai', 'heart')),
           V('เอา', 'สระ เอา', 'sà-rà ao', 'ao, as in "cow"', 'ao, as in cow', ex('เขา', 'khǎo', 'he, she')),

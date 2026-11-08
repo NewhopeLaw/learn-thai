@@ -117,9 +117,9 @@ window.DIALOGUES = {
     lines: [
       { who: 'B', th: 'สวัสดี{Pb}', rom: 'sa-wàt-dii {Pb}', en: 'Hello.' },
       { who: 'A', th: '{I}จองไว้แล้ว{P}', rom: '{I} jɔɔng wái lɛ́ɛo {P}', en: 'I have a reservation.' },
-      { who: 'B', th: 'สองคืน ใช่ไหม{Pbq}', rom: 'sɔ̌ɔng khuen, châi mǎi {Pbq}', en: 'Two nights, right?' },
+      { who: 'B', th: 'สองคืน ใช่ไหม{Pbq}', rom: 'sɔ̌ɔng khuuen, châi mǎi {Pbq}', en: 'Two nights, right?' },
       { who: 'A', th: 'ใช่{P}', rom: 'châi {P}', en: 'Yes.' },
-      { who: 'A', th: 'รหัสไวไฟคืออะไร{Pq}', rom: 'ra-hàt wai-fai khue a-rai {Pq}', en: "What's the Wi-Fi password?" },
+      { who: 'A', th: 'รหัสไวไฟคืออะไร{Pq}', rom: 'ra-hàt wai-fai khuue a-rai {Pq}', en: "What's the Wi-Fi password?" },
       { who: 'B', th: 'หนึ่ง สอง สาม สี่{Pb}', rom: 'nùeng, sɔ̌ɔng, sǎam, sìi {Pb}', en: 'One, two, three, four.' },
       { who: 'A', th: 'อาหารเช้ากี่โมง{Pq}', rom: 'aa-hǎan cháao kìi moong {Pq}', en: 'What time is breakfast?' },
       { who: 'B', th: 'เจ็ดโมง{Pb}', rom: 'jèt moong {Pb}', en: "Seven o'clock." },
@@ -203,7 +203,7 @@ window.DIALOGUES = {
     lines: [
       { who: 'A', th: 'รอ{I}ด้วย{P}', rom: 'rɔɔ {I} dûai {P}', en: 'Wait for me, please.' },
       { who: 'B', th: 'ได้ จะซื้ออะไร{Pbq}', rom: 'dâi, jà súue a-rai {Pbq}', en: 'Sure. What are you going to buy?' },
-      { who: 'A', th: 'อยากซื้ออันนี้{P}', rom: 'yàak súue an-níi {P}', en: 'I want to buy this one.' },
+      { who: 'A', th: 'อยากซื้ออันนี้{P}', rom: 'yàak súue an níi {P}', en: 'I want to buy this one.' },
       { who: 'B', th: 'ดูก่อน{Pb}', rom: 'duu kɔ̀ɔn {Pb}', en: 'Take a look first.' },
       { who: 'A', th: 'ไม่รู้ คิดก่อน{P}', rom: 'mâi rúu, khít kɔ̀ɔn {P}', en: "I don't know. Let me think first." },
       { who: 'B', th: 'ได้ ไม่เป็นไร{Pb}', rom: 'dâi, mâi pen rai {Pb}', en: 'Sure, no problem.' },
@@ -216,7 +216,7 @@ window.DIALOGUES = {
       { who: 'A', th: 'วันศุกร์{P}', rom: 'wan sùk {P}', en: 'Friday.' },
       { who: 'B', th: 'พรุ่งนี้ว่างไหม{Pbq}', rom: 'phrûng-níi wâang mǎi {Pbq}', en: 'Are you free tomorrow?' },
       { who: 'A', th: 'ตอนเย็นว่าง{P}', rom: 'tɔɔn yen wâang {P}', en: "I'm free in the evening." },
-      { who: 'B', th: 'ไปตลาดกลางคืนไหม{Pbq}', rom: 'pai ta-làat klaang-khuen mǎi {Pbq}', en: 'Shall we go to the night market?' },
+      { who: 'B', th: 'ไปตลาดกลางคืนไหม{Pbq}', rom: 'pai ta-làat klaang-khuuen mǎi {Pbq}', en: 'Shall we go to the night market?' },
       { who: 'A', th: 'ได้ เจอกันพรุ่งนี้{P}', rom: 'dâi, joe kan phrûng-níi {P}', en: 'Sure. See you tomorrow.' },
     ],
   },
@@ -498,7 +498,7 @@ window.DIALOGUES = {
   'wants': {
     scene: 'Deciding where to eat with a friend.', you: 'the friend',
     lines: [
-      { who: 'B', th: 'คืนนี้อยากกินอะไร{Pbq}', rom: 'khuen-níi yàak kin a-rai {Pbq}', en: 'What do you feel like eating tonight?' },
+      { who: 'B', th: 'คืนนี้อยากกินอะไร{Pbq}', rom: 'khuuen-níi yàak kin a-rai {Pbq}', en: 'What do you feel like eating tonight?' },
       { who: 'A', th: 'อะไรก็ได้ แล้วแต่คุณ{P}', rom: 'a-rai kɔ̂ɔ dâi, lɛ́ɛo-tɛ̀ɛ khun {P}', en: "Anything's fine. It's up to you." },
       { who: 'B', th: 'ชอบอาหารญี่ปุ่นไหม{Pbq}', rom: 'chɔ̂ɔp aa-hǎan yîi-pùn mǎi {Pbq}', en: 'Do you like Japanese food?' },
       { who: 'A', th: 'ไม่ค่อยชอบ ชอบอาหารไทยมากกว่า{P}', rom: 'mâi khɔ̂i chɔ̂ɔp, chɔ̂ɔp aa-hǎan thai mâak kwàa {P}', en: 'Not really. I prefer Thai food.' },
@@ -626,7 +626,7 @@ window.DIALOGUES = {
       { who: 'B', th: 'แต่พูดชัดนะ{Pbq}', rom: 'tɛ̀ɛ phûut chát ná {Pbq}', en: 'But you speak very clearly!' },
       { who: 'A', th: 'ขอบคุณ{P} ถ้าพูดผิด ช่วยแก้ให้หน่อย{P}', rom: 'khɔ̀ɔp-khun {P}, thâa phûut phìt, chûai kɛ̂ɛ hâi nɔ̀i {P}', en: 'Thanks. If I say something wrong, please correct me.' },
       { who: 'B', th: 'ได้เลย{Pb}', rom: 'dâi loei {Pb}', en: 'Sure thing.' },
-      { who: 'A', th: 'อันนี้พูดว่ายังไง{Pq}', rom: 'an-níi phûut wâa yang-ngai {Pq}', en: '(pointing) How do you say this?' },
+      { who: 'A', th: 'อันนี้พูดว่ายังไง{Pq}', rom: 'an níi phûut wâa yang-ngai {Pq}', en: '(pointing) How do you say this?' },
     ],
   },
   'weekend': {
@@ -638,7 +638,7 @@ window.DIALOGUES = {
       { who: 'A', th: 'ดีเลย ไปที่ไหน{Pq}', rom: 'dii loei, pai thîi-nǎi {Pq}', en: 'Sounds great! Where?' },
       { who: 'B', th: 'ตั้งใจจะไปหัวหิน{Pb}', rom: 'tâng-jai jà pai hǔa-hǐn {Pb}', en: "We're planning to go to Hua Hin." },
       { who: 'A', th: 'ไปกี่วัน{Pq}', rom: 'pai kìi wan {Pq}', en: 'For how many days?' },
-      { who: 'B', th: 'ไปสองคืน กลับวันอาทิตย์{Pb}', rom: 'pai sɔ̌ɔng khuen, klàp wan aa-thít {Pb}', en: 'Two nights, back on Sunday.' },
+      { who: 'B', th: 'ไปสองคืน กลับวันอาทิตย์{Pb}', rom: 'pai sɔ̌ɔng khuuen, klàp wan aa-thít {Pb}', en: 'Two nights, back on Sunday.' },
       { who: 'A', th: 'ไปกับใคร{Pq}', rom: 'pai kàp khrai {Pq}', en: 'Who are you going with?' },
       { who: 'B', th: 'กับพี่สาว{Ib} แล้วก็เพื่อนอีกสองคน{Pb}', rom: 'kàp phîi-sǎao {Ib}, lɛ́ɛo kɔ̂ɔ phûean ìik sɔ̌ɔng khon {Pb}', en: 'With my older sister, and two other friends.' },
       { who: 'A', th: 'โอเค ไปด้วย{P}', rom: 'oo-khee, pai dûai {P}', en: "OK, I'm in." },
@@ -677,7 +677,7 @@ window.DIALOGUES = {
   'weather-talk': {
     scene: 'Small talk with a neighbour on a stormy afternoon.', you: 'the neighbour',
     lines: [
-      { who: 'B', th: 'เมื่อคืนฝนตกหนักมาก{Pb}', rom: 'mûea-khuen fǒn tòk nàk mâak {Pb}', en: 'It rained really hard last night.' },
+      { who: 'B', th: 'เมื่อคืนฝนตกหนักมาก{Pb}', rom: 'mûea-khuuen fǒn tòk nàk mâak {Pb}', en: 'It rained really hard last night.' },
       { who: 'A', th: 'ใช่ {I}เปียกหมดเลย{P}', rom: 'châi, {I} pìak mòt loei {P}', en: 'Yes, I got completely soaked.' },
       { who: 'B', th: 'พยากรณ์อากาศบอกว่าพายุกำลังมา{Pb}', rom: 'pha-yaa-kɔɔn aa-kàat bɔ̀ɔk wâa phaa-yú kam-lang maa {Pb}', en: 'The forecast says a storm is coming.' },
       { who: 'A', th: 'จริงเหรอ วันนี้ร้อนกว่าเมื่อวานอีก{P}', rom: 'jing rǒe, wan-níi rɔ́ɔn kwàa mûea-waan ìik {P}', en: "Really? Today is even hotter than yesterday." },
@@ -740,7 +740,7 @@ window.DIALOGUES = {
       { who: 'B', th: 'ดูเหนื่อยๆ เกิดอะไรขึ้น{Pbq}', rom: 'duu nùeai-nùeai, kòet a-rai khûen {Pbq}', en: 'You look tired. What happened?' },
       { who: 'A', th: 'เมื่อวานตื่นสาย เพราะนาฬิกาปลุกไม่ดัง{P}', rom: 'mûea-waan tùuen sǎai, phrɔ́ naa-li-kaa plùk mâi dang {P}', en: "Yesterday I woke up late, because my alarm didn't go off." },
       { who: 'B', th: 'แล้วไงต่อ{Pbq}', rom: 'lɛ́ɛo ngai tɔ̀ɔ {Pbq}', en: 'And then what?' },
-      { who: 'A', th: 'ก็เลยพลาดรถเมล์ เลยต้องนั่งแท็กซี่{P}', rom: 'kɔ̂ɔ loei phlâat rót-mee, loei tɔ̂ng nâng thɛ́k-sîi {P}', en: 'So I missed the bus, and had to take a taxi.' },
+      { who: 'A', th: 'ก็เลยไม่ทันรถเมล์ เลยต้องนั่งแท็กซี่{P}', rom: 'kɔ̂ɔ loei mâi than rót-mee, loei tɔ̂ng nâng thɛ́k-sîi {P}', en: 'So I missed the bus, and had to take a taxi.' },
       { who: 'B', th: 'โชคดีที่มีแท็กซี่{Pb}', rom: 'chôok dii thîi mii thɛ́k-sîi {Pb}', en: 'Lucky there was a taxi.' },
       { who: 'A', th: 'แต่รถติดมาก ไปถึงช้าไปครึ่งชั่วโมง{P}', rom: 'tɛ̀ɛ rót tìt mâak, pai thǔeng cháa pai khrûeng chûa-moong {P}', en: 'But the traffic was terrible. I got there half an hour late.' },
       { who: 'B', th: 'หัวหน้าว่าอะไรไหม{Pbq}', rom: 'hǔa-nâa wâa a-rai mǎi {Pbq}', en: 'Did your boss say anything?' },
