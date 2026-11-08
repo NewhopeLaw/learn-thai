@@ -557,8 +557,17 @@
   const repeatGap = text => (1600 + text.length * 140) / Math.min(1, S.thaiRate);
   // The word list alternates speeds: tap once for the set speed, again for slow, so the sounds can be picked apart.
   const slowRate = () => Math.max(0.5, S.thaiRate * 0.75);
+  // A phrase's note: spoken, and shown on screen while it is spoken (Thai examples filled in).
   async function note(segments, folder) {
-    for (const seg of segments) seg.en ? await en(seg.en) : (await sayRaw(seg.th, folder || voiceFolder()), await wait(500));
+    const f = folder || voiceFolder();
+    ui.feedback.textContent = segments.map(seg => seg.en || fillAs(seg.th, false, f === 'female')).join(' ');
+    ui.feedback.classList.add('note-text');
+    try {
+      for (const seg of segments) seg.en ? await en(seg.en) : (await sayRaw(seg.th, f), await wait(500));
+    } finally {
+      ui.feedback.textContent = '';
+      ui.feedback.classList.remove('note-text');
+    }
   }
 
   // ---------- speech recognition (optional) ----------

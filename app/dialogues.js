@@ -750,4 +750,19 @@ window.DIALOGUES = {
       { who: 'A', th: 'เพราะหัวหน้าก็มาสายเหมือนกัน สุดท้ายก็โอเค{P}', rom: 'phrɔ́ hǔa-nâa kɔ̂ɔ maa sǎai mǔean kan, sùt-tháai kɔ̂ɔ oo-khee {P}', en: 'Because the boss was late too! In the end it was OK.' },
     ],
   },
+  'tones-mai': {
+    scene: 'Sitting around a campfire, a Thai friend tests you with a famous tongue twister.', you: 'the one being tested',
+    lines: [
+      { who: 'B', th: 'ลองพูดอันนี้ดู{Pb}', rom: 'lɔɔng phûut an níi duu {Pb}', en: 'Try saying this.' },
+      { who: 'B', th: 'ไม้ใหม่ไม่ไหม้ไหม', rom: 'máai mài mâi mâi mǎi', en: "New wood doesn't burn, does it?" },
+      { who: 'A', th: 'ไม้ใหม่ไม่ไหม้ไหม', rom: 'máai mài mâi mâi mǎi', en: "New wood doesn't burn, does it?" },
+      { who: 'B', th: 'เก่งมาก{Pb} อีกที เร็วๆ', rom: 'kèng mâak {Pb}, ìik thii, reo-reo', en: 'Very good! Again, faster.' },
+      { who: 'A', th: 'ไม้ใหม่ไม่ไหม้ไหม{Pq}', rom: 'máai mài mâi mâi mǎi {Pq}', en: "New wood doesn't burn, does it?" },
+      { who: 'B', th: 'แล้วไม้ใหม่ไหม้ไหม{Pbq}', rom: 'lɛ́ɛo máai mài mâi mǎi {Pbq}', en: 'So, does new wood burn?' },
+      { who: 'A', th: 'ไหม้ แต่ไหม้ช้า{P}', rom: 'mâi, tɛ̀ɛ mâi cháa {P}', en: 'It burns, but slowly.' },
+      { who: 'B', th: 'ถูกต้อง{Pb}', rom: 'thùuk-tɔ̂ng {Pb}', en: "That's right." },
+      { who: 'A', th: 'เสียงวรรณยุกต์ยาก{P}', rom: 'sǐang wan-na-yúk yâak {P}', en: 'Tones are hard.' },
+      { who: 'B', th: 'ไม่ยาก{Pb} ฝึกทุกวัน', rom: 'mâi yâak {Pb}, fùek thúk wan', en: 'Not hard. Practise every day.' },
+    ],
+  },
 };
