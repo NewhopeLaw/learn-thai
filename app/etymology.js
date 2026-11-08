@@ -15,7 +15,7 @@ window.ETYMOLOGY = {
   'ใจกว้าง': { en: 'generous, open-minded', parts: [['ใจ', 'jai', 'heart, mind'], ['กว้าง', 'kwâang', 'wide']], note: 'A wide heart.' },
   'ดีใจ': { en: 'glad, happy', parts: [['ดี', 'dii', 'good'], ['ใจ', 'jai', 'heart, mind']], note: 'Good in the heart. Compare ใจดี, kind: the same two pieces the other way round.' },
   'แน่ใจ': { en: 'sure, certain', parts: [['แน่', 'nɛ̂ɛ', 'certain, firm'], ['ใจ', 'jai', 'heart, mind']] },
-  'สนใจ': { en: 'to be interested', parts: [['สน', 'sǒn', 'to care about'], ['ใจ', 'jai', 'heart, mind']], note: 'Interesting is น่าสนใจ: worth being interested in.' },
+  'สนใจ': { en: 'to be interested', parts: [['สน', 'sǒn', 'to thread through (as in สนเข็ม, to thread a needle)'], ['ใจ', 'jai', 'heart, mind']], note: 'Often explained as threading your mind onto something. Interesting is น่าสนใจ: worth being interested in.' },
   'ตั้งใจ': { en: 'to intend; to concentrate', parts: [['ตั้ง', 'tâng', 'to set up'], ['ใจ', 'jai', 'heart, mind']], note: 'To set your mind on something.' },
   'เกรงใจ': { en: 'to be considerate, not wanting to trouble someone', parts: [['เกรง', 'kreeng', 'to be in awe of, to fear'], ['ใจ', 'jai', 'heart, mind']], note: 'A key Thai value: holding back so as not to impose on others.' },
 
@@ -24,8 +24,8 @@ window.ETYMOLOGY = {
   'น้ำแข็ง': { en: 'ice', parts: [['น้ำ', 'náam', 'water'], ['แข็ง', 'khɛ̌ng', 'hard']], note: 'Hard water.' },
   'น้ำเปล่า': { en: 'plain drinking water', parts: [['น้ำ', 'náam', 'water'], ['เปล่า', 'plàao', 'empty, plain']], note: 'Water with nothing in it.' },
   'น้ำมัน': { en: 'oil; petrol', parts: [['น้ำ', 'náam', 'water, liquid'], ['มัน', 'man', 'fat, grease']] },
-  'น้ำมูก': { en: 'runny nose', parts: [['น้ำ', 'náam', 'water, liquid'], ['มูก', 'mûuk', 'mucus']] },
-  'น้ำเงิน': { en: 'dark blue', parts: [['น้ำ', 'náam', 'water'], ['เงิน', 'ngoen', 'silver; money']], note: 'The colour of polished silver. Light blue is สีฟ้า, the colour of the sky.' },
+  'น้ำมูก': { en: 'snot, nasal mucus', parts: [['น้ำ', 'náam', 'water, liquid'], ['มูก', 'mûuk', 'mucus']], note: 'A runny nose is น้ำมูกไหล: the snot flows.' },
+  'น้ำเงิน': { en: 'dark blue', parts: [['น้ำ', 'náam', 'lustre, sheen (as in น้ำเพชร, a diamond\'s sparkle)'], ['เงิน', 'ngoen', 'silver; money']], note: 'Usually explained as the bluish sheen of silver. Light blue is สีฟ้า, the colour of the sky.' },
   'ห้องน้ำ': { en: 'bathroom, toilet', parts: [['ห้อง', 'hɔ̂ng', 'room'], ['น้ำ', 'náam', 'water']], note: 'The water room.' },
 
   // ---- fire and sky ----
@@ -44,14 +44,14 @@ window.ETYMOLOGY = {
   // ---- time ----
   'วันนี้': { en: 'today', parts: [['วัน', 'wan', 'day'], ['นี้', 'níi', 'this']] },
   'เมื่อวาน': { en: 'yesterday', parts: [['เมื่อ', 'mûea', 'when, at the time'], ['วาน', 'waan', 'yesterday (old word)']] },
-  'เที่ยงคืน': { en: 'midnight', parts: [['เที่ยง', 'thîang', 'noon'], ['คืน', 'khuuen', 'night']], note: 'The noon of the night.' },
+  'เที่ยงคืน': { en: 'midnight', parts: [['เที่ยง', 'thîang', 'exact; the exact middle'], ['คืน', 'khuuen', 'night']], note: 'The exact middle of the night. Noon is เที่ยง, or เที่ยงวัน: the exact middle of the day.' },
   'เมื่อไร': { en: 'when?', parts: [['เมื่อ', 'mûea', 'when, at the time'], ['ไร', 'rai', 'what (short for อะไร)']], note: 'At what time.' },
   'เท่าไร': { en: 'how much?', parts: [['เท่า', 'thâo', 'equal to, as much as'], ['ไร', 'rai', 'what (short for อะไร)']], note: 'As much as what.' },
   'ยังไง': { en: 'how?', parts: [['ยัง', 'yang', 'from อย่าง, way, kind'], ['ไง', 'ngai', 'from ไร, what']], note: 'Casual for อย่างไร: in what way.' },
 
   // ---- people and family ----
   'พี่น้อง': { en: 'brothers and sisters', parts: [['พี่', 'phîi', 'older sibling'], ['น้อง', 'nɔ́ɔng', 'younger sibling']], note: 'Thai sorts brothers and sisters by age first, not by boy or girl.' },
-  'ครอบครัว': { en: 'family', parts: [['ครอบ', 'khrɔ̂ɔp', 'to cover'], ['ครัว', 'khrua', 'kitchen']], note: 'Often explained as everyone under one kitchen.' },
+  'ครอบครัว': { en: 'family', parts: [['ครอบ', 'khrɔ̂ɔp', 'to cover'], ['ครัว', 'khrua', 'household (today it means kitchen)']], note: 'Often explained as the household gathered under one roof.' },
   'บ้านเกิด': { en: 'hometown', parts: [['บ้าน', 'bâan', 'home'], ['เกิด', 'kòet', 'to be born']] },
   'เจ้าของ': { en: 'owner', parts: [['เจ้า', 'jâo', 'lord, master'], ['ของ', 'khɔ̌ɔng', 'thing; of']], note: 'Master of the thing.' },
   'นักเรียน': { en: 'student (at school)', parts: [['นัก', 'nák', 'a person who does it'], ['เรียน', 'rian', 'to study']], note: 'นัก makes people: นักศึกษา (university student), นักร้อง (singer).' },
@@ -110,5 +110,5 @@ window.ETYMOLOGY = {
   'พระเจ้า': { en: 'God', parts: [['พระ', 'phrá', 'holy, sacred (a title)'], ['เจ้า', 'jâo', 'lord']] },
   'พระพุทธรูป': { en: 'a Buddha image', parts: [['พระ', 'phrá', 'holy, sacred (a title)'], ['พุทธ', 'phút-tha', 'the Buddha'], ['รูป', 'rûup', 'image, form']] },
   'พระแก้ว': { en: 'the Emerald Buddha', parts: [['พระ', 'phrá', 'holy, sacred (a title)'], ['แก้ว', 'kɛ̂ɛo', 'crystal, glass, gem']], note: 'It is carved from green stone (jade or jasper), not emerald.' },
-  'คริสตจักร': { en: 'church (the community)', parts: [['คริสต', 'khrít-sa', 'Christ'], ['จักร', 'jàk', 'wheel; realm, as in อาณาจักร (kingdom)']] },
+  'คริสตจักร': { en: 'church (the community)', parts: [['คริสต', 'khrít-tà', 'Christ'], ['จักร', 'jàk', 'wheel; realm, as in อาณาจักร (kingdom)']] },
 };
