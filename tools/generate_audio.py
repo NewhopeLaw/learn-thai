@@ -141,6 +141,10 @@ async def main():
         # (cutting it out of the phrase clips it or catches a bit of the next word).
         have = set(texts)
         words = sorted({w for t in texts for flat in timing.get(key(t), {}).values() for w in spoken_words(t, flat)} - have)
+        # Words the voice splits in two (พรุ่ง + นี้): the app joins them back, so record the whole word too.
+        lex = ROOT / 'app' / 'lexicon.js'
+        if lex.exists():
+            words = sorted(set(words) | (set(re.findall(r'"en": "\(part of ([\u0E00-\u0E7F]+)', lex.read_text(encoding='utf-8'))) - have))
         texts = texts + words
         PROGRESS['texts'] = texts
         await asyncio.gather(*(generate(sem, v, f, t, failures, timing) for f, v in VOICES.items() for t in words))

@@ -329,6 +329,7 @@
       });
       if (last < rom.length) romEl.append(rom.slice(last));
       // The meaning, if it is on screen: the English that goes with each Thai word lights with it.
+      joinFragments(words);
       const g = target.en && (target.gloss || (GLOSS_OF.get(text) || []).find(c => target.en.textContent.includes(c.en)) || autoGloss(text, target.en.textContent, words));
       if (g) lightMeaning(target.en, g, text, words, folder);
       lyric.words = words;
@@ -397,10 +398,37 @@
   // Without a hand-written gloss, find each Thai word's English in the meaning shown, from the words its
   // dictionary entry lists as translations in the course (app/lexicon.js `match`). Only whole-word
   // matches count, so nothing is lit when unsure.
+  // The voice sometimes splits one word in two (พรุ่ง + นี้ = พรุ่งนี้, tomorrow). Such pieces are marked
+  // "(part of …)" in the dictionary; they are joined back so a tap plays, shows and lights the whole word.
+  const knownWord = x => !!(ETYMOLOGY[x] || (LEXICON[x] && !/^\(part of /.test(LEXICON[x].en)) || MEANING.has(x));
+  function joinFragments(words) {
+    const isPart = w => /^\(part of /.test(LEXICON[w.word]?.en || '');
+    for (let i = 0; i < words.length; i++) {
+      if (!isPart(words[i]) || words[i].group) continue;
+      for (const [a, b] of [[i, i + 1], [i - 1, i], [i, i + 2], [i - 1, i + 1], [i - 2, i]]) {
+        if (a < 0 || b >= words.length || words.slice(a, b + 1).some(w => w.group)) continue;
+        const x = words.slice(a, b + 1).map(w => w.word).join('');
+        if (!knownWord(x)) continue;
+        const g = { a, b, word: x, ws: words.slice(a, b + 1) };
+        g.ws.forEach(w => { w.group = g; });
+        break;
+      }
+    }
+  }
+  // English words to look for: the dictionary's list, or for a joined word, its meaning in the course.
+  const matchesOf = w => {
+    if (w.group) {
+      const x = w.group.word, m = LEXICON[x]?.match;
+      if (m?.length) return m;
+      const en = ETYMOLOGY[x]?.en || MEANING.get(x) || '';
+      return en.split(/[;,]/).map(t => t.replace(/\(.*?\)/g, '').replace(/^\s*to /, '').trim()).filter(t => t && t.split(' ').length <= 3);
+    }
+    return LEXICON[w.word]?.match;
+  };
   function autoGloss(text, en, words) {
     const low = en.toLowerCase(), pairs = [];
     for (const w of words) {
-      const ms = LEXICON[w.word]?.match;
+      const ms = matchesOf(w);
       if (!ms?.length) continue;
       const lead = text.slice(w.from, w.to).match(/^\s*/)[0].length;
       const th = { at: w.from + lead, len: w.to - w.from - lead };
@@ -481,19 +509,22 @@
   // Tapping the same word again plays it slower, like the word list.
   let wordRun = 0, lastWord = null;
   async function playWord(words, i, folder) {
-    const w = words[i];
-    if (!w?.word) return;
+    const w0 = words[i];
+    if (!w0?.word) return;
+    // A piece of a split word stands for the whole word.
+    const ws = w0.group ? w0.group.ws : [w0];
+    const w = w0.group ? { word: w0.group.word, rom: ws.flatMap(x => x.rom), en: ws.flatMap(x => x.en || []) } : w0;
     if (run && !run.paused) togglePause();
     silence();
     endPlayback?.();
     const mine = ++wordRun;
-    words.forEach((x, k) => setWordClass(x, k === i ? 'now' : 'said'));
+    words.forEach(x => setWordClass(x, ws.includes(x) ? 'now' : 'said'));
     showWordCard(w.word, w.rom.map(sp => sp.textContent).join(' '), folder, (w.en || []).map(m => m.sp.textContent.trim()).filter(Boolean));
-    const slow = lastWord === w;
-    lastWord = slow ? null : w;
+    const slow = lastWord === ws[0];
+    lastWord = slow ? null : ws[0];
     const rate = slow ? slowRate() : undefined;
     if (!(await playRecorded(w.word, folder, rate, false)) && mine === wordRun) await rawSpeak(w.word, 'th', rate || S.thaiRate);
-    if (mine === wordRun) setWordClass(w, 'said');
+    if (mine === wordRun) ws.forEach(x => setWordClass(x, 'said'));
   }
   // ---------- word card: meaning and origin of a tapped word ----------
   const ETYMOLOGY = window.ETYMOLOGY || {};

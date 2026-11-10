@@ -16,6 +16,7 @@ const SHELL = [
   'app/audio-manifest.js',
   'app/audio-timing.js',
   'app/etymology.js',
+  'app/lexicon.js',
   'app/vendor/qrcode.min.js',
   'app/icons/icon-192.png',
   'app/icons/icon-512.png',
