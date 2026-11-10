@@ -398,25 +398,28 @@
   // dictionary entry lists as translations in the course (app/lexicon.js `match`). Only whole-word
   // matches count, so nothing is lit when unsure.
   function autoGloss(text, en, words) {
-    const low = en.toLowerCase(), used = [], pairs = [];
+    const low = en.toLowerCase(), pairs = [];
     for (const w of words) {
       const ms = LEXICON[w.word]?.match;
       if (!ms?.length) continue;
+      const lead = text.slice(w.from, w.to).match(/^\s*/)[0].length;
+      const th = { at: w.from + lead, len: w.to - w.from - lead };
       let best = null;
       for (const m of ms) {
         const mm = m.toLowerCase().trim();
         if (!mm) continue;
         for (let i = low.indexOf(mm); i >= 0; i = low.indexOf(mm, i + 1)) {
           if (/\w/.test(low[i - 1] || '') || /\w/.test(low[i + mm.length] || '')) continue;
-          if (used.some(([a, z]) => i < z && a < i + mm.length)) continue;
-          if (!best || i < best.i || (i === best.i && mm.length > best.len)) best = { i, len: mm.length };
+          const hit = pairs.find(p => i < p.i + p.len && p.i < i + mm.length);
+          // A word the voice split in two (ข้อ + เท้า = ankle) may share the same English word.
+          if (hit && !(hit.i === i && hit.len === mm.length && hit.last === words.indexOf(w) - 1)) continue;
+          if (!best || i < best.i || (i === best.i && mm.length > best.len)) best = { i, len: mm.length, hit };
           break;
         }
       }
       if (!best) continue;
-      used.push([best.i, best.i + best.len]);
-      const lead = text.slice(w.from, w.to).match(/^\s*/)[0].length;
-      pairs.push({ i: best.i, en: en.slice(best.i, best.i + best.len), th: { at: w.from + lead, len: w.to - w.from - lead } });
+      if (best.hit) { best.hit.th.push(th); best.hit.last = words.indexOf(w); continue; }
+      pairs.push({ i: best.i, len: best.len, en: en.slice(best.i, best.i + best.len), th: [th], last: words.indexOf(w) });
     }
     pairs.sort((a, b) => a.i - b.i);
     return pairs.length ? { th: text, en, gloss: pairs.map(p => [p.en, p.th]) } : null;
