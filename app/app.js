@@ -275,7 +275,7 @@
       box.append(th, rom);
       (row.querySelector('.vocab-text') || row).appendChild(box);
     }
-    return { box, th: box.firstChild, rom: box.lastChild };
+    return { box, th: box.firstChild, rom: box.lastChild, en: row.querySelector('.vocab-text > .en') || undefined };
   }
   function addSpan(box, str) {
     const lead = str.match(/^\s*/)[0];
@@ -329,7 +329,7 @@
       });
       if (last < rom.length) romEl.append(rom.slice(last));
       // The meaning, if it is on screen: the English that goes with each Thai word lights with it.
-      const g = target.en && (target.gloss || (GLOSS_OF.get(text) || []).find(c => target.en.textContent.includes(c.en)));
+      const g = target.en && (target.gloss || (GLOSS_OF.get(text) || []).find(c => target.en.textContent.includes(c.en)) || autoGloss(text, target.en.textContent, words));
       if (g) lightMeaning(target.en, g, text, words, folder);
       lyric.words = words;
       paintLyric(-1);
@@ -365,6 +365,7 @@
       epos = at + en.length;
       const ranges = [];
       for (const t of [].concat(th)) {
+        if (typeof t === 'object') { used.push([t.at, t.at + t.len]); ranges.push([t.at - off, t.at - off + t.len]); continue; }
         let i = -1;
         do i = g.th.indexOf(t, i + 1); while (i >= 0 && used.some(([a, b]) => i < b && a < i + t.length));
         if (i < 0) continue;
@@ -392,6 +393,33 @@
       sp.onclick = e => { e.stopPropagation(); playWord(words, words.indexOf(p.ws[0]), folder); };
     }
     el.append(g.en.slice(last) + full.slice(base + g.en.length));
+  }
+  // Without a hand-written gloss, find each Thai word's English in the meaning shown, from the words its
+  // dictionary entry lists as translations in the course (app/lexicon.js `match`). Only whole-word
+  // matches count, so nothing is lit when unsure.
+  function autoGloss(text, en, words) {
+    const low = en.toLowerCase(), used = [], pairs = [];
+    for (const w of words) {
+      const ms = LEXICON[w.word]?.match;
+      if (!ms?.length) continue;
+      let best = null;
+      for (const m of ms) {
+        const mm = m.toLowerCase().trim();
+        if (!mm) continue;
+        for (let i = low.indexOf(mm); i >= 0; i = low.indexOf(mm, i + 1)) {
+          if (/\w/.test(low[i - 1] || '') || /\w/.test(low[i + mm.length] || '')) continue;
+          if (used.some(([a, z]) => i < z && a < i + mm.length)) continue;
+          if (!best || i < best.i || (i === best.i && mm.length > best.len)) best = { i, len: mm.length };
+          break;
+        }
+      }
+      if (!best) continue;
+      used.push([best.i, best.i + best.len]);
+      const lead = text.slice(w.from, w.to).match(/^\s*/)[0].length;
+      pairs.push({ i: best.i, en: en.slice(best.i, best.i + best.len), th: { at: w.from + lead, len: w.to - w.from - lead } });
+    }
+    pairs.sort((a, b) => a.i - b.i);
+    return pairs.length ? { th: text, en, gloss: pairs.map(p => [p.en, p.th]) } : null;
   }
   // Which romanization syllables go with which spoken Thai word. `want` is each word's syllable count
   // (an estimate), `dur` how long each takes to say, `sep` the separator before each syllable ('-' inside
@@ -457,7 +485,7 @@
     endPlayback?.();
     const mine = ++wordRun;
     words.forEach((x, k) => setWordClass(x, k === i ? 'now' : 'said'));
-    showWordCard(w.word, w.rom.map(sp => sp.textContent).join(' '), folder);
+    showWordCard(w.word, w.rom.map(sp => sp.textContent).join(' '), folder, (w.en || []).map(m => m.sp.textContent.trim()).filter(Boolean));
     const slow = lastWord === w;
     lastWord = slow ? null : w;
     const rate = slow ? slowRate() : undefined;
@@ -466,6 +494,7 @@
   }
   // ---------- word card: meaning and origin of a tapped word ----------
   const ETYMOLOGY = window.ETYMOLOGY || {};
+  const LEXICON = window.LEXICON || {}; // every spoken word: { en, match, note } (app/lexicon.js)
   // Meanings of single words, from the course (both polite forms) and the songs.
   const MEANING = new Map();
   for (const f of [false, true]) for (const it of ALL) {
@@ -473,9 +502,9 @@
     if (!/\s/.test(th) && !MEANING.has(th)) MEANING.set(th, it.en);
   }
   function hideWordCard() { const c = $('wordCard'); if (c) c.hidden = true; }
-  function showWordCard(word, rom, folder) {
-    const info = ETYMOLOGY[word];
-    const meaning = info?.en || MEANING.get(word);
+  function showWordCard(word, rom, folder, here = []) {
+    const info = ETYMOLOGY[word], lex = LEXICON[word];
+    const meaning = info?.en || lex?.en || MEANING.get(word);
     if (!info && !meaning) return hideWordCard();
     const body = $('wordCardBody');
     body.textContent = '';
@@ -501,6 +530,14 @@
     head.append(thBtn, el('span', 'wc-rom', rom || ''));
     body.append(head);
     if (meaning) body.append(el('p', 'wc-en', meaning));
+    // What it stands for in the sentence on screen, when that differs from the dictionary meaning.
+    const hereText = [...new Set(here)].join(' … ');
+    if (hereText && !meaning.toLowerCase().split(/[;,]\s*/).includes(hereText.toLowerCase())) {
+      const h = el('p', 'wc-here');
+      h.append(el('span', 'wc-label-inline', 'Here: '), el('span', null, `“${hereText}”`));
+      body.append(h);
+    }
+    if (lex?.note) body.append(el('p', 'wc-note wc-usage', lex.note));
     if (info?.parts?.length) {
       body.append(el('p', 'wc-label', 'Built from'));
       const row = el('div', 'wc-parts');
@@ -1916,7 +1953,10 @@
         play.onclick = () => playVocab(it, play);
         const text = document.createElement('span');
         text.className = 'vocab-text';
-        text.textContent = it.en;
+        const enEl = document.createElement('span');
+        enEl.className = 'en follow';
+        enEl.textContent = it.en;
+        text.appendChild(enEl);
         if (showRom) {
           const r = document.createElement('span');
           r.className = 'muted small vocab-rom';

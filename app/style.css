@@ -402,3 +402,6 @@ button.link.who::after { content: ' ▾'; color: var(--muted); }
 .wc-part-en { font-size: .85rem; }
 .wc-note { color: var(--muted); font-size: .9rem; margin-top: 10px !important; }
 .feedback.note-text { color: var(--muted); font-size: .95rem; font-weight: 400; line-height: 1.45; }
+.wc-here { margin-top: 4px !important; font-size: .95rem; }
+.wc-label-inline { color: var(--muted); }
+.wc-usage { color: var(--text); opacity: .85; }
