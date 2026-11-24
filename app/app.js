@@ -8,6 +8,8 @@
 // simplified SM-2 schedule decides when it comes back.
 (() => {
   'use strict';
+  // The version this copy is (the ?v= the page loaded it with); version.json on the server says the newest.
+  const APP_V = +(new URL(document.currentScript?.src || location.href).searchParams.get('v') || 0);
 
   const ALL = window.COURSE.units.flatMap((u, unit) => u.items.map(it => ({ ...it, unit })));
   const BY_ID = Object.fromEntries(ALL.map(i => [i.id, i]));
@@ -2535,6 +2537,32 @@
   $('offlineBtn').onclick = downloadAudio;
   $('offlineNudgeBtn').onclick = downloadAudio;
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+
+  // Updates: ask the server which version is newest. If it is newer than this copy (a saved offline copy
+  // can get stuck on a slow connection), reload onto it once, never in the middle of a lesson.
+  async function checkForUpdate(manual) {
+    const say = t => { const el = $('updateStatus'); if (el) el.textContent = t; };
+    if (inSession) return;
+    try {
+      const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
+      const { v } = await r.json();
+      if (!(v > APP_V)) { if (manual) say(`Up to date (version ${APP_V}).`); return; }
+      let done = null;
+      try { done = sessionStorage.getItem('learn-thai-updated-to'); } catch {}
+      if (done === String(v) && !manual) return; // reloaded for it already: don't loop
+      try { sessionStorage.setItem('learn-thai-updated-to', String(v)); } catch {}
+      say('Updating…');
+      const reg = await navigator.serviceWorker?.getRegistration().catch(() => null);
+      await reg?.update().catch(() => {});
+      location.reload();
+    } catch { if (manual) say('Could not check: no connection?'); }
+  }
+  checkForUpdate();
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkForUpdate(); });
+  if ($('checkUpdate')) {
+    $('appVersion').textContent = `Version ${APP_V}`;
+    $('checkUpdate').onclick = () => checkForUpdate(true);
+  }
   renderOffline();
 
   renderVoiceInfo();

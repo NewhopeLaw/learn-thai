@@ -1,7 +1,7 @@
 // Service worker: makes the app work offline.
 //   App files: network first (so updates arrive), falling back to the cached copy.
 //   Audio: cache first. The page's "Download for offline" button fills AUDIO_CACHE in bulk.
-const SHELL_CACHE = 'learn-thai-shell-v52';
+const SHELL_CACHE = 'learn-thai-shell-v53';
 const AUDIO_CACHE = 'learn-thai-audio-v1';
 const SHELL = [
   './',
@@ -23,7 +23,8 @@ const SHELL = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(SHELL_CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // cache: 'reload' skips the browser's own short-term cache, so a new version saves new files.
+  e.waitUntil(caches.open(SHELL_CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
@@ -39,7 +40,9 @@ self.addEventListener('activate', e => {
 function fromNetwork(req, ms) {
   return new Promise((resolve, reject) => {
     const t = setTimeout(() => reject(new Error('timeout')), ms);
-    fetch(req).then(r => { clearTimeout(t); resolve(r); }, err => { clearTimeout(t); reject(err); });
+    // The page itself is asked for fresh (it names the version of every other file).
+    const fresh = req.mode === 'navigate' ? new Request(req.url, { cache: 'no-cache', credentials: 'same-origin' }) : req;
+    fetch(fresh).then(r => { clearTimeout(t); resolve(r); }, err => { clearTimeout(t); reject(err); });
   });
 }
 
@@ -48,6 +51,7 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // GitHub API etc. go straight to the network
+  if (url.pathname.endsWith('/version.json')) return; // the update check always asks the server
 
   if (url.pathname.includes('/audio/')) {
     e.respondWith(
