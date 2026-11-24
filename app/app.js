@@ -242,7 +242,7 @@
   const glossOf = x => ({ th: x.th, en: x.en, gloss: x.gloss || [[x.en, x.th]] }); // no gloss: the meaning lights whole
   const addGloss = (th, g) => (GLOSS_OF.get(th) || GLOSS_OF.set(th, []).get(th)).push(g);
   for (const song of window.SONGS || []) {
-    for (const sec of song.sections) for (const l of sec.lines) {
+    for (const sec of song.sections || []) for (const l of sec.lines) {
       addLine(l.th, l.rom);
       const ps = l.th.split(' ').filter(Boolean);
       for (let i = 0; i < ps.length; i++) addGloss(ps.slice(i).join(' '), glossOf(l));
@@ -1732,7 +1732,7 @@
         });
       }
     }
-    await narrate('Now the lines, one at a time. Spoken, not sung, so you hear every word.');
+    if (lines.length) await narrate('Now the lines, one at a time. Spoken, not sung, so you hear every word.');
     for (let i = 0; i < lines.length; i++) {
       const L = lines[i];
       phase(`${L.section} · line ${i + 1} of ${lines.length}`, 10 + Math.round((75 * i) / lines.length));
@@ -1780,11 +1780,13 @@
         }
       }
     }
-    phase('All together', 92);
-    await narrate('The whole song, spoken. Then sing it with the recording.');
+    if (lines.length) {
+      phase('All together', 92);
+      await narrate('The whole song, spoken. Then sing it with the recording.');
+    }
     for (const L of lines) await step(async () => { stage('listen', L.section, L.en, L.rom); await sayText(L.th, folder); await wait(500); });
     store.songs[song.id] = Date.now();
-    store.log[dayKey()] = (store.log[dayKey()] || 0) + lines.length;
+    store.log[dayKey()] = (store.log[dayKey()] || 0) + (lines.length || song.words.length + song.more.length);
     store.secs[dayKey()] = (store.secs[dayKey()] || 0) + Math.round((Date.now() - t0) / 1000);
     save();
     phase('Done', 100);
@@ -1798,7 +1800,7 @@
       await runSong(song);
       stage('listen', 'Done!', '');
       setBar('none');
-      await narrate('Now open the recording and sing along.');
+      await narrate(song.sections.length ? 'Now open the recording and sing along.' : 'Now open the recording and listen for these words as you sing along.');
     } catch (e) { if (e !== STOP) console.error(e); }
     finish();
   }
@@ -1822,7 +1824,8 @@
       row.className = 'row';
       const learn = document.createElement('button');
       learn.className = 'primary';
-      learn.textContent = store.songs[song.id] ? 'Learn it again' : 'Learn the song';
+      const wordsOnly = !song.sections.length; // no lyrics here: the lesson teaches the words, the lyrics are read at the source
+      learn.textContent = store.songs[song.id] ? 'Learn it again' : wordsOnly ? 'Learn the words' : 'Learn the song';
       learn.onclick = () => startSong(song.id);
       row.appendChild(learn);
       if (song.video) {
@@ -1842,7 +1845,7 @@
         const a = document.createElement('a');
         a.href = song.source; a.target = '_blank'; a.rel = 'noopener';
         a.className = 'link-btn';
-        a.textContent = song.video ? 'MP3 and chords' : 'Recording, MP3 and chords';
+        a.textContent = song.sourceLabel || (song.video ? 'MP3 and chords' : 'Recording, MP3 and chords');
         row.appendChild(a);
       }
       const lyrics = document.createElement('div');
@@ -1883,6 +1886,7 @@
       }
       const words = document.createElement('details');
       words.className = 'follow';
+      words.open = wordsOnly;
       const ws = document.createElement('summary');
       ws.textContent = `Words in this song (${song.words.length + song.more.length}) · also in Words as "Song · ${song.titleEn}"`;
       words.appendChild(ws);

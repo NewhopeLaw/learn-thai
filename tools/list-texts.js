@@ -31,7 +31,7 @@ for (const d of Object.values(window.DIALOGUES)) {
   }
 }
 for (const song of window.SONGS) {
-  for (const sec of song.sections) for (const line of sec.lines) addWithSuffixes(line.th);
+  for (const sec of song.sections || []) for (const line of sec.lines) addWithSuffixes(line.th);
 }
 // Letter names and example words for the Letters tab.
 for (const g of window.LETTERS.groups) for (const it of g.items) { texts.add(it.name); if (it.example) texts.add(it.example.th); }

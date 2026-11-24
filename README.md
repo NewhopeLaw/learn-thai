@@ -18,7 +18,7 @@ The app has two modes, side by side:
 
 - **Letters** is the same kind of flashcards for the Thai script ([app/letters.js](app/letters.js)): all 44 consonants, 28 vowels and the 4 tone marks, in small groups (by consonant class, then vowel pairs). Each one pops up big on screen while a Thai voice says its name and the narrator gives its sound, key word and class. Two cards each: *What is this letter?* (see it, say its name: reading) and *Which letter is this?* (hear the name, picture it: writing). Auto mode keeps going hands-free, so the phone can sit on the desk showing each letter as it is named.
 
-- **Song** learns lyrics line by line ([app/songs.js](app/songs.js)): key words first (they also join Words as a unit), then each line built from the end, "what comes next?" chaining, run-throughs from the top, and finally the whole song spoken, before singing it with the recording. Lyrics belong to their writers; add only songs you have the right to use.
+- **Song** learns lyrics line by line ([app/songs.js](app/songs.js)): key words first (they also join Words as a unit), then each line built from the end, "what comes next?" chaining, run-throughs from the top, and finally the whole song spoken, before singing it with the recording. A song can also be words only (no lyrics in the app): the lesson teaches its vocabulary, and the lyrics are read at the source, as with Way Maker. Lyrics belong to their writers; add only songs you have the right to use.
 
 ### Inside a phrase drill
 
