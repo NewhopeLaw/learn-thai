@@ -566,7 +566,7 @@
     if (meaning) body.append(el('p', 'wc-en', meaning));
     // What it stands for in the sentence on screen, when that differs from the dictionary meaning.
     const hereText = [...new Set(here)].join(' … ');
-    if (hereText && !meaning.toLowerCase().split(/[;,]\s*/).includes(hereText.toLowerCase())) {
+    if (hereText && hereText.toLowerCase() !== meaning.toLowerCase() && !meaning.toLowerCase().split(/[;,]\s*/).includes(hereText.toLowerCase())) {
       const h = el('p', 'wc-here');
       h.append(el('span', 'wc-label-inline', 'Here: '), el('span', null, `“${hereText}”`));
       body.append(h);
