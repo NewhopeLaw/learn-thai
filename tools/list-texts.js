@@ -4,6 +4,8 @@ require('../app/course.js');
 require('../app/dialogues.js');
 require('../app/songs.js'); // adds each song's key words as a unit
 require('../app/letters.js');
+require('../app/drills.js'); // new sentences for the listening drill
+const TONES = require('../app/tones.js'); // example words for the tone chart and the ear drills
 
 const MALE = { P: 'ครับ', Pq: 'ครับ', I: 'ผม' };
 const FEMALE = { P: 'ค่ะ', Pq: 'คะ', I: 'ฉัน' };
@@ -35,4 +37,12 @@ for (const song of window.SONGS) {
 }
 // Letter names and example words for the Letters tab.
 for (const g of window.LETTERS.groups) for (const it of g.items) { texts.add(it.name); if (it.example) texts.add(it.example.th); }
+// New sentences (Listen > New sentences), in both speakers' forms.
+for (const set of window.SENTENCES) for (const [th] of set.items) {
+  for (const [me, other] of [[MALE, FEMALE], [FEMALE, MALE]]) texts.add(fill(th, me, other));
+}
+// Words of the tone chart, the tone contrasts and the sound pairs.
+for (const set of [...TONES.CONTRASTS, ...TONES.SOUNDS]) for (const [th] of set.words) texts.add(th);
+for (const row of Object.values(TONES.CHART.rows)) for (const cell of Object.values(row)) for (const [th] of cell) texts.add(th);
+for (const [name] of Object.values(TONES.SIGN_NAMES)) texts.add(name);
 process.stdout.write(JSON.stringify([...texts]));

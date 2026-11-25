@@ -572,6 +572,13 @@
       body.append(h);
     }
     if (lex?.note) body.append(el('p', 'wc-note wc-usage', lex.note));
+    // One syllable: the letters that give it its tone.
+    const ta = rom && TONES.check(word, rom);
+    if (ta) {
+      const box = el('div', 'wc-tone');
+      box.append(el('p', 'wc-label', 'Why this tone'), toneWord(ta, 'tw-lg'), toneChips(ta), toneLetters(ta));
+      body.append(box);
+    }
     if (info?.parts?.length) {
       body.append(el('p', 'wc-label', 'Built from'));
       const row = el('div', 'wc-parts');
@@ -1219,6 +1226,7 @@
       play.onclick = () => { silence(); speakThai(it.example.th, voiceFolder(), undefined, { box: null, th, rom: r }).catch(() => {}); };
       ex.append(th, r, m, play);
     }
+    renderCardTones(it);
     const i = LETTERS_ALL.indexOf(it);
     $('cardPrev').disabled = i <= 0;
     $('cardNext').disabled = i >= LETTERS_ALL.length - 1;
@@ -1406,7 +1414,7 @@
     phase('Lesson complete', 100);
   }
 
-  function beginSession(letters = false) {
+  function beginSession(letters = false, drill = false) {
     inSession = true;
     run = { stopped: false, paused: false };
     hideLyric(); reveal = false;
@@ -1418,7 +1426,8 @@
       player.play().then(() => { player.pause(); player.muted = false; }, () => { player.muted = false; });
     }
     show('session');
-    $('sessionWords').appendChild($(letters ? 'letterPanel' : 'vocabPanel'));
+    $('sessionWordsBox').hidden = drill; // a drill has no list to look things up in
+    if (!drill) $('sessionWords').appendChild($(letters ? 'letterPanel' : 'vocabPanel'));
     $('sessionWordsTitle').textContent = letters ? 'Letter list' : 'Word list';
     showGlyph(null);
     ui.feedback.textContent = '';
@@ -1476,6 +1485,12 @@
     if (!inSession) return;
     inSession = false;
     talkMode = false;
+    drillMode = false;
+    ui.stageBox.classList.remove('drill');
+    $('autoBtn').hidden = false;
+    $('sessionWordsBox').hidden = false;
+    $('replay').hidden = false;
+    clearDrill();
     hideLyric();
     delete document.body.dataset.level;
     save();
@@ -1508,9 +1523,10 @@
     lyric: $('lyric'), lyricTh: $('lyricTh'), lyricRom: $('lyricRom'),
     grades: $('grades'), unit: $('unit'), bar: $('bar'), count: $('count'), pause: $('pause'),
     glyph: $('glyph'), glyphText: $('glyphText'), glyphLabel: $('glyphLabel'), stageBox: document.querySelector('#session .stage'),
+    choices: $('choices'), reveal: $('reveal'), readText: $('readText'),
   };
 
-  const TABS = ['words', 'talk', 'song', 'letters', 'more'];
+  const TABS = ['words', 'talk', 'ear', 'song', 'letters', 'more'];
   let tab = 'words';
   // Tabs inside a screen (Learn / Progress, Settings / Offline & sync / Help). Each screen opens on its
   // first one when the app starts; the last one chosen is kept while the app is open.
@@ -1660,6 +1676,7 @@
     renderProgress();
     renderVocab();
     renderLetters();
+    renderDrills();
     renderChip();
     syncSettings();
   }
@@ -2442,6 +2459,691 @@
     else if (e.key.toLowerCase() === 'a') $('autoBtn').click();
     else if (!ui.grades.hidden && e.key.toLowerCase() === 'r') $('replay').click();
   });
+
+  // ---------- tones in the spelling (app/tones.js) ----------
+  // A word drawn with the letters that decide its tone in colour: first consonant by class, the tone
+  // mark in its own colour, a dead ending underlined. See .tw in style.css for why it is three layers.
+  const TONES = window.TONES;
+  const TONE_LIST = ['mid', 'low', 'falling', 'high', 'rising'];
+  const TONE_LABEL = { mid: 'Mid', low: 'Low', falling: 'Falling', high: 'High', rising: 'Rising' };
+  const CONTOUR = { mid: 'M2 9 H22', low: 'M2 11 L22 14', falling: 'M2 6 Q12 -1 22 14', high: 'M2 9 Q14 9 22 2', rising: 'M2 8 Q9 17 22 2' };
+  const COMBINING = /[ัิ-ฺ็-๎]/; // written above or below another letter
+  const h = (tag, cls, text, lang) => {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    if (lang) e.lang = lang;
+    return e;
+  };
+  function toneIcon(tone) {
+    const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    s.setAttribute('viewBox', '0 0 24 16');
+    s.setAttribute('aria-hidden', 'true');
+    const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    p.setAttribute('d', CONTOUR[tone]);
+    s.append(p);
+    return s;
+  }
+  const toneTag = tone => { const t = h('span', 'tone-tag'); t.append(toneIcon(tone), TONE_LABEL[tone]); return t; };
+  function toneWord(a, cls = '') {
+    const w = h('span', 'tw ' + cls, null, 'th');
+    const base = h('span', `tw-base cls-${a.cls} ${a.mark ? 'has-mark' : a.live ? 'live' : 'dead'}`);
+    for (const c of a.chars) if (!COMBINING.test(c.ch)) base.append(h('span', 'r-' + (c.role || 'vowel'), c.ch === 'ำ' ? 'า' : c.ch));
+    const signs = h('span', 'tw-signs', a.chars.filter(c => c.role !== 'mark').map(c => c.ch).join(''));
+    signs.setAttribute('aria-hidden', 'true'); base.setAttribute('aria-hidden', 'true');
+    w.append(h('span', 'tw-marks', a.chars.map(c => c.ch).join('')), signs, base);
+    return w;
+  }
+  // The sum under a word: class + mark (or ending) = tone.
+  function toneChips(a) {
+    const row = h('div', 'tone-chips');
+    const chip = (cls, main, sub, lang) => { const c = h('span', 'tone-chip ' + cls); c.append(h('b', null, main, lang), h('small', null, sub)); return c; };
+    const of = role => a.chars.filter(c => c.role === role).map(c => c.ch).join('');
+    const first = of('init') + of('init2');
+    row.append(chip('c-' + a.cls, a.lead ? `${of('lead')} + ${first}` : first, `${TONES.CLASS_NAMES[a.cls]} class` + (a.lead ? `: silent ${of('lead')}` : ''), 'th'));
+    row.append(h('span', 'tone-op', '+'));
+    if (a.mark) row.append(chip('c-mark', '◌' + a.mark, TONES.MARK_NAMES[a.mark], 'th'));
+    else row.append(chip('c-end', a.live ? 'live' : 'dead', 'no mark · ' + (a.live ? 'ends long, or in n m ng y w' : a.cls !== 'low' ? 'ends short, or in k t p' : a.long ? 'long vowel' : 'short vowel')));
+    row.append(h('span', 'tone-op', '='));
+    const t = h('span', 'tone-chip c-tone');
+    t.append(toneIcon(a.tone), h('b', null, TONE_LABEL[a.tone] + ' tone'));
+    row.append(t);
+    return row;
+  }
+  // The letters of a word, one button each: tap one and its name is shown and said, e.g. เ = sà-rà ee.
+  // A vowel written in several pieces (เ-ีย, -ือ) is one button, because it is one vowel.
+  const SIGN_INFO = Object.fromEntries(Object.entries(TONES.SIGN_NAMES).map(([ch, [name, rom, what]]) => [ch, [rom, what, name]]));
+  const VOWEL_OF = { 'เ': 'เอ', 'แ': 'แอ', 'โ': 'โอ', 'ไ': 'ไอ', 'ใ': 'ใอ', 'า': 'อา', 'ะ': 'อะ', 'ิ': 'อิ', 'ี': 'อี', 'ึ': 'อึ', 'ื': 'อือ', 'ุ': 'อุ', 'ู': 'อู', 'ำ': 'อำ' };
+  const CONSONANT = /[ก-ฮ]/;
+  const letterOf = th => LETTERS_ALL.find(i => i.th === th);
+  const ROLE_SAY = { lead: 'silent here: it only sets the class', init: 'first consonant', init2: 'second consonant of the pair', final: 'last consonant', silent: 'not said in this word' };
+  function toneLetters(a) {
+    const box = h('div', 'letters-box'), row = h('div', 'letter-row');
+    const tip = h('p', 'letter-tip', 'Tap a letter to hear its name');
+    const chip = (glyph, cls, name, desc, say) => {
+      const b = h('button', 'letter-chip ' + cls, glyph, 'th');
+      const text = [name, desc].filter(Boolean).join(' · ');
+      b.title = text;
+      b.setAttribute('aria-label', `${glyph}: ${text}`);
+      b.onclick = e => {
+        e.stopPropagation();
+        row.querySelectorAll('.on').forEach(x => x.classList.remove('on'));
+        b.classList.add('on');
+        tip.textContent = '';
+        tip.append(h('b', null, glyph, 'th'), ` ${text}`);
+        if (!say) return;
+        // Its name, said: from the recording, or the device's Thai voice if there is none.
+        silence(); endPlayback?.();
+        const mine = ++wordRun;
+        playRecorded(say, voiceFolder(), undefined, false).then(ok => { if (!ok && mine === wordRun) rawSpeak(say, 'th', S.thaiRate); });
+      };
+      row.append(b);
+    };
+    // The whole vowel, as the Letters tab writes it (on อ): เดี๋ยว -> เอีย.
+    const vch = a.chars.filter(c => c.role === 'vowel');
+    let pattern = '', shown = '', placed = false;
+    for (const c of a.chars) {
+      if (c.role === 'vowel') { pattern += c.ch; shown += c.ch; }
+      else if (c.role === 'init' && !placed) { pattern += 'อ'; shown += COMBINING.test(vch[0]?.ch || '') || vch.length ? '◌' : ''; placed = true; }
+    }
+    const whole = vch.length ? letterOf(pattern) : null;
+    let vowelDone = false;
+    for (const c of a.chars) {
+      const role = c.role || 'vowel';
+      if (role === 'mark') {
+        const it = letterOf('ก' + c.ch);
+        chip('◌' + c.ch, 'c-mark', it?.rom || TONES.MARK_NAMES[c.ch], it?.en || 'tone mark', it?.name);
+      } else if (role === 'vowel' && whole) {
+        if (!vowelDone) chip(shown, 'c-vowel', whole.rom, whole.en, whole.name);
+        vowelDone = true;
+      } else if (role === 'vowel' && !CONSONANT.test(c.ch)) {
+        const it = letterOf(VOWEL_OF[c.ch] || ''), sign = SIGN_INFO[c.ch];
+        chip((COMBINING.test(c.ch) ? '◌' : '') + c.ch, 'c-vowel', it?.rom || sign?.[0] || 'vowel sign', it?.en || sign?.[1] || '', it?.name || sign?.[2]);
+      } else if (c.ch === '์') {
+        chip('◌์', 'c-silent', ...SIGN_INFO['์']);
+      } else {
+        const it = letterOf(c.ch);
+        const what = role === 'vowel' ? 'here it is part of the vowel' : ROLE_SAY[role];
+        const cls = role === 'vowel' ? 'c-vowel' : role === 'silent' ? 'c-silent' : role === 'final' ? 'c-final' : 'c-' + (role === 'lead' ? a.cls : it?.cls || a.cls);
+        chip(c.ch, cls, it?.rom || c.ch, [it && `${it.sound}, ${TONES.CLASS_NAMES[it.cls]} class`, what].filter(Boolean).join(' · '), it?.name);
+      }
+    }
+    box.append(row, tip);
+    return box;
+  }
+  const toneEntry = ([th, rom, en]) => ({ th, rom, en, a: TONES.check(th, rom) });
+  for (const set of [...TONES.CONTRASTS, ...TONES.SOUNDS]) for (const [th, rom] of set.words) addRom(th, rom);
+  // One word of the chart or of a contrast: tap to hear it and see its sum.
+  function playEntry(e, btn, rate) {
+    if (run && !run.paused) togglePause();
+    silence(); endPlayback?.();
+    const mine = ++wordRun;
+    document.querySelectorAll('.tone-item.now').forEach(x => x.classList.remove('now'));
+    btn?.classList.add('now');
+    const folder = voiceFolder();
+    return playRecorded(e.th, folder, rate, false)
+      .then(ok => (ok || mine !== wordRun ? 0 : rawSpeak(e.th, 'th', rate || S.thaiRate)))
+      .finally(() => { if (mine === wordRun) btn?.classList.remove('now'); });
+  }
+  function showToneDetail(box, e) {
+    box.textContent = '';
+    box.append(toneWord(e.a, 'tw-xl'), h('p', 'rom', `${e.rom} · ${e.en}`), toneChips(e.a), toneLetters(e.a));
+    box.hidden = false;
+    box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+  function toneItem(e, detail, size = 'tw-lg') {
+    const b = h('button', 'tone-item');
+    b.append(toneWord(e.a, size), h('span', 'rom', e.rom), h('span', 'en', e.en), toneTag(e.a.tone));
+    b.setAttribute('aria-label', `${e.rom}, ${e.en}: ${e.a.tone} tone. Play`);
+    b.onclick = () => { if (detail) showToneDetail(detail, e); playEntry(e, b); };
+    return b;
+  }
+  let tonesDrawn = false;
+  function renderTones() {
+    if (tonesDrawn) return;
+    tonesDrawn = true;
+    const chart = $('toneChart'), detail = $('toneDetail');
+    chart.append(h('span'));
+    for (const cls of ['mid', 'high', 'low']) chart.append(h('span', 'th ' + cls, `${TONES.CLASS_NAMES[cls]} class`));
+    for (const col of TONES.CHART.cols) {
+      const rh = h('span', 'rh');
+      const marked = col.label !== 'no mark';
+      const b = h('b', marked ? null : 'plain', col.label, marked ? 'th' : null);
+      rh.append(b, col.sub);
+      chart.append(rh);
+      for (const cls of ['mid', 'high', 'low']) {
+        const words = (TONES.CHART.rows[cls][col.key] || []).map(toneEntry).filter(e => e.a);
+        const cell = h('div', 'tone-cell' + (words.length ? '' : ' none'));
+        if (!words.length) cell.textContent = 'not used';
+        for (const e of words) {
+          const b = toneItem(e, detail, 'tw-md');
+          if (words.length > 1) b.prepend(h('span', 'cond', e.a.long ? 'long vowel' : 'short vowel')); // low class, dead: the vowel decides
+          cell.append(b);
+        }
+        chart.append(cell);
+      }
+    }
+    const sets = $('toneSets');
+    for (const set of TONES.CONTRASTS) {
+      const words = set.words.map(toneEntry).filter(e => e.a);
+      const card = h('div', 'card tone-set');
+      const row = h('div', 'tone-row'), box = h('div', 'tone-detail');
+      box.hidden = true;
+      const btns = words.map(e => toneItem(e, box));
+      row.append(...btns);
+      const all = h('button', 'link play-all', '▶ Hear them one after another');
+      all.onclick = async () => {
+        const mine = wordRun + 1;
+        for (let k = 0; k < words.length; k++) {
+          if (k && wordRun !== mine + k - 1) return; // something else was tapped
+          showToneDetail(box, words[k]);
+          await playEntry(words[k], btns[k]);
+          await tick(350);
+        }
+      };
+      card.append(h('h3', 'card-title', set.title), h('p', 'muted small', set.note), row, all, box);
+      sets.append(card);
+    }
+  }
+  // Letter card: the tones a consonant gives (its class's row of the chart), or what a tone mark does on each class.
+  function renderCardTones(it) {
+    const box = $('cardTones');
+    box.textContent = '';
+    const isMark = !it.cls && LETTER_GROUPS[it.group].key === 'tones';
+    box.hidden = !it.cls && !isMark;
+    if (box.hidden) return;
+    const row = h('div', 'tone-row');
+    const cell = (cond, e) => {
+      const b = toneItem(e, null, 'tw-md');
+      b.prepend(h('span', 'cond', cond));
+      row.append(b);
+    };
+    if (it.cls) {
+      box.append(h('p', 'label', `${TONES.CLASS_NAMES[it.cls]} class: the tones it gives`));
+      for (const col of TONES.CHART.cols) for (const w of TONES.CHART.rows[it.cls][col.key] || []) {
+        const e = toneEntry(w);
+        if (e.a) cell(col.label === 'no mark' ? `no mark, ${e.a.ending.replace(' ending', '')}` : col.sub, e);
+      }
+    } else {
+      const mark = [...it.th].find(ch => TONES.MARK_NAMES[ch]);
+      box.append(h('p', 'label', 'The tone it gives depends on the class'));
+      for (const cls of ['mid', 'high', 'low']) for (const w of TONES.CHART.rows[cls][mark] || []) {
+        const e = toneEntry(w);
+        if (e.a) cell(`on ${TONES.CLASS_NAMES[cls]} class`, e);
+      }
+    }
+    box.append(row);
+  }
+
+  // ---------- drills: questions with an answer the app can check ----------
+  // Three kinds, all on the lesson screen with buttons to answer: tones and sounds by ear (Listen),
+  // new sentences (Listen), and reading (Letters › Tones and Letters › Read). Scores are kept with the
+  // rest of the progress as items named "D:…" (reps = answers, lapses = wrong ones) so they sync like
+  // everything else; reading cards are items named "T:<phrase id>" on the usual review schedule.
+  const SENTENCE_SETS = window.SENTENCES || [];
+  for (const f of [false, true]) for (const set of SENTENCE_SETS) for (const [th, rom] of set.items) addLine(fillAs(th, false, f), fillAs(rom, true, f));
+  const tallyOf = key => { const p = store.items['D:' + key]; return p ? { n: p.reps, ok: p.reps - p.lapses } : { n: 0, ok: 0 }; };
+  function tally(key, ok) {
+    const p = store.items['D:' + key] || { ease: 2.5, interval: 0, reps: 0, lapses: 0, due: 0 };
+    store.items['D:' + key] = { ...p, reps: p.reps + 1, lapses: p.lapses + (ok ? 0 : 1), updated: Date.now() };
+  }
+  // How much a thing needs practice: 1 when untried or always missed, down to 0.15 when always right.
+  const need = key => { const t = tallyOf(key); return t.n ? Math.max(0.15, 1 - t.ok / t.n) + 0.6 / (t.n + 1) : 1; };
+  const rand = list => list[Math.floor(Math.random() * list.length)];
+  function weighted(list, weight) {
+    const ws = list.map(weight);
+    let r = Math.random() * ws.reduce((a, b) => a + b, 0);
+    for (let k = 0; k < list.length; k++) { r -= ws[k]; if (r <= 0) return list[k]; }
+    return list[list.length - 1];
+  }
+  const shuffle = list => { const a = [...list]; for (let k = a.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [a[k], a[j]] = [a[j], a[k]]; } return a; };
+
+  // Every recorded one-syllable word whose spelling explains its tone: the pool for the tone questions.
+  const TONE_POOL = (() => {
+    const seen = new Map();
+    const add = (th, rom, en) => {
+      if (!th || seen.has(th) || !AUDIO[th] || /[{\s]/.test(th)) return;
+      const a = TONES.check(th, rom);
+      if (a) seen.set(th, { th, rom, en: en || LEXICON[th]?.en || MEANING.get(th) || '', a });
+    };
+    for (const set of TONES.CONTRASTS) for (const w of set.words) add(...w);
+    for (const row of Object.values(TONES.CHART.rows)) for (const cell of Object.values(row)) for (const w of cell) add(...w);
+    for (const it of ALL) { add(it.th, it.rom, it.en); for (const p of it.parts || []) add(p.th, p.rom); }
+    for (const e of Object.values(ETYMOLOGY)) for (const [th, rom, en] of e.parts || []) add(th, rom, en);
+    for (const it of LETTERS_ALL) if (it.example) add(it.example.th, it.example.rom, it.example.en);
+    return [...seen.values()];
+  })();
+  const toneCase = a => `${a.cls}:${a.mark || a.how}`; // one square of the chart
+
+  let drillMode = false, choiceBtns = [];
+  function clearDrill() {
+    for (const el of [ui.choices, ui.reveal, ui.readText]) { el.hidden = true; el.textContent = ''; }
+    choiceBtns = [];
+    ui.feedback.textContent = '';
+    ui.feedback.classList.remove('ok', 'bad');
+  }
+  function beginDrill(title) {
+    beginSession(false, true);
+    drillMode = true;
+    talkMode = true; // no self-rating
+    ui.stageBox.classList.add('drill');
+    ui.unit.textContent = title;
+    $('autoBtn').hidden = true;
+    setBar('none');
+    clearDrill();
+  }
+  // Buttons to answer with (keys 1 to 9 work too); gives back which one was pressed.
+  async function pickChoice(options, layout = 'list') {
+    ui.choices.textContent = '';
+    ui.choices.className = 'choices ' + layout;
+    ui.choices.hidden = false;
+    $('replay').hidden = !currentText; // nothing to play again in a reading question
+    let got = null;
+    choiceBtns = options.map((o, k) => {
+      const b = h('button', 'choice');
+      typeof o === 'string' ? (b.textContent = o) : b.append(...[].concat(o));
+      b.onclick = () => { if (got == null) got = k; };
+      ui.choices.append(b);
+      return b;
+    });
+    for (;;) { checkpoint(); if (got != null) return got; await tick(50); }
+  }
+  function markChoices(correct, picked) {
+    choiceBtns.forEach((b, k) => {
+      b.disabled = true;
+      if (k === correct) b.classList.add('right'); else if (k === picked) b.classList.add('wrong');
+      else if (ui.choices.classList.contains('list')) b.hidden = true; // a list of meanings: keep the answer and the pick
+    });
+  }
+  function verdict(ok, text) {
+    ui.feedback.textContent = (ok ? '✓ ' : '✗ ') + text;
+    ui.feedback.classList.toggle('ok', ok);
+    ui.feedback.classList.toggle('bad', !ok);
+  }
+  // The button that moves on. It is there as soon as the answer shows, so nobody has to sit through
+  // the audio: pressing it while something plays cuts that short (the same as the N key).
+  function nextButton(label = 'Next ▸') {
+    let b = ui.choices.querySelector('.next-btn');
+    if (!b) {
+      b = h('button', 'primary next-btn');
+      b.onclick = pressNext;
+      ui.choices.hidden = false;
+      ui.choices.append(b);
+    }
+    b.textContent = label;
+    $('replay').hidden = !currentText;
+    return b;
+  }
+  async function waitNext(label = 'Next ▸') {
+    const b = nextButton(label);
+    b.focus({ preventScroll: true });
+    b.scrollIntoView({ block: 'nearest' });
+    for (;;) {
+      if (run?.next) { run.next = false; break; }
+      checkpoint();
+      await tick(50);
+    }
+    b.remove();
+  }
+  // Thai with nothing shown, for a question.
+  async function sayHidden(text, folder, rate) {
+    currentText = text; currentFolder = folder;
+    checkpoint();
+    hideLyric();
+    if (!(await playRecorded(text, folder, rate, false))) await rawSpeak(text, 'th', rate || S.thaiRate);
+    checkpoint();
+  }
+  const ask = text => { ui.prompt.textContent = text; };
+  // One round: each question is asked (and may be paused, which asks it again), scored, then shown
+  // with its answer until Next is pressed.
+  async function drillRound(trials, question, answer) {
+    let right = 0, t0 = Date.now();
+    for (let k = 0; k < trials.length; k++) {
+      ui.bar.style.width = (k / trials.length) * 100 + '%';
+      ui.count.textContent = `${k + 1} of ${trials.length}` + (k ? ` · ${right} right` : '');
+      let res = null;
+      const r = await step(async () => { clearDrill(); res = await question(trials[k]); });
+      if (r !== 'done' || !res) continue; // skipped
+      if (res.ok && !res.again) right++;
+      ui.count.textContent = `${k + 1} of ${trials.length} · ${right} right`;
+      store.log[dayKey()] = (store.log[dayKey()] || 0) + 1;
+      store.secs[dayKey()] = (store.secs[dayKey()] || 0) + Math.round(Math.min(Date.now() - t0, 60000) / 1000);
+      t0 = Date.now();
+      save();
+      const last = k === trials.length - 1;
+      await step(async () => { nextButton(last ? 'Finish ▸' : 'Next ▸'); await answer(trials[k], res); await waitNext(last ? 'Finish ▸' : 'Next ▸'); });
+    }
+    return right;
+  }
+  async function drillEnd(right, total, note) {
+    clearDrill();
+    showGlyph(null);
+    ui.bar.style.width = '100%';
+    ui.count.textContent = '';
+    stage('listen', 'Done!', '');
+    ask(`${right} of ${total} right`);
+    ui.feedback.textContent = note || (right === total ? 'All of them. Well done.' : right >= total * 0.7 ? 'Good. What you missed will come up again.' : 'These are hard at first. A few minutes a day trains the ear.');
+    await step(() => waitNext('Done'));
+  }
+  async function runDrill(title, body) {
+    if (!synth) return alert('This browser has no speech support. Try Chrome or Edge.');
+    beginDrill(title);
+    try { await body(); } catch (e) { if (e !== STOP) console.error(e); }
+    finish();
+  }
+
+  // What a tone button shows: its shape and its name.
+  const toneOption = tone => [toneIcon(tone), document.createTextNode(TONE_LABEL[tone])];
+  // A word as an answer button: plain until the answer is shown, then in colour.
+  function wordOption(e) {
+    const top = e.a ? toneWord(e.a, 'tw-lg plain') : h('span', 'tw tw-lg', e.th, 'th');
+    return [top, h('span', 'rom', e.rom), h('span', 'en', e.en)];
+  }
+  const colourChoices = () => ui.choices.querySelectorAll('.tw.plain').forEach(x => x.classList.remove('plain'));
+  // Play the answer buttons' words one after another, each lit while it plays.
+  async function playSideBySide(words, folder, from = 0) {
+    for (let k = from; k < words.length; k++) {
+      choiceBtns[k]?.classList.add('now');
+      try { await sayHidden(words[k].th, folder); await wait(350); }
+      finally { choiceBtns[k]?.classList.remove('now'); }
+    }
+  }
+  function showWordReveal(e) {
+    ui.reveal.textContent = '';
+    ui.reveal.append(toneWord(e.a, 'tw-xl'), h('p', 'rom', [e.rom, e.en].filter(Boolean).join(' · ')), toneChips(e.a), toneLetters(e.a));
+    ui.reveal.hidden = false;
+  }
+  // Another word of a contrast set with the tone that was picked by mistake, to hear the difference.
+  function sameSoundWithTone(th, tone) {
+    for (const set of TONES.CONTRASTS) {
+      if (!set.words.some(w => w[0] === th)) continue;
+      const w = set.words.map(toneEntry).find(e => e.a && e.a.tone === tone && e.th !== th);
+      if (w) return w;
+    }
+    return null;
+  }
+
+  // Listen › Hear the tone: name the tone of a word, or tell look-alike words apart.
+  function startEarTone() {
+    return runDrill('Hear the tone', async () => {
+      const byTone = t => TONE_POOL.filter(e => e.a.tone === t);
+      const sets = TONES.CONTRASTS.map(s => ({ ...s, entries: s.words.map(toneEntry).filter(e => e.a && AUDIO[e.th]) })).filter(s => s.entries.length > 1);
+      const trials = [], used = new Set();
+      for (let k = 0; k < 20; k++) {
+        if (k % 5 >= 3 && sets.length) {
+          const set = weighted(sets, s => need('ec:' + s.key));
+          trials.push({ set, target: Math.floor(Math.random() * set.entries.length) });
+        } else {
+          const tone = weighted(TONE_LIST.filter(t => byTone(t).length), t => need('et:' + t));
+          const pool = byTone(tone).filter(e => !used.has(e.th));
+          const e = rand(pool.length ? pool : byTone(tone));
+          used.add(e.th);
+          trials.push({ e });
+        }
+      }
+      const right = await drillRound(trials, async t => {
+        const folder = Math.random() < 0.5 ? 'male' : 'female';
+        stage('listen', 'Listen', '');
+        if (t.set) {
+          ask('Which word is it?');
+          await sayHidden(t.set.entries[t.target].th, folder);
+          stage('speak', 'Tap to hear again');
+          const got = await pickChoice(t.set.entries.map(wordOption), 'words');
+          const ok = got === t.target;
+          markChoices(t.target, got);
+          tally('ec:' + t.set.key, ok);
+          return { ok, got, folder };
+        }
+        ask('Which tone is it?');
+        await sayHidden(t.e.th, folder);
+        stage('speak', 'Tap to hear again');
+        const got = await pickChoice(TONE_LIST.map(toneOption), 'tones');
+        const ok = TONE_LIST[got] === t.e.a.tone;
+        markChoices(TONE_LIST.indexOf(t.e.a.tone), got);
+        tally('et:' + t.e.a.tone, ok);
+        return { ok, got, folder };
+      }, async (t, res) => {
+        stage('listen', 'Listen');
+        if (t.set) {
+          const e = t.set.entries[t.target];
+          colourChoices();
+          verdict(res.ok, res.ok ? `Right: ${e.rom}, ${e.en}` : `It was ${e.rom}, ${e.en}`);
+          ask(t.set.note);
+          await sayHidden(e.th, res.folder);
+          await wait(500);
+          await playSideBySide(t.set.entries, res.folder);
+          return;
+        }
+        const picked = TONE_LIST[res.got];
+        const other = res.ok ? null : sameSoundWithTone(t.e.th, picked);
+        showWordReveal(t.e);
+        verdict(res.ok, res.ok ? `${TONE_LABEL[t.e.a.tone]} tone` : `It was ${t.e.a.tone}, not ${picked}`);
+        ask(other ? `${TONE_LABEL[picked]} would be ${other.th} ${other.rom}, ${other.en}. Listen to both.` : '');
+        await sayHidden(t.e.th, res.folder);
+        if (other) { await wait(400); await sayHidden(other.th, res.folder); await wait(400); await sayHidden(t.e.th, res.folder); }
+      });
+      await drillEnd(right, trials.length);
+    });
+  }
+
+  // Listen › Tricky sounds: which word of a pair that differs in one sound.
+  function startEarSound() {
+    return runDrill('Tricky sounds', async () => {
+      const sets = TONES.SOUNDS.map(s => ({ ...s, entries: s.words.map(toneEntry).filter(e => AUDIO[e.th]) })).filter(s => s.entries.length > 1);
+      const trials = [];
+      let prev = null;
+      for (let k = 0; k < 20; k++) {
+        const set = weighted(sets.filter(s => s !== prev), s => need('es:' + s.key));
+        prev = set;
+        trials.push({ set, target: Math.floor(Math.random() * set.entries.length) });
+      }
+      const right = await drillRound(trials, async t => {
+        const folder = Math.random() < 0.5 ? 'male' : 'female';
+        stage('listen', 'Listen', '');
+        ask(`Which word is it? (${t.set.title})`);
+        await sayHidden(t.set.entries[t.target].th, folder);
+        stage('speak', 'Tap to hear again');
+        const got = await pickChoice(t.set.entries.map(wordOption), 'words');
+        const ok = got === t.target;
+        markChoices(t.target, got);
+        tally('es:' + t.set.key, ok);
+        return { ok, got, folder };
+      }, async (t, res) => {
+        const e = t.set.entries[t.target];
+        stage('listen', 'Listen');
+        colourChoices();
+        verdict(res.ok, res.ok ? `Right: ${e.rom}, ${e.en}` : `It was ${e.rom}, ${e.en}`);
+        ask('Listen to them side by side.');
+        await sayHidden(e.th, res.folder);
+        await wait(500);
+        await playSideBySide(t.set.entries, res.folder);
+      });
+      await drillEnd(right, trials.length);
+    });
+  }
+
+  // Letters › Tones › Practise: see a word, say which tone its spelling gives.
+  function startReadTone() {
+    return runDrill('Read the tone', async () => {
+      const cases = [...new Set(TONE_POOL.map(e => toneCase(e.a)))];
+      const trials = [], used = new Set();
+      for (let k = 0; k < 15; k++) {
+        const c = weighted(cases, x => need('rt:' + x));
+        const pool = TONE_POOL.filter(e => toneCase(e.a) === c);
+        const fresh = pool.filter(e => !used.has(e.th));
+        const e = rand(fresh.length ? fresh : pool);
+        used.add(e.th);
+        trials.push({ e });
+      }
+      const right = await drillRound(trials, async t => {
+        currentText = null;
+        stage('speak', 'Read it', '');
+        ask('Which tone does this spelling give?');
+        ui.reveal.textContent = '';
+        ui.reveal.append(toneWord(t.e.a, 'tw-xl plain'));
+        ui.reveal.hidden = false;
+        const got = await pickChoice(TONE_LIST.map(toneOption), 'tones');
+        const ok = TONE_LIST[got] === t.e.a.tone;
+        markChoices(TONE_LIST.indexOf(t.e.a.tone), got);
+        tally('rt:' + toneCase(t.e.a), ok);
+        return { ok, got };
+      }, async (t, res) => {
+        stage('listen', 'Listen');
+        showWordReveal(t.e);
+        verdict(res.ok, res.ok ? `${TONE_LABEL[t.e.a.tone]} tone` : `It is ${t.e.a.tone}, not ${TONE_LIST[res.got]}`);
+        ask(t.e.a.why[0].toUpperCase() + t.e.a.why.slice(1) + '.');
+        await sayHidden(t.e.th, voiceFolder());
+      });
+      await drillEnd(right, trials.length, right === trials.length ? 'All of them. Well done.' : 'The squares of the chart you missed will come up more often.');
+    });
+  }
+
+  // Listen › New sentences: unheard sentences made of known words; the wrong answers are the meanings
+  // of the other sentences in the same set.
+  const unitLearned = key => {
+    const u = unitIndex(key);
+    if (u < 0) return false;
+    const items = ALL.filter(i => i.unit === u);
+    return items.filter(i => store.items[i.id]).length >= items.length * 0.8;
+  };
+  const sentenceKey = th => 's:' + AUDIO[fillAs(th, false, false)];
+  const openSentences = () => SENTENCE_SETS.filter(set => unitLearned(set.unit))
+    .flatMap(set => set.items.filter(([th]) => AUDIO[fillAs(th, false, false)]).map(([th, rom, en]) => ({ th, rom, en, set })));
+  function startSentences() {
+    const open = openSentences();
+    if (open.length < 4) return alert('New sentences open up as you finish units in Words. Learn the first unit, then come back.');
+    return runDrill('New sentences', async () => {
+      // Unheard first, then the ones missed, then the ones heard longest ago.
+      const rank = s => { const p = store.items['D:' + sentenceKey(s.th)]; return !p ? 0 : p.lapses * 2 > p.reps ? 1 : 2 + (p.updated || 0) / 1e13; };
+      const trials = shuffle(open).sort((a, b) => rank(a) - rank(b)).slice(0, 10);
+      const right = await drillRound(shuffle(trials), async s => {
+        const folder = Math.random() < 0.5 ? 'male' : 'female';
+        stage('listen', 'Listen', '');
+        ask('What does it mean?');
+        await sayRaw(s.th, folder);
+        stage('speak', 'Tap to hear again');
+        const others = shuffle(s.set.items.filter(i => i[2] !== s.en)).slice(0, 3).map(i => i[2]);
+        const options = shuffle([s.en, ...others]);
+        const got = await pickChoice(options, 'list');
+        const ok = options[got] === s.en;
+        markChoices(options.indexOf(s.en), got);
+        tally(sentenceKey(s.th), ok);
+        return { ok, folder };
+      }, async (s, res) => {
+        const f = res.folder === 'female', rom = fillAs(s.rom, true, f);
+        verdict(res.ok, res.ok ? 'Right' : 'Not quite. Listen again');
+        stage('listen', 'Listen', s.en, rom);
+        if (!S.follow) { ui.readText.textContent = fillAs(s.th, false, f); ui.readText.hidden = false; ui.peek.textContent = rom; }
+        await sayRaw(s.th, res.folder);
+        stage('speak', 'Repeat', s.en, rom);
+        if (!S.follow) ui.peek.textContent = rom;
+      });
+      await drillEnd(right, trials.length);
+    });
+  }
+
+  // Letters › Read: a phrase already known by ear, in Thai script; read it, then pick its meaning.
+  const readId = id => 'T:' + id;
+  const canRead = it => !it.letter && /[ก-ฮ]/.test(thOf(it)) && thOf(it).replace(/[^฀-๿]/g, '').length > 1;
+  const readDue = () => ALL.filter(it => store.items[readId(it.id)] && store.items[readId(it.id)].due <= Date.now())
+    .sort((a, b) => store.items[readId(a.id)].due - store.items[readId(b.id)].due);
+  const readFresh = () => ALL.filter(it => store.items[it.id] && !store.items[readId(it.id)] && canRead(it))
+    .sort((a, b) => thOf(a).length - thOf(b).length || a.unit - b.unit);
+  function startRead() {
+    const due = readDue().slice(0, 20), fresh = readFresh().slice(0, 10);
+    const known = ALL.filter(it => store.items[it.id] && canRead(it));
+    if (known.length < 4) return alert('Reading uses phrases you have already learned by ear. Learn a few in Words first.');
+    if (!due.length && !fresh.length) return alert('Nothing to read right now. Learn more words, or come back tomorrow.');
+    return runDrill('Read', async () => {
+      const mine = S.gender === 'female' ? 'female' : 'male'; // the text shows the learner's own polite forms
+      const trials = [...due.map(it => ({ it, review: true })), ...fresh.map(it => ({ it, review: false }))];
+      const total = trials.length;
+      const right = await drillRound(trials, async t => {
+        const text = thOf(t.it);
+        currentText = null;
+        stage('speak', 'Read aloud', '');
+        ask('Read it aloud, then pick what it means.');
+        ui.readText.textContent = text;
+        ui.readText.hidden = false;
+        // Wrong answers: other phrases of about the same length.
+        const others = shuffle(known.filter(o => o.en !== t.it.en)).sort((a, b) => Math.abs(thOf(a).length - text.length) - Math.abs(thOf(b).length - text.length));
+        const picks = [];
+        for (const o of others.slice(0, 12)) if (picks.length < 3 && !picks.includes(o.en)) picks.push(o.en);
+        const options = shuffle([t.it.en, ...picks]);
+        const got = await pickChoice(options, 'list');
+        const ok = options[got] === t.it.en;
+        markChoices(options.indexOf(t.it.en), got);
+        if (!t.again) commit(readId(t.it.id), ok ? 'good' : 'again', t.review);
+        if (!ok && !t.again) trials.push({ ...t, again: true }); // once more before the end
+        return { ok, again: t.again };
+      }, async (t, res) => {
+        const rom = fillAs(t.it.rom, true, mine === 'female');
+        verdict(res.ok, res.ok ? 'Right' : 'Not quite. Listen and read along');
+        const a = TONES.check(thOf(t.it), rom);
+        if (a) { ui.readText.hidden = true; showWordReveal({ a, rom, en: '' }); } // one syllable: show what gives its tone
+        stage('listen', 'Listen', t.it.en, rom);
+        if (!a && S.follow) ui.readText.hidden = true; // the follow-along text takes its place
+        if (!S.follow) ui.peek.textContent = rom;
+        if (a) await sayHidden(thOf(t.it), mine); else await sayRaw(t.it.th, mine);
+        stage('speak', 'Repeat', t.it.en, rom);
+        if (!S.follow) ui.peek.textContent = rom;
+      });
+      await drillEnd(right, total, 'What you read correctly comes back in a few days.');
+    });
+  }
+
+  // The drills' home screens: how each has gone so far.
+  function statChip(label, key, icon) {
+    const t = tallyOf(key);
+    const c = h('span', 'drill-stat' + (t.n >= 4 && t.ok / t.n < 0.6 ? ' weak' : ''));
+    if (icon) c.append(icon);
+    c.append(label, h('b', null, t.n ? Math.round((t.ok / t.n) * 100) + '%' : '–'));
+    c.title = t.n ? `${t.ok} of ${t.n} right` : 'Not tried yet';
+    return c;
+  }
+  function renderDrills() {
+    renderTones();
+    const et = $('earToneStats');
+    et.textContent = '';
+    for (const t of TONE_LIST) et.append(statChip(TONE_LABEL[t], 'et:' + t, toneIcon(t)));
+    const es = $('earSoundStats');
+    es.textContent = '';
+    const kinds = { puff: 'Puff of air', start: 'First sound', length: 'Short or long', vowel: 'Vowels', end: 'Last sound' };
+    for (const [kind, label] of Object.entries(kinds)) {
+      const tot = TONES.SOUNDS.filter(s => s.kind === kind).map(s => tallyOf('es:' + s.key)).reduce((a, b) => ({ n: a.n + b.n, ok: a.ok + b.ok }), { n: 0, ok: 0 });
+      const c = h('span', 'drill-stat' + (tot.n >= 4 && tot.ok / tot.n < 0.6 ? ' weak' : ''));
+      c.append(label, h('b', null, tot.n ? Math.round((tot.ok / tot.n) * 100) + '%' : '–'));
+      es.append(c);
+    }
+    const open = openSentences(), all = SENTENCE_SETS.reduce((n, s) => n + s.items.length, 0);
+    const heard = open.filter(s => store.items['D:' + sentenceKey(s.th)]);
+    const got = heard.filter(s => store.items['D:' + sentenceKey(s.th)].lapses === 0).length;
+    $('sentenceStats').textContent = open.length
+      ? `${open.length} of ${all} sentences open from the units you have learned · ${heard.length} heard` + (heard.length ? `, ${got} understood first time` : '')
+      : 'Sentences open up unit by unit as you learn the words. Finish a unit in Words to start.';
+    const rt = Object.keys(store.items).filter(k => k.startsWith('D:rt:')).map(k => store.items[k]).reduce((a, p) => ({ n: a.n + p.reps, ok: a.ok + p.reps - p.lapses }), { n: 0, ok: 0 });
+    $('readToneStats').textContent = rt.n ? `${rt.ok} of ${rt.n} right so far · 15 words a round` : '15 words a round · the app checks your answer';
+    const due = readDue().length, fresh = readFresh().length, going = ALL.filter(it => store.items[readId(it.id)]).length;
+    $('statReadDue').textContent = Math.min(due, 20);
+    $('statReadNew').textContent = fresh;
+    $('statReadDone').textContent = going;
+    $('readNext').textContent = due || fresh ? 'Read what you can say' : going ? 'All read for today' : 'Learn some words first';
+    $('startRead').textContent = due && fresh ? '▶  Start: review + new' : due ? '▶  Start review' : '▶  Start';
+    const n = Math.min(due, 20) + Math.min(fresh, 10);
+    $('readEstimate').textContent = n ? `${n} phrases · about ${Math.max(1, Math.round(n * 0.35))} min` : going ? 'Come back tomorrow, or learn more words.' : 'Reading starts from the phrases you have learned in Words.';
+  }
+  $('startEarTone').onclick = startEarTone;
+  $('startEarSound').onclick = startEarSound;
+  $('startSentences').onclick = startSentences;
+  $('startReadTone').onclick = startReadTone;
+  $('startRead').onclick = startRead;
+  // In a drill the orb plays the question again; keys 1 to 9 answer.
+  ui.orb.onclick = () => { if (drillMode && currentText && run && !run.paused) $('replay').click(); };
+  document.addEventListener('keydown', e => {
+    if (!drillMode || ui.session.hidden || !/^[1-9]$/.test(e.key) || e.ctrlKey || e.metaKey || e.altKey) return;
+    const b = choiceBtns[+e.key - 1];
+    if (b && !b.disabled) { e.preventDefault(); e.stopImmediatePropagation(); b.click(); }
+  }, true);
 
   // ---------- install & offline ----------
   const AUDIO_CACHE = 'learn-thai-audio-v1'; // must match sw.js

@@ -20,6 +20,15 @@ The app has two modes, side by side:
 
 - **Song** learns lyrics line by line ([app/songs.js](app/songs.js)): key words first (they also join Words as a unit), then each line built from the end, "what comes next?" chaining, run-throughs from the top, and finally the whole song spoken, before singing it with the recording. A song can also be words only (no lyrics in the app): the lesson teaches its vocabulary, and the lyrics are read at the source, as with Way Maker. Lyrics belong to their writers; add only songs you have the right to use.
 
+- **Listen** is practice the app marks for you; nothing is self-rated.
+  - *Hear the tone:* one word plays, in either voice. Name its tone, or pick which of two or three look-alike words it was (มา / ม้า / หมา). The answer shows the spelling that gives that tone.
+  - *Tricky sounds:* pairs that differ in one sound only (p / ph, short / long vowel, n / ng, the cut-off k / t / p at the end).
+  - *New sentences:* sentences that are not taught anywhere in the course, built from words already learned ([app/drills.js](app/drills.js)). Listen, pick the meaning. A set opens when its unit's words are learned; so far Units 1 to 30 have sets.
+
+- **Letters › Tones** shows how the spelling gives the tone ([app/tones.js](app/tones.js)). In every example the first consonant is coloured by its class, the tone mark has its own colour and a dead ending is underlined, with the sum underneath: *low class + mái èek = falling tone*. It has the tone chart as tappable words, sets of words that differ in one written part (ไก่ / ไข่ / ไม่), and a quiz: see a word, say which tone its spelling gives. The same breakdown appears on a letter's card (the tones that letter gives) and when a one-syllable word is tapped in the follow-along text.
+
+- **Letters › Read** is reading practice on phrases already learned by ear: the phrase appears in Thai script only, you read it aloud and pick its meaning, then the recording plays with the text lit word by word. Shortest phrases first; reviews on the same spaced schedule as Words.
+
 ### Inside a phrase drill
 
 Optional extras:
@@ -28,7 +37,7 @@ Optional extras:
 - **Follow along:** while Thai plays, the Thai text and its romanization are shown with the word being spoken lit up (on by default, in Settings). It stays hidden whenever seeing it would give away the answer. Tap any word in it to hear just that word, from its own recording (tap it again for slow) (in a lesson this pauses it; press ▶ to carry on). A card pops up with the word's meaning; words with a dotted underline also show where they come from, e.g. แม่น้ำ (river) = แม่ "mother, the main one" + น้ำ "water" (`app/etymology.js`; the pieces are only the origin, the meaning to learn is the whole word). Tap the big letter on a letter card, or in a Letters lesson once its name has been said, to hear the name again.
 - **Gendered politeness:** the course teaches ครับ/ค่ะ and ผม/ฉัน to match you.
 
-**Screens:** *Words* (Learn: start button, reviews due, new today, every phrase · Progress: practice chart, totals, each unit), *Talk* (lessons in two tabs, A1 · A2; it opens on the level of your next lesson), *Song*, *Letters* (Learn · Progress, the same way) and *More* (Settings · Offline & sync · Help). The tab row stays at the top while you scroll; tapping the bottom tab you're already on goes back to its first tab.
+**Screens:** *Words* (Learn: start button, reviews due, new today, every phrase · Progress: practice chart, totals, each unit), *Talk* (lessons in two tabs, A1 · A2; it opens on the level of your next lesson), *Listen* (the three checked drills, each with its score so far), *Song*, *Letters* (Learn · Tones · Read · Progress) and *More* (Settings · Offline & sync · Help). The tab row stays at the top while you scroll; tapping the bottom tab you're already on goes back to its first tab.
 
 **Tracking progress:** *Words › Progress* shows the last 14 days of practice, totals, and each unit's phrases as learning / known / mastered; *Letters › Progress* does the same for each group of letters. Progress is saved in your browser and syncs through your personal link; *More › Offline & sync* also has a backup file.
 
@@ -42,7 +51,9 @@ Once you're comfortable speaking, **[Stage 2: Reading](lessons/)** teaches the T
 index.html        audio app (the home page)
 app/course.js     course content: units and phrases  ← add material here
 app/letters.js    the script: consonants, vowels, tone marks (Letters tab)
-app/app.js        player, scheduling, speech
+app/tones.js      tone from spelling: the rules, the chart, tone and sound contrasts
+app/drills.js     new sentences for the listening drill  ← add sets here
+app/app.js        player, scheduling, speech, drills
 app/style.css
 lessons/          Stage 2 reading lessons (Markdown, built by Jekyll / Just the Docs)
 ```
@@ -59,6 +70,12 @@ Add an item to a unit in `app/course.js`:
 ```
 
 `{P}`, `{Pq}` and `{I}` are replaced with the learner's polite ending and pronoun.
+
+### Adding new sentences and tone examples
+
+A set in `app/drills.js` belongs to one unit and holds at least four sentences that are close to each other, because the wrong answers offered for one are the meanings of the others. Use only that unit's words plus the basics of Units 1 to 8, and do not repeat a phrase the course already teaches.
+
+Tone examples and sound pairs are in `app/tones.js`. After changing either file, or the course, run `node tools/check_tones.js`: it works out the tone of every one-syllable word from its spelling and compares it with the romanization. A word that disagrees is either irregular (the app then shows no breakdown for it) or has a typo.
 
 ### Audio
 

@@ -9,7 +9,9 @@ About 1 hour a day, with roughly 10 new phrases per session. Set **New phrases p
 | 30 min | Audio session. Answer out loud every time, with the voice set to Both. |
 | 10 min | Free listening: Thai YouTube, podcasts or music. Just catch words you know. |
 | 15 min | Speaking: say today's phrases while doing chores, or act out a scene from your trip. |
-| 5 min | A second, short session later in the day (reviews only), or replay phrases from the word list. |
+| 5 min | A second, short session later in the day: one round in **Listen** (*Hear the tone*, *Tricky sounds* or *New sentences*), or reviews only. |
+
+When a unit is finished, its *New sentences* open in **Listen**: sentences you have not heard, made from that unit's words. They show whether you understand the pattern or only remember the phrase.
 
 ## Day by day
 

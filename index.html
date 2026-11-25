@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Learn Thai by Ear</title>
   <meta name="description" content="Free audio-first Thai course: listen, recall out loud, and review with spaced repetition. No reading required.">
-  <link rel="stylesheet" href="app/style.css?v=57">
+  <link rel="stylesheet" href="app/style.css?v=60">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#b5452b">
   <link rel="icon" type="image/png" href="app/icons/icon-192.png">
@@ -117,6 +117,8 @@
     <section id="letters" class="view" hidden>
       <nav class="seg" role="tablist" aria-label="Letters">
         <button role="tab" data-pane="learn">Learn</button>
+        <button role="tab" data-pane="tones">Tones</button>
+        <button role="tab" data-pane="read">Read</button>
         <button role="tab" data-pane="progress">Progress</button>
       </nav>
       <div class="pane" data-pane="learn" role="tabpanel">
@@ -133,7 +135,7 @@
           <button id="startLettersNew">New letters only</button>
         </div>
         <p id="lettersEstimate" class="muted small center"></p>
-        <p class="muted small">Each letter pops up big on screen while you hear its name, its sound and its class. Two cards each: <i>What is this letter?</i> for reading, <i>Which letter is this?</i> for writing. Turn on <b>Auto</b> to listen hands-free. The rules behind the letters are in the <a href="lessons/">reading lessons</a>.</p>
+        <p class="muted small">Each letter pops up big on screen while you hear its name, its sound and its class. Two cards each: <i>What is this letter?</i> for reading, <i>Which letter is this?</i> for writing. Turn on <b>Auto</b> to listen hands-free. Tap a letter in the list to see which tones it gives. <b>Tones</b> shows how the spelling decides the tone; <b>Read</b> gives you phrases you already know by ear, in Thai script. The rules are also written up in the <a href="lessons/">reading lessons</a>.</p>
 
         <h2 class="card-title section-title">All letters</h2>
         <div id="lettersHome">
@@ -142,6 +144,38 @@
           </div>
         </div>
       </div>
+      <!-- Tones: which letters decide the tone, shown in colour -->
+      <div class="pane" data-pane="tones" role="tabpanel" hidden>
+        <p class="eyebrow">Letters · how the spelling gives the tone</p>
+        <h1 class="next-title">Read the tone</h1>
+        <p class="small">Every Thai syllable shows its tone in its spelling. Three things decide it, and here each has its own colour:</p>
+        <ol class="small tone-key">
+          <li><b>The class of the first consonant:</b> <span class="key k-mid">middle</span> <span class="key k-high">high</span> <span class="key k-low">low</span></li>
+          <li><b>The tone mark</b> above it, if there is one: <span class="key k-mark" lang="th">◌่ ◌้ ◌๊ ◌๋</span></li>
+          <li>With no mark, <b>how the syllable ends:</b> live (a long vowel, or n, m, ng, y, w) or <span class="key k-dead">dead</span> (a short vowel, or k, t, p; the last letter is underlined)</li>
+        </ol>
+        <button id="startReadTone" class="primary start">▶&nbsp; Practise: read the tone</button>
+        <p id="readToneStats" class="muted small center"></p>
+        <h2 class="card-title section-title">The tone chart</h2>
+        <p class="muted small">Find the class across the top and the mark down the side. Tap a word to hear it and see what decided its tone.</p>
+        <div id="toneChart" class="tone-chart"></div>
+        <div id="toneDetail" class="card tone-detail" hidden></div>
+        <h2 class="card-title section-title">One change in the spelling, a different tone</h2>
+        <div id="toneSets"></div>
+      </div>
+      <!-- Read: phrases already known by ear, in Thai script -->
+      <div class="pane" data-pane="read" role="tabpanel" hidden>
+        <p class="eyebrow">Letters · reading what you can already say</p>
+        <h1 class="next-title" id="readNext"></h1>
+        <div class="stats">
+          <div><b id="statReadDue">0</b><span>reviews due</span></div>
+          <div><b id="statReadNew">0</b><span>ready to read</span></div>
+          <div><b id="statReadDone">0</b><span>reading</span></div>
+        </div>
+        <button id="startRead" class="primary start">▶&nbsp; Start</button>
+        <p id="readEstimate" class="muted small center"></p>
+        <p class="muted small">You see a phrase you have already learned by ear, in Thai script only. Read it aloud, then pick what it means: the app checks your answer, plays the phrase and lights it up word by word. The shortest phrases come first. What you read correctly comes back after a few days, then weeks; a miss comes back tomorrow.</p>
+      </div>
       <div class="pane" data-pane="progress" role="tabpanel" hidden>
         <div class="card">
           <h2 class="card-title">Letters</h2>
@@ -149,6 +183,30 @@
           <p class="legend small"><i class="mastered"></i> mastered <i class="known"></i> known <i class="learning"></i> learning</p>
           <div id="letterUnits"></div>
         </div>
+      </div>
+    </section>
+
+    <!-- Listen: ear training and new sentences, where the app checks the answer -->
+    <section id="ear" class="view" hidden>
+      <p class="eyebrow">Listen · the app checks every answer</p>
+      <h1>Train your ear</h1>
+      <div class="card">
+        <h2 class="card-title">Hear the tone</h2>
+        <p class="small">A word plays, in one of the two voices. Pick its tone, or pick which of two or three look-alike words it was. Then see the spelling that gives that tone.</p>
+        <div id="earToneStats" class="drill-stats"></div>
+        <button id="startEarTone" class="primary wide-btn">▶&nbsp; Start · 20 questions</button>
+      </div>
+      <div class="card">
+        <h2 class="card-title">Tricky sounds</h2>
+        <p class="small">Pairs that sound alike to an English ear: p and ph, short and long vowels, n and ng, the cut-off k, t, p at the end of a word. Which one did you hear?</p>
+        <div id="earSoundStats" class="drill-stats"></div>
+        <button id="startEarSound" class="primary wide-btn">▶&nbsp; Start · 20 questions</button>
+      </div>
+      <div class="card">
+        <h2 class="card-title">New sentences</h2>
+        <p class="small">Sentences you have never heard, built from words you know. Listen, then pick the meaning. They are not in the lessons, so you have to understand them, not remember them.</p>
+        <p id="sentenceStats" class="muted small"></p>
+        <button id="startSentences" class="primary wide-btn">▶&nbsp; Start · 10 sentences</button>
       </div>
     </section>
 
@@ -236,6 +294,8 @@
           <h2 class="card-title">How it works</h2>
           <p class="small"><b>Words</b> is audio flashcards with spaced repetition. Every phrase has two cards: <i>What does this mean?</i> trains your ear, <i>How do you say…?</i> trains your mouth. Each card comes back just before you'd forget it. Rate it Again, Good or Easy; <b>Auto</b> hides the buttons, marks everything OK and keeps going. <b>I know this</b> skips a phrase for a week. <b>Learn</b> next to a unit in the list starts that unit now (and the daily Start carries on with it); <b>Replay</b> runs a finished unit again as practice, without changing when its words come back.</p>
           <p class="small"><b>Letters</b> is the same kind of flashcards for the Thai script: each consonant, vowel and tone mark pops up big on screen while you hear its name. <i>What is this letter?</i> trains reading; <i>Which letter is this?</i> trains writing (picture it, or trace it in the air). With <b>Auto</b> on it keeps going by itself.</p>
+          <p class="small"><b>Letters › Tones</b> shows how the spelling gives the tone: the first consonant is coloured by its class, the tone mark has its own colour, and a dead ending is underlined. Tap any word in the chart to hear it. <b>Letters › Read</b> shows phrases you already know by ear in Thai script: read one aloud, then pick its meaning.</p>
+          <p class="small"><b>Listen</b> is practice the app marks for you. <i>Hear the tone</i> and <i>Tricky sounds</i> play one word and ask which it was. <i>New sentences</i> plays a sentence you have never heard, made from words you know, and asks what it means. Nothing here is rated by you; the app keeps score and brings back what you miss.</p>
           <p class="small"><b>Talk</b> is a Pimsleur-style lesson for each unit, about 20–30 minutes, no buttons needed:</p>
           <ol class="small">
             <li><b>Opening conversation</b> between Niwat and Premwadee at natural speed. Just listen.</li>
@@ -283,7 +343,10 @@
           <p id="lyricRom" class="lyric-rom"></p>
         </div>
         <p id="peek" class="peek"></p>
+        <p id="readText" class="read-text" lang="th" hidden></p>
+        <div id="reveal" class="reveal" hidden></div>
         <p id="feedback" class="feedback" aria-live="polite"></p>
+        <div id="choices" class="choices" hidden></div>
         <p class="links">
           <button id="knowLink" class="link">I know this</button>
           <button id="replay" class="link">Replay</button>
@@ -311,6 +374,7 @@
       <p id="cardName" class="card-name"></p>
       <p id="cardDesc" class="muted"></p>
       <p id="cardExample" class="card-example" hidden></p>
+      <div id="cardTones" class="card-tones" hidden></div>
       <div class="row">
         <button id="cardPrev" class="icon" aria-label="Previous letter">‹</button>
         <button id="cardPlay" class="primary grow">▶&nbsp; Play</button>
@@ -322,6 +386,7 @@
   <nav id="tabbar" class="tabbar" hidden>
     <button data-tab="words"><span aria-hidden="true">≡</span>Words</button>
     <button data-tab="talk"><span aria-hidden="true">❝</span>Talk</button>
+    <button data-tab="ear"><span aria-hidden="true">∿</span>Listen</button>
     <button data-tab="song"><span aria-hidden="true">♪</span>Song</button>
     <button data-tab="letters"><span aria-hidden="true" lang="th">ก</span>Letters</button>
     <button data-tab="more"><span aria-hidden="true">⋯</span>More</button>
@@ -332,14 +397,16 @@
     <div id="wordCardBody"></div>
   </div>
 
-  <script src="app/course.js?v=57"></script>
-  <script src="app/dialogues.js?v=57"></script>
-  <script src="app/songs.js?v=57"></script>
-  <script src="app/letters.js?v=57"></script>
-  <script src="app/audio-manifest.js?v=57"></script>
-  <script src="app/audio-timing.js?v=57"></script>
-  <script src="app/etymology.js?v=57"></script>
-  <script src="app/lexicon.js?v=57"></script>
-  <script src="app/app.js?v=57"></script>
+  <script src="app/course.js?v=60"></script>
+  <script src="app/dialogues.js?v=60"></script>
+  <script src="app/songs.js?v=60"></script>
+  <script src="app/letters.js?v=60"></script>
+  <script src="app/audio-manifest.js?v=60"></script>
+  <script src="app/audio-timing.js?v=60"></script>
+  <script src="app/etymology.js?v=60"></script>
+  <script src="app/lexicon.js?v=60"></script>
+  <script src="app/tones.js?v=60"></script>
+  <script src="app/drills.js?v=60"></script>
+  <script src="app/app.js?v=60"></script>
 </body>
 </html>

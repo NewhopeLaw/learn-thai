@@ -405,3 +405,149 @@ button.link.who::after { content: ' ▾'; color: var(--muted); }
 .wc-here { margin-top: 4px !important; font-size: .95rem; }
 .wc-label-inline { color: var(--muted); }
 .wc-usage { color: var(--text); opacity: .85; }
+
+/* ---------- tones: the letters that decide the tone, in colour ---------- */
+:root { --mark: #0a8a5c; --right-bg: #dff3e6; --wrong-bg: #f8dedb; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --mark: #4fd6a0; --right-bg: #1f3a2b; --wrong-bg: #45231f; }
+}
+/* A word painted by part. A Thai mark cannot be coloured apart from its consonant inside one piece of
+   text (browsers draw the pair as a unit), so the word is drawn three times, one on top of the other:
+   the whole word in the tone-mark colour, then without tone marks, then the plain letters, each in its
+   own colour. Each layer hides the one below, except for the part it leaves out. */
+.tw {
+  position: relative; display: inline-block; white-space: nowrap; line-height: 1.7;
+  font-family: "Leelawadee UI", "Noto Sans Thai", "Sukhumvit Set", "Thonburi", system-ui, sans-serif;
+}
+.tw > span { display: block; white-space: nowrap; }
+.tw-marks { color: var(--mark); }
+.tw-signs, .tw-base { position: absolute; left: 0; top: 0; }
+.tw-signs { color: var(--muted); }
+.tw-base span { color: var(--muted); }
+.tw-base.cls-mid .r-init, .tw-base.cls-mid .r-init2 { color: var(--listen); }
+.tw-base.cls-high .r-init, .tw-base.cls-high .r-init2 { color: var(--grade); }
+.tw-base.cls-low .r-init, .tw-base.cls-low .r-init2 { color: var(--speak); }
+.tw-base.cls-high .r-lead { color: color-mix(in srgb, var(--grade) 55%, var(--surface)); }
+.tw-base.cls-mid .r-lead { color: color-mix(in srgb, var(--listen) 55%, var(--surface)); }
+.tw-base .r-final { color: var(--text); }
+.tw-base.dead .r-final { text-decoration: underline; text-decoration-thickness: .06em; text-underline-offset: .16em; }
+.tw-base.has-mark .r-final { color: var(--muted); text-decoration: none; } /* with a mark, the ending decides nothing */
+.tw-base .r-silent { color: color-mix(in srgb, var(--muted) 45%, var(--surface)); }
+.tw.plain .tw-marks, .tw.plain .tw-signs, .tw.plain .tw-base span { color: var(--text) !important; text-decoration: none !important; }
+.tw span { transition: color .25s; }
+.tw-xl { font-size: 4.6rem; line-height: 1.5; }
+.tw-lg { font-size: 2.1rem; }
+.tw-md { font-size: 1.5rem; }
+
+.tone-key { padding-left: 20px; margin: 6px 0 0; }
+.tone-key li { margin: 6px 0; }
+.key { display: inline-block; padding: 0 8px; border-radius: 999px; font-weight: 600; border: 1px solid currentColor; margin: 0 2px; }
+.k-mid { color: var(--listen); } .k-high { color: var(--grade); } .k-low { color: var(--speak); }
+.k-mark { color: var(--mark); font-size: 1.15rem; letter-spacing: .2em; padding-left: 12px; }
+.k-dead { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+
+/* The chart: a column per class, a row per mark or ending. */
+.tone-chart { display: grid; grid-template-columns: minmax(64px, .8fr) repeat(3, 1fr); gap: 6px; }
+.tone-chart .th { font-size: .78rem; font-weight: 600; text-align: center; align-self: end; padding-bottom: 2px; }
+.tone-chart .th.mid { color: var(--listen); } .tone-chart .th.high { color: var(--grade); } .tone-chart .th.low { color: var(--speak); }
+.tone-chart .rh { font-size: .78rem; color: var(--muted); align-self: center; line-height: 1.25; }
+.tone-chart .rh b { display: block; font-size: 1.25rem; color: var(--mark); font-weight: 500; line-height: 1.3; }
+.tone-chart .rh b.plain { font-size: .85rem; color: var(--text); font-weight: 600; }
+.tone-cell { display: flex; flex-direction: column; gap: 4px; }
+.tone-cell.none { align-items: center; justify-content: center; color: var(--muted); font-size: .78rem; text-align: center; border: 1px dashed var(--border); border-radius: 12px; min-height: 64px; }
+.tone-item {
+  display: flex; flex-direction: column; align-items: center; gap: 0; width: 100%;
+  min-height: 0; padding: 4px 4px 6px; border-radius: 12px; text-align: center;
+}
+.tone-item.now { border-color: var(--accent); background: var(--accent-soft); }
+.tone-item .rom { font-size: .82rem; color: var(--muted); line-height: 1.2; }
+.tone-item .en { font-size: .8rem; line-height: 1.2; }
+.tone-tag { display: inline-flex; align-items: center; gap: 4px; font-size: .8rem; font-weight: 600; line-height: 1.2; }
+.tone-tag svg { width: 22px; height: 15px; flex: none; }
+.tone-tag path, .tone-chip path { fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+.tone-detail { text-align: center; }
+.tone-detail p { margin: 0; }
+.tone-detail .rom, .reveal .rom { color: var(--muted); margin: 0; }
+.tone-chips { display: flex; flex-wrap: wrap; align-items: stretch; justify-content: center; gap: 6px; margin: 8px 0 4px; }
+.tone-chip { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); min-width: 64px; }
+.tone-chip b { font-size: 1.25rem; line-height: 1.5; font-weight: 600; }
+.tone-chip small { font-size: .74rem; color: var(--muted); line-height: 1.25; text-align: center; max-width: 9.5em; }
+.choice[hidden] { display: none; }
+.tone-chip.c-mid b { color: var(--listen); } .tone-chip.c-high b { color: var(--grade); } .tone-chip.c-low b { color: var(--speak); }
+.tone-chip.c-mark b { color: var(--mark); }
+.tone-chip.c-tone { background: var(--surface-2); }
+.tone-chip.c-tone b { font-size: 1rem; }
+.tone-chip.c-tone svg { width: 34px; height: 22px; }
+.tone-op { align-self: center; color: var(--muted); font-weight: 600; }
+
+.tone-set .tone-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 6px; margin-top: 8px; }
+.tone-set .why { font-size: .74rem; color: var(--muted); line-height: 1.25; margin-top: 2px; }
+.tone-set .play-all { margin-top: 6px; }
+.tone-set .tone-detail { margin: 10px 0 0; border: 0; border-top: 1px solid var(--border); border-radius: 0; padding: 10px 0 0; }
+
+/* Letter card: the tones this letter (or this mark) gives. */
+.card-tones { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; }
+.card-tones[hidden] { display: none; }
+.card-tones .label { font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin: 0 0 6px; }
+.card-tones .tone-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 6px; }
+.tone-item .cond { font-size: .74rem; color: var(--muted); line-height: 1.2; }
+.wc-tone { margin-top: 10px; }
+.wc-tone .tone-chips { justify-content: flex-start; }
+
+/* ---------- drills: answers the app checks ---------- */
+.stage.drill #orb { width: 104px; height: 104px; padding: 8px; font-size: .85rem; gap: 0; cursor: pointer; }
+.stage.drill #orb .icon::before { font-size: 1.6rem; }
+.stage.drill { justify-content: flex-start; padding-top: 12px; }
+.stage.drill .prompt { font-size: 1.15rem; margin-top: 10px; min-height: 1.6em; }
+.read-text {
+  font-size: 2.3rem; line-height: 1.6; text-align: center; margin: 8px 0 0; overflow-wrap: anywhere;
+  font-family: "Leelawadee UI", "Noto Sans Thai", "Sukhumvit Set", "Thonburi", system-ui, sans-serif;
+}
+.read-text[hidden], .reveal[hidden], .choices[hidden] { display: none; }
+.reveal { text-align: center; margin-top: 4px; }
+.reveal p { margin: 0; }
+.feedback.ok { color: var(--ok); }
+.feedback.bad { color: var(--accent); }
+.choices { display: grid; gap: 8px; width: 100%; margin: 10px 0 4px; }
+.choices.list { grid-template-columns: 1fr; }
+.choices.tones { grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.choices.words { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); }
+.choice { min-height: 52px; padding: 8px 10px; border-radius: 14px; text-align: left; line-height: 1.3; }
+.choices.tones .choice, .choices.words .choice { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-align: center; padding: 8px 2px; }
+.choices.tones .choice { font-size: .8rem; font-weight: 600; min-height: 64px; }
+.choices.tones .choice svg { width: 34px; height: 22px; }
+.choices.tones .choice path { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.choice .rom { font-size: .85rem; color: var(--muted); }
+.choice .en { font-size: .82rem; }
+.choice:disabled { opacity: 1; cursor: default; color: var(--text); }
+.choice.right { border-color: var(--ok); background: var(--right-bg); box-shadow: 0 0 0 1px var(--ok); }
+.choice.wrong { border-color: var(--accent); background: var(--wrong-bg); }
+.choice.now { box-shadow: 0 0 0 3px var(--accent-soft); border-color: var(--accent); }
+.next-btn { grid-column: 1 / -1; min-height: 56px; font-size: 1.05rem; border-radius: 16px; margin-top: 4px; }
+.wide-btn { display: block; width: 100%; margin-top: 10px; min-height: 52px; }
+.drill-stats { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
+.drill-stats:empty { display: none; }
+.drill-stat { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); font-size: .8rem; }
+.drill-stat svg { width: 20px; height: 13px; }
+.drill-stat path { fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
+.drill-stat b { font-variant-numeric: tabular-nums; }
+.drill-stat.weak { background: var(--wrong-bg); }
+.tabbar button { padding: 0 2px; }
+
+/* The letters of a word as buttons: tap one for its name. */
+.letters-box { margin-top: 8px; }
+.letter-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.letter-chip {
+  min-width: 44px; min-height: 44px; padding: 0 10px; border-radius: 12px; font-size: 1.5rem; line-height: 1.6;
+  font-family: "Leelawadee UI", "Noto Sans Thai", "Sukhumvit Set", "Thonburi", system-ui, sans-serif;
+}
+.letter-chip.c-mid { color: var(--listen); } .letter-chip.c-high { color: var(--grade); } .letter-chip.c-low { color: var(--speak); }
+.letter-chip.c-mark { color: var(--mark); }
+.letter-chip.c-vowel, .letter-chip.c-silent { color: var(--muted); }
+.letter-chip.c-silent { border-style: dashed; }
+.letter-chip.on { border-color: var(--accent); background: var(--accent-soft); }
+.letter-tip { font-size: .9rem; color: var(--muted); margin: 6px 0 0 !important; min-height: 1.4em; text-align: center; }
+.letter-tip b { font-size: 1.15rem; color: var(--text); font-weight: 500; }
+.wc-tone .letter-row { justify-content: flex-start; }
+.wc-tone .letter-tip { text-align: left; }
